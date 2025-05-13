@@ -1,0 +1,14 @@
+<Project>
+	<PropertyGroup>
+		<LibFrwkVer>net8.0</LibFrwkVer>
+		<TestFrwkVer>net8.0</TestFrwkVer>
+		<GenFrwkVer>netstandard2.0</GenFrwkVer>
+	</PropertyGroup>
+	<PropertyGroup>
+		<DotNetCoreVersion>8.0.15</DotNetCoreVersion>
+	</PropertyGroup>
+	<PropertyGroup>
+		<Ver>0.0.1</Ver>
+		<Prev>-betha-1</Prev>
+	</PropertyGroup>
+</Project>

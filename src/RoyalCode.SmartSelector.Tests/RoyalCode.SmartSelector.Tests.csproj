@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../tests.targets" />
+	
+  <PropertyGroup>
+    <TargetFramework>$(TestFrwkVer)</TargetFramework>
+        <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
+  </ItemGroup>
+
+</Project>

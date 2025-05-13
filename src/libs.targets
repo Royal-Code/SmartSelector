@@ -1,0 +1,29 @@
+<Project>
+	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<DocumentationFile>$(BaseOutputPath)\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Authors>Royal Code</Authors>
+		<Copyright>Royal Code Copyright ©  2025</Copyright>
+		<RepositoryUrl>https://github.com/Royal-Code/SmartSelector</RepositoryUrl>
+		<RepositoryType>Git</RepositoryType>
+		<Configurations>Debug;Release</Configurations>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+	<PropertyGroup>
+		<Version>$(Ver)$(Prev)</Version>
+		<AssemblyVersion>$(Ver)</AssemblyVersion>
+		<FileVersion>$(Ver)</FileVersion>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="../icon.png" Pack="true" PackagePath="/"/>
+		<None Include="../../README.md" Pack="true" PackagePath="/"/>
+	</ItemGroup>
+	<PropertyGroup>
+		<DotNetCoreVersion Condition="'$(TargetFramework)' == 'net8'">8.0.0</DotNetCoreVersion>
+	</PropertyGroup>
+</Project>

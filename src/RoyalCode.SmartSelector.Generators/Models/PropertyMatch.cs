@@ -1,103 +1,49 @@
-﻿using RoyalCode.SmartSelector.Extensions;
-using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+﻿using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-internal class PropertyMatch
+/// <summary>
+/// A result of matching a property from the origin type to a property in the target type.
+/// </summary>
+internal class PropertyMatch(PropertyDescriptor origin, PropertySelection? target) : IEquatable<PropertyMatch>
 {
-}
+    /// <summary>
+    /// The origin property type descriptor.
+    /// </summary>
+    public PropertyDescriptor Origin { get; } = origin;
 
-internal class PropertySelection
-{
-    private readonly PropertyDescriptor property;
+    /// <summary>
+    /// The target property selection.
+    /// </summary>
+    public PropertySelection? Target { get; } = target;
 
-    public PropertySelection(PropertyDescriptor property)
+    /// <summary>
+    /// Determines if the target property selection is missing.
+    /// </summary>
+    public bool IsMissing => Target is null;
+
+    public bool Equals(PropertyMatch other)
     {
-        this.property = property;
-    }
-
-    /// <summary>
-    /// The current selected property type.
-    /// </summary>
-    public PropertyDescriptor PropertyType => property;
-
-    /// <summary>
-    /// The declaring class type of the root selected property.
-    /// if this selection does not have a parent, this selection will be the root.
-    /// </summary>
-    public PropertyDescriptor RootDeclaringType => Parent != null ? Parent.RootDeclaringType : property;
-
-    /// <summary>
-    /// The parent <see cref="PropertySelection"/>. Can be null.
-    /// </summary>
-    public PropertySelection? Parent { get; private set; }
-
-    public static PropertySelection? Select(PropertyDescriptor property, TargetTypeInfo targetType)
-    {
-        PropertySelection? ps =null;
-
-        var targetProperty = targetType.Properties.FirstOrDefault(p => p.Name == property.Name);
+        if (other is null)
+            return false;
         
-        if(targetProperty != null)
-        {
-            return new PropertySelection(targetProperty);
-        }
+        if (ReferenceEquals(this, other))
+            return true;
 
-        var parts = property.Name.SplitUpperCase();
-        if (parts is not null)
-        {
-            var partSelector = new PropertySelectionPart(parts, targetType);
-            ps = partSelector.Select();
-        }
-
-        return ps;
-    }
-}
-
-internal class PropertySelectionPart
-{
-    private readonly string[] parts;
-    private readonly TargetTypeInfo targetType;
-    private readonly int position;
-    private readonly PropertySelection? parent;
-
-    public PropertySelectionPart(
-        string[] parts, 
-        TargetTypeInfo targetType,
-        int position = 0,
-        PropertySelection? parent = null)
-    {
-        this.parts = parts;
-        this.targetType = targetType;
-        this.position = position;
-        this.parent = parent;
+        return Origin.Equals(other.Origin) &&
+            Equals(Target, other.Target);
     }
 
-    internal PropertySelection? Select()
+    public override bool Equals(object? obj)
     {
-        var currentProperty = string.Empty;
+        return obj is PropertyMatch other && Equals(other);
+    }
 
-        for (int i = position; i < parts.Length; i++)
-        {
-            currentProperty += parts[i];
-            var property = targetType.Properties.FirstOrDefault(p => p.Name == currentProperty);
-            if (property is not null)
-            {
-                var ps = parent == null ? new PropertySelection(property) : parent.SelectChild(property);
-                if (i + 1 < parts.Length)
-                {
-                    var nextPart = new PropertySelectionPart(parts, property.PropertyType, i + 1, ps);
-                    var nextPs = nextPart.Select();
-                    if (nextPs is not null)
-                        return nextPs;
-                }
-                else
-                {
-                    return ps;
-                }
-            }
-        }
-
-        return null;
+    public override int GetHashCode()
+    {
+        int hashCode = -1013312977;
+        hashCode = hashCode * -1521134295 + EqualityComparer<PropertyDescriptor>.Default.GetHashCode(Origin);
+        hashCode = hashCode * -1521134295 + EqualityComparer<PropertySelection?>.Default.GetHashCode(Target);
+        return hashCode;
     }
 }

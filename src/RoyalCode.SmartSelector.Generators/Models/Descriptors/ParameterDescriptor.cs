@@ -10,7 +10,18 @@ public sealed class ParameterDescriptor : IEquatable<ParameterDescriptor>
     public static ParameterDescriptor Create(ParameterSyntax syntax, SemanticModel model)
         => new(TypeDescriptor.Create(syntax.Type!, model), syntax.Identifier.Text);
 
-    public static readonly ParameterDescriptor CancellationToken = new ParameterDescriptor(TypeDescriptor.CancellationToken, "ct");
+    private static ParameterDescriptor? cancellationToken;
+    public static ParameterDescriptor CancellationToken(SemanticModel model)
+    {
+        if (cancellationToken is not null)
+            return cancellationToken;
+        
+        var type = TypeDescriptor.CancellationToken(model);
+        
+        cancellationToken = new(type, "ct");
+        
+        return cancellationToken;
+    }
 
     public ParameterDescriptor(TypeDescriptor type, string name)
     {

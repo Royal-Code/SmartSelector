@@ -1,39 +1,64 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+﻿using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-internal class MatchSelection
+internal class MatchSelection : IEquatable<MatchSelection>
 {
     private readonly TypeDescriptor originType;
-    private readonly IReadOnlyList<PropertyDescriptor> originProperties;
-    private readonly TargetTypeInfo targetType;
+    private readonly IReadOnlyList<PropertyMatch> propertyMatches;
 
-    public MatchSelection(
-        TypeDescriptor originType,
-        IReadOnlyList<PropertyDescriptor> originProperties,
-        TargetTypeInfo targetType)
+    public MatchSelection(TypeDescriptor originType, IReadOnlyList<PropertyMatch> propertyMatches)
     {
         this.originType = originType;
-        this.originProperties = originProperties;
-        this.targetType = targetType;
+        this.propertyMatches = propertyMatches;
     }
-}
 
-public readonly struct TargetTypeInfo
-{
-    public TargetTypeInfo(ITypeSymbol typeSymbol, TypeSyntax typeSyntax, IReadOnlyList<PropertyDescriptor> properties)
+    public TypeDescriptor OriginType => originType;
+
+    public IReadOnlyList<PropertyMatch> PropertyMatches => propertyMatches;
+
+    public bool HasMissingProperties(out IReadOnlyList<PropertyDescriptor> missingProperties)
     {
-        TypeSymbol = typeSymbol;
-        TypeSyntax = typeSyntax;
-        Properties = properties;
+        var missing = propertyMatches.Where(m => m.IsMissing).Select(m => m.Origin).ToList();
+        missingProperties = missing.AsReadOnly();
+        return missing.Count > 0;
     }
 
-    public ITypeSymbol TypeSymbol { get; }
+    public static MatchSelection Create(MatchTypeInfo origin, MatchTypeInfo target)
+    {
+        List<PropertyMatch> matches = [];
 
-    public TypeSyntax TypeSyntax { get; }
+        foreach (var originProperty in origin.Properties)
+        {
+            var targetSelection = PropertySelection.Select(originProperty, target);
+            matches.Add(new PropertyMatch(originProperty, targetSelection));
+        }
 
-    public IReadOnlyList<PropertyDescriptor> Properties { get; }
+        return new MatchSelection(origin.Type, matches);
+    }
+
+    public bool Equals(MatchSelection other)
+    {
+        if (other is null)
+            return false;
+        
+        if (ReferenceEquals(this, other))
+            return true;
+
+        return originType.Equals(other.originType) &&
+               propertyMatches.SequenceEqual(other.propertyMatches);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is MatchSelection other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        int hashCode = -1794252460;
+        hashCode = hashCode * -1521134295 + EqualityComparer<TypeDescriptor>.Default.GetHashCode(originType);
+        hashCode = hashCode * -1521134295 + EqualityComparer<IReadOnlyList<PropertyMatch>>.Default.GetHashCode(propertyMatches);
+        return hashCode;
+    }
 }
-

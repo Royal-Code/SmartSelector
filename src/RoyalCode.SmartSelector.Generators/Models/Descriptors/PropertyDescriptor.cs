@@ -1,25 +1,34 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 public sealed class PropertyDescriptor : IEquatable<PropertyDescriptor>
 {
     public static PropertyDescriptor Create(PropertyDeclarationSyntax syntax, SemanticModel model)
-        => new(TypeDescriptor.Create(syntax.Type!, model), syntax.Identifier.Text);
+    {
+        var symbol = model.GetDeclaredSymbol(syntax) as IPropertySymbol;
 
-    public static PropertyDescriptor Create(IPropertySymbol syntax, SemanticModel model)
-        => new(TypeDescriptor.Create(syntax.Type!, model), syntax.Name);
+        return new(TypeDescriptor.Create(syntax.Type!, model), syntax.Identifier.Text, symbol);
+    }
 
-    public PropertyDescriptor(TypeDescriptor type, string name)
+    public static PropertyDescriptor Create(IPropertySymbol symbol)
+        => new(TypeDescriptor.Create(symbol.Type!), symbol.Name, symbol);
+
+    public PropertyDescriptor(TypeDescriptor type, string name, IPropertySymbol? symbol)
     {
         Type = type;
         Name = name;
+        Symbol = symbol;
     }
 
     public TypeDescriptor Type { get; }
 
     public string Name { get; }
+
+    public IPropertySymbol? Symbol { get; }
 
     public bool Equals(PropertyDescriptor? other)
     {

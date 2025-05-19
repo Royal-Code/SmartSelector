@@ -16,17 +16,20 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         var name = typeSyntax.ToString();
         bool isNullable = false;
 
+        var typeInfo = model.GetTypeInfo(typeSyntax);
+        if (typeInfo.Type is null)
+            return new(name, typeSyntax.GetNamespaces(model).ToArray(), null!, isNullable);
+
         if (name[name.Length - 1] == '?')
         {
-            var typeInfo = model.GetTypeInfo(typeSyntax);
             var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
             isNullable = namedTypeSymbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
         }
 
-        return new(name, typeSyntax.GetNamespaces(model).ToArray(), isNullable);
+        return new(name, typeSyntax.GetNamespaces(model).ToArray(), typeInfo.Type!, isNullable);
     }
 
-    public static TypeDescriptor Create(ITypeSymbol typeSymbol, SemanticModel model)
+    public static TypeDescriptor Create(ITypeSymbol typeSymbol)
     {
         var name = typeSymbol.ToString();
         bool isNullable = false;
@@ -37,30 +40,63 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
             isNullable = namedTypeSymbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
         }
 
-        return new(name, typeSymbol.GetNamespaces().ToArray(), isNullable);
+        return new(name, typeSymbol.GetNamespaces().ToArray(), typeSymbol, isNullable);
     }
 
-    public static readonly TypeDescriptor CancellationToken = new("CancellationToken", []);
+    private static TypeDescriptor? cancellationToken;
+    public static TypeDescriptor CancellationToken(SemanticModel model)
+    {
+        if (cancellationToken is not null)
+            return cancellationToken;
 
-    public static readonly TypeDescriptor Void = new("void", []);
+        var name = "CancellationToken";
+        var namespaces = new[] { "System.Threading" };
+        var symbol = model.Compilation.GetTypeByMetadataName("System.Threading.CancellationToken");
+        
+        if (symbol is null)
+            throw new InvalidOperationException($"Type '{name}' not found in the compilation.");
+
+        cancellationToken = new(name, namespaces, symbol, false);
+        return cancellationToken;
+    }
+
+    private static TypeDescriptor? voidTypeDescriptor;
+    public static TypeDescriptor Void(SemanticModel model)
+    {
+        if (voidTypeDescriptor is not null)
+            return voidTypeDescriptor;
+
+        var name = "void";
+        var namespaces = new[] { "System" };
+        var symbol = model.Compilation.GetSpecialType(SpecialType.System_Void);
+
+        if (symbol is null)
+            throw new InvalidOperationException($"Type '{name}' not found in the compilation.");
+        
+        voidTypeDescriptor = new(name, namespaces, symbol, false);
+        return voidTypeDescriptor;
+    }
 
     #endregion
 
     private List<string>? hints;
 
-    public TypeDescriptor(string name, string[] namespaces, bool isNullable = false)
+    public TypeDescriptor(string name, string[] namespaces, ITypeSymbol? symbol, bool isNullable = false)
     {
         Name = name;
         Namespaces = namespaces;
         IsNullable = isNullable;
+        Symbol = symbol;
     }
 
     public string Name { get; }
 
     public string[] Namespaces { get; }
 
-    public bool IsNullable { get; }
+    public ITypeSymbol? Symbol { get; }
 
+    public bool IsNullable { get; }
+    
     public bool IsVoid => Name == "void";
 
     public bool IsVoidTask => Name == "Task";
@@ -118,6 +154,20 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         }
     }
 
+    public IReadOnlyList<PropertyDescriptor> CreateProperties(Func<IPropertySymbol, bool>? predicate)
+    {
+        if (Symbol is null)
+            return [];
+
+        return Symbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic)
+            .Where(p => predicate is null || predicate(p))
+            .Select(PropertyDescriptor.Create)
+            .ToList();
+    }
+
     public bool Equals(TypeDescriptor? other)
     {
         if (other is null)
@@ -141,85 +191,85 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         return hashCode;
     }
 
-    public bool HasValueType(out TypeDescriptor? type)
-    {
-        string typeName = Name;
+    //public bool HasValueType(out TypeDescriptor? type)
+    //{
+    //    string typeName = Name;
 
-        if (IsVoid)
-        {
-            type = null;
-            return false;
-        }
+    //    if (IsVoid)
+    //    {
+    //        type = null;
+    //        return false;
+    //    }
 
-        if (typeName.StartsWith("Task"))
-        {
-            if (typeName.Length == 4)
-            {
-                type = null;
-                return false;
-            }
+    //    if (typeName.StartsWith("Task"))
+    //    {
+    //        if (typeName.Length == 4)
+    //        {
+    //            type = null;
+    //            return false;
+    //        }
 
-            typeName = typeName.Substring(5, typeName.Length - 6);
-        }
+    //        typeName = typeName.Substring(5, typeName.Length - 6);
+    //    }
 
-        if (typeName.StartsWith("Result"))
-        {
-            if (typeName.Length == 6)
-            {
-                type = null;
-                return false;
-            }
+    //    if (typeName.StartsWith("Result"))
+    //    {
+    //        if (typeName.Length == 6)
+    //        {
+    //            type = null;
+    //            return false;
+    //        }
 
-            typeName = typeName.Substring(7, typeName.Length - 8);
-        }
+    //        typeName = typeName.Substring(7, typeName.Length - 8);
+    //    }
 
-        type = new TypeDescriptor(typeName, Namespaces);
-        return true;
-    }
+    //    type = new TypeDescriptor(typeName, Namespaces);
+    //    return true;
+    //}
 
-    public TypeDescriptor Wrap(string typeName, string ns)
-    {
-        return new TypeDescriptor($"{typeName}<{Name}>", [..Namespaces, ns]);
-    }
+    //public TypeDescriptor Wrap(string typeName, string ns)
+    //{
+    //    return new TypeDescriptor($"{typeName}<{Name}>", [..Namespaces, ns]);
+    //}
 
-    public TypeDescriptor MustBeTask()
-    {
-        if (Name.StartsWith("Task"))
-            return this;
+    //public TypeDescriptor MustBeTask()
+    //{
+    //    if (Name.StartsWith("Task"))
+    //        return this;
 
-        if (IsVoid)
-            return new TypeDescriptor("Task", Namespaces);
+    //    if (IsVoid)
+    //        return new TypeDescriptor("Task", Namespaces);
 
-        return new TypeDescriptor($"Task<{Name}>", Namespaces);
-    }
+    //    return new TypeDescriptor($"Task<{Name}>", Namespaces);
+    //}
 
-    public TypeDescriptor MustBeResult()
-    {
-        string typeName = Name;
-        bool task = false;
+    //public TypeDescriptor MustBeResult()
+    //{
+    //    string typeName = Name;
+    //    bool task = false;
 
-        if (IsVoid)
-            return new TypeDescriptor("Result", Namespaces);
+    //    if (IsVoid)
+    //        return new TypeDescriptor("Result", Namespaces);
 
-        if (typeName == "Task")
-        {
-            return new TypeDescriptor("Task<Result>", [.. Namespaces, "RoyalCode.SmartProblems"]);
-        }
+    //    if (typeName == "Task")
+    //    {
+    //        return new TypeDescriptor("Task<Result>", [.. Namespaces, "RoyalCode.SmartProblems"]);
+    //    }
 
-        if (typeName.StartsWith("Task"))
-        {
-            typeName = typeName.Substring(5, typeName.Length - 6);
-            task = true;
-        }
+    //    if (typeName.StartsWith("Task"))
+    //    {
+    //        typeName = typeName.Substring(5, typeName.Length - 6);
+    //        task = true;
+    //    }
 
-        if (typeName.StartsWith("Result"))
-            return this;
+    //    if (typeName.StartsWith("Result"))
+    //        return this;
 
-        typeName = $"Result<{typeName}>";
+    //    typeName = $"Result<{typeName}>";
 
-        if (task)
-            typeName = $"Task<{typeName}>";
+    //    if (task)
+    //        typeName = $"Task<{typeName}>";
 
-        return new TypeDescriptor(typeName, [.. Namespaces, "RoyalCode.SmartProblems"]);
-    }
+    //    return new TypeDescriptor(typeName, [.. Namespaces, "RoyalCode.SmartProblems"]);
+    //}
 }

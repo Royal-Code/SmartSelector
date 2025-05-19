@@ -13,4 +13,13 @@ internal static class AnalyzerDiagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor PropertyNotMatch = new(
+        id: "RCSS001",
+        title: "It is not possible to determine a corresponding property for the other type",
+        messageFormat: "The property '{0}' does not match another property of the other type",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
 }

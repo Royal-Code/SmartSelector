@@ -30,6 +30,7 @@
 		<AdditionalFiles Include="../AnalyzerReleases.Shipped.md" />
 		<AdditionalFiles Include="../AnalyzerReleases.Unshipped.md" />
 	</ItemGroup>
+	
 	<ItemGroup>
 		 <!--Package items--> 
 		<None Include="RoyalCode.SmartSelector.Generators.props" Pack="true" PackagePath="build" Visible="false" />

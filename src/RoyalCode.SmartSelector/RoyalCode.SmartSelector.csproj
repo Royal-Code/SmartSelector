@@ -4,6 +4,11 @@
 	
 	<PropertyGroup>
 		<TargetFramework>$(LibFrwkVer)</TargetFramework>
+
+		<Version>0.1.0</Version>
+		<AssemblyVersion>0.1.0</AssemblyVersion>
+		<FileVersion>0.1.0</FileVersion>
+		
 	</PropertyGroup>
 
 </Project>

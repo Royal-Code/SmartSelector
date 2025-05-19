@@ -4,11 +4,9 @@ using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace RoyalCode.SmartSelector.Extensions;
+namespace RoyalCode.SmartSelector.Generators.Extensions;
 
-#pragma warning disable S3267 // loop can be simplified
-
-public static class ExtensionMethods
+internal static class ExtensionMethods
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetAttribute(this MemberDeclarationSyntax node,
@@ -142,7 +140,7 @@ public static class ExtensionMethods
 
         foreach (var typeArgument in genericName.TypeArgumentList.Arguments)
         {
-            var namespaces = GetNamespaces(typeArgument, semanticModel);
+            var namespaces = typeArgument.GetNamespaces(semanticModel);
             foreach (var n in namespaces)
                 yield return n;
         }
@@ -162,7 +160,7 @@ public static class ExtensionMethods
         {
             if (typeArgument is INamedTypeSymbol namedTypeArgument)
             {
-                var namespaces = GetNamespaces(namedTypeArgument);
+                var namespaces = namedTypeArgument.GetNamespaces();
                 foreach (var n in namespaces)
                     yield return n;
             }
@@ -480,7 +478,7 @@ public static class ExtensionMethods
         {
             var currentChar = name[i];
             if (char.IsUpper(currentChar) && i > 1
-                && (!char.IsUpper(name[i - 1]) || (i + 1 < name.Length && !char.IsUpper(name[i + 1]))))
+                && (!char.IsUpper(name[i - 1]) || i + 1 < name.Length && !char.IsUpper(name[i + 1])))
             {
                 parts.AddLast(sb.ToString());
                 sb.Clear();
@@ -491,5 +489,43 @@ public static class ExtensionMethods
         parts.AddLast(sb.ToString());
 
         return parts.Count > 1 ? parts.ToArray() : null;
+    }
+
+    /// <summary>
+    /// Attempts to get the generic argument type of an <see cref="IEnumerable{T}"/>-like type.
+    /// </summary>
+    /// <param name="typeSymbol">The symbol to inspect.</param>
+    /// <param name="underlyingType">The generic type argument <c>T</c>.</param>
+    /// <returns>
+    ///     Returns <c>true</c> if the symbol represents or implements <see cref="IEnumerable{T}"/>,
+    ///     otherwise <c>false</c>.
+    /// </returns>
+    public static bool TryGetEnumerableGenericType(this ITypeSymbol typeSymbol, out ITypeSymbol? underlyingType)
+    {
+        if (TryGetEnumerableGenericTypeCore(typeSymbol, out underlyingType))
+            return true;
+
+        foreach (var @interface in typeSymbol.AllInterfaces)
+        {
+            if (TryGetEnumerableGenericTypeCore(@interface, out underlyingType))
+                return true;
+        }
+
+        underlyingType = null;
+        return false;
+    }
+
+    private static bool TryGetEnumerableGenericTypeCore(ITypeSymbol symbol, out ITypeSymbol? underlyingType)
+    {
+        if (symbol is INamedTypeSymbol namedType &&
+            namedType.IsGenericType &&
+            namedType.ConstructedFrom.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+        {
+            underlyingType = namedType.TypeArguments[0];
+            return true;
+        }
+
+        underlyingType = null;
+        return false;
     }
 }

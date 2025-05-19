@@ -1,9 +1,9 @@
-﻿using RoyalCode.SmartSelector.Extensions;
+﻿using RoyalCode.SmartSelector.Generators.Extensions;
 using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-internal class PropertySelection : IEquatable<PropertySelection>
+public class PropertySelection : IEquatable<PropertySelection>
 {
     private readonly PropertyDescriptor property;
 

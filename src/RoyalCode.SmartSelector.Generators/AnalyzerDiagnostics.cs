@@ -22,4 +22,12 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor PropertyNotCompatible = new(
+        id: "RCSS002",
+        title: "Incompatible property types",
+        messageFormat: "Incompatible property types, the property {0} of the type {1} is not compatible with the property {2} of the type {3}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
 }

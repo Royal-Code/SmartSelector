@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RoyalCode.SmartSelector.Extensions;
+using RoyalCode.SmartSelector.Generators.Extensions;
 
 namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
@@ -172,8 +172,10 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
     {
         if (other is null)
             return false;
+
         if (ReferenceEquals(this, other))
             return true;
+
         return Name == other.Name && 
                Namespaces.SequenceEqual(other.Namespaces);
     }

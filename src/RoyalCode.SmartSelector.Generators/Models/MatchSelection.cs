@@ -1,9 +1,35 @@
-﻿using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+﻿using Microsoft.CodeAnalysis;
+using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-internal class MatchSelection : IEquatable<MatchSelection>
+public class MatchSelection : IEquatable<MatchSelection>
 {
+    #region Factory
+
+    public static MatchSelection Create(MatchTypeInfo origin, MatchTypeInfo target, SemanticModel model)
+    {
+        List<PropertyMatch> matches = [];
+
+        foreach (var originProperty in origin.Properties)
+        {
+            // para cada propriedade, seleciona a propriedade correspondente no target
+            var targetSelection = PropertySelection.Select(originProperty, target);
+
+            // se a propriedade for encontrada, avalia os tipos entre elas e a forma de atribuíção.
+            AssignDescriptor? assignDescriptor = targetSelection is not null
+                ? AssignDescriptorFactory.Create(originProperty.Type, targetSelection.PropertyType.Type, model)
+                : null;
+
+            // por fim, cria o match entre as propriedades, mesmo que não tenha sido encontrado.
+            matches.Add(new PropertyMatch(originProperty, targetSelection, assignDescriptor));
+        }
+
+        return new MatchSelection(origin.Type, matches);
+    }
+
+    #endregion
+
     private readonly TypeDescriptor originType;
     private readonly IReadOnlyList<PropertyMatch> propertyMatches;
 
@@ -24,17 +50,11 @@ internal class MatchSelection : IEquatable<MatchSelection>
         return missing.Count > 0;
     }
 
-    public static MatchSelection Create(MatchTypeInfo origin, MatchTypeInfo target)
+    public bool HasNotAssignableProperties(out IReadOnlyList<PropertyMatch> notAssignableProperties)
     {
-        List<PropertyMatch> matches = [];
-
-        foreach (var originProperty in origin.Properties)
-        {
-            var targetSelection = PropertySelection.Select(originProperty, target);
-            matches.Add(new PropertyMatch(originProperty, targetSelection));
-        }
-
-        return new MatchSelection(origin.Type, matches);
+        var notAssignable = propertyMatches.Where(m => !m.IsMissing && !m.CanAssign).ToList();
+        notAssignableProperties = notAssignable.AsReadOnly();
+        return notAssignable.Count > 0;
     }
 
     public bool Equals(MatchSelection other)

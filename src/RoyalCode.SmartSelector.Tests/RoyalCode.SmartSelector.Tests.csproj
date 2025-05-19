@@ -9,6 +9,7 @@
   </PropertyGroup>
 	
   <ItemGroup>
+    <ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" />
     <ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
   </ItemGroup>
 

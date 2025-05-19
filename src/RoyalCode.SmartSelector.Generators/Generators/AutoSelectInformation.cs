@@ -3,7 +3,7 @@ using RoyalCode.SmartSelector.Generators.Models;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
-internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
+public class AutoSelectInformation : IEquatable<AutoSelectInformation>
 {
     private Diagnostic[]? diagnostics;
     private MatchSelection? matchSelection;
@@ -25,6 +25,19 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
     internal void Generate(SourceProductionContext context)
     {
+        if (diagnostics is not null)
+        {
+            foreach (var diagnostic in diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
+
+        if (matchSelection is not null)
+        {
+            AutoSelectGenerator.Generate(matchSelection, context);
+        }
+
         throw new NotImplementedException();
     }
 

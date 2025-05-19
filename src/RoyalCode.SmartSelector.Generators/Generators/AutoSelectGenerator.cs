@@ -1,7 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RoyalCode.SmartSelector.Extensions;
+using RoyalCode.SmartSelector.Generators.Extensions;
 using RoyalCode.SmartSelector.Generators.Models;
 using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
@@ -11,9 +11,13 @@ internal static class AutoSelectGenerator
 {
     public const string AutoSelectAttributeFullName = "RoyalCode.SmartSelector.AutoSelectAttribute";
 
-    private const string AutoSelectAttributeName = "AutoSelectAttribute";
+    private const string AutoSelectAttributeName = "AutoSelect";
 
-    public static bool Predicate(SyntaxNode node, CancellationToken _) => node is ClassDeclarationSyntax;
+    public static bool Predicate(SyntaxNode node, CancellationToken _)
+    {
+        var accept = node is ClassDeclarationSyntax;
+        return accept;
+    }
 
     public static AutoSelectInformation Transform(
         GeneratorAttributeSyntaxContext context,
@@ -25,7 +29,7 @@ internal static class AutoSelectGenerator
         // extrai o symbol do classDeclaration
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
-        // lê o atributo MapFindAttribute
+        // lê o atributo AutoSelectAttribute
         if (!classDeclaration.TryGetAttribute(AutoSelectAttributeName, out var attr))
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
@@ -62,7 +66,7 @@ internal static class AutoSelectGenerator
         var target = new MatchTypeInfo(fromType, fromProperties);
         
         // match das propriedades da classe com o attributo com a classe from.
-        var matchSelection = MatchSelection.Create(origin, target);
+        var matchSelection = MatchSelection.Create(origin, target, context.SemanticModel);
 
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))
@@ -85,6 +89,35 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostics.ToArray());
         }
 
+        // se há propriedades que não podem ser atribuídas, exibe o(s) erro(s)
+        if (matchSelection.HasNotAssignableProperties(out var notAssignableProperties))
+        {
+            List<Diagnostic> diagnostics = [];
+            foreach (var property in notAssignableProperties)
+            {
+                // obtém o syntax token da propriedade a partir do classDeclaration
+                var propertySyntax = classDeclaration.Members
+                    .OfType<PropertyDeclarationSyntax>()
+                    .FirstOrDefault(p => p.Identifier.Text == property.Origin.Name);
 
+                var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.PropertyNotCompatible,
+                    location: propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
+                    property.Origin.Name,
+                    property.Origin.Type.Name,
+                    property.Target!.PropertyType.Name,
+                    property.Target!.PropertyType.Type.Name);
+
+                diagnostics.Add(diagnostic);
+            }
+
+            return new AutoSelectInformation(diagnostics.ToArray());
+        }
+
+        return new AutoSelectInformation(matchSelection);
+    }
+
+    public static void Generate(MatchSelection match, SourceProductionContext context)
+    {
+        // gera o código de seleção automática
     }
 }

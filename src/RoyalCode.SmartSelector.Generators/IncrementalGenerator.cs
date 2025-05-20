@@ -17,10 +17,9 @@ public class IncrementalGenerator : IIncrementalGenerator
             predicate: AutoSelectGenerator.Predicate,
             transform: AutoSelectGenerator.Transform);
 
-        context.RegisterSourceOutput(pipelineSelect.Collect(), static (context, models) =>
+        context.RegisterSourceOutput(pipelineSelect, static (context, model) =>
         {
-            foreach(var model in models)
-                model.Generate(context);
+            model.Generate(context);
         });
     }
 }

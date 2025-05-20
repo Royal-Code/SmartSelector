@@ -3,7 +3,7 @@ using RoyalCode.SmartSelector.Generators.Models;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
-public class AutoSelectInformation : IEquatable<AutoSelectInformation>
+internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 {
     private Diagnostic[]? diagnostics;
     private MatchSelection? matchSelection;
@@ -37,8 +37,6 @@ public class AutoSelectInformation : IEquatable<AutoSelectInformation>
         {
             AutoSelectGenerator.Generate(matchSelection, context);
         }
-
-        throw new NotImplementedException();
     }
 
     public bool Equals(AutoSelectInformation other)

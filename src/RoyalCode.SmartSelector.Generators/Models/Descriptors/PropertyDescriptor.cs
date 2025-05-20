@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
-public sealed class PropertyDescriptor : IEquatable<PropertyDescriptor>
+internal sealed class PropertyDescriptor : IEquatable<PropertyDescriptor>
 {
     public static PropertyDescriptor Create(PropertyDeclarationSyntax syntax, SemanticModel model)
     {

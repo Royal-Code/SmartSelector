@@ -5,7 +5,7 @@ namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-public sealed class ParameterDescriptor : IEquatable<ParameterDescriptor>
+internal sealed class ParameterDescriptor : IEquatable<ParameterDescriptor>
 {
     public static ParameterDescriptor Create(ParameterSyntax syntax, SemanticModel model)
         => new(TypeDescriptor.Create(syntax.Type!, model), syntax.Identifier.Text);

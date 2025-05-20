@@ -3,7 +3,7 @@ using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-public class PropertySelection : IEquatable<PropertySelection>
+internal class PropertySelection : IEquatable<PropertySelection>
 {
     private readonly PropertyDescriptor property;
 

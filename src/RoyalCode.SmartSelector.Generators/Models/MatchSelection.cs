@@ -3,7 +3,7 @@ using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
-public class MatchSelection : IEquatable<MatchSelection>
+internal class MatchSelection : IEquatable<MatchSelection>
 {
     #region Factory
 

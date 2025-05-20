@@ -23,9 +23,7 @@ internal sealed class DirectAssignDescriptorResolver : IAssignDescriptorResolver
             AssignType = AssignType.Direct,
             IsEnumerable = leftType.Symbol?.TryGetEnumerableGenericType(out _) ?? false
         };
-
-        descriptor = null;
-        return false;
+        return true;
     }
 
     private bool CanBeAssigned(TypeDescriptor leftType, TypeDescriptor rightType, SemanticModel model)

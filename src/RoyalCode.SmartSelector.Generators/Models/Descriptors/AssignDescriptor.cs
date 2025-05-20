@@ -1,6 +1,6 @@
 ﻿namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
-public class AssignDescriptor : IEquatable<AssignDescriptor>
+internal class AssignDescriptor : IEquatable<AssignDescriptor>
 {
     public AssignType AssignType { get; set; }
 

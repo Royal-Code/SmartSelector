@@ -1,6 +1,6 @@
 ﻿namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
-public enum AssignType
+internal enum AssignType
 {
     /// <summary>
     /// Direct assignment, no conversion needed.

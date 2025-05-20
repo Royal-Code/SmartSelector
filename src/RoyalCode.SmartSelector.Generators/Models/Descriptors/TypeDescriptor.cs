@@ -5,9 +5,8 @@ using RoyalCode.SmartSelector.Generators.Extensions;
 namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
 #pragma warning disable S3358 // Ternary operators should not be nested
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
+internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
 {
     #region Factories
 
@@ -159,13 +158,31 @@ public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         if (Symbol is null)
             return [];
 
-        return Symbol
-            .GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(p => p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic)
-            .Where(p => predicate is null || predicate(p))
-            .Select(PropertyDescriptor.Create)
+        var properties = new List<PropertyDescriptor>();
+        var typeSymbol = Symbol;
+
+        // Traverse base types to collect all public instance properties
+        while (typeSymbol is INamedTypeSymbol namedType)
+        {
+            var props = namedType
+                .GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(p => p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic)
+                .Where(p => predicate is null || predicate(p))
+                .Select(PropertyDescriptor.Create);
+
+            properties.AddRange(props);
+
+            typeSymbol = namedType.BaseType;
+        }
+
+        // Remove duplicates by property name (derived class property hides base class property)
+        var distinctProperties = properties
+            .GroupBy(p => p.Name)
+            .Select(g => g.First())
             .ToList();
+
+        return distinctProperties;
     }
 
     public bool Equals(TypeDescriptor? other)

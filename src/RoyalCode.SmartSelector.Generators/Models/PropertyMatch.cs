@@ -5,7 +5,7 @@ namespace RoyalCode.SmartSelector.Generators.Models;
 /// <summary>
 /// A result of matching a property from the origin type to a property in the target type.
 /// </summary>
-public class PropertyMatch(PropertyDescriptor origin, PropertySelection? target, AssignDescriptor? assignDescriptor) : IEquatable<PropertyMatch>
+internal class PropertyMatch(PropertyDescriptor origin, PropertySelection? target, AssignDescriptor? assignDescriptor) : IEquatable<PropertyMatch>
 {
     /// <summary>
     /// The origin property type descriptor. (DTO property)

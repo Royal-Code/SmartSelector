@@ -5,7 +5,7 @@ namespace RoyalCode.SmartSelector.Generators.Models;
 /// <summary>
 /// Represent a type and its properties that can be matched to another type.
 /// </summary>
-public ref struct MatchTypeInfo
+internal ref struct MatchTypeInfo
 {
     /// <summary>
     /// Creates a new instance of <see cref="MatchTypeInfo"/>.

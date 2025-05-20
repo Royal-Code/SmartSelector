@@ -19,13 +19,14 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         if (typeInfo.Type is null)
             return new(name, typeSyntax.GetNamespaces(model).ToArray(), null!, isNullable);
 
+        var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
+
         if (name[name.Length - 1] == '?')
         {
-            var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
             isNullable = namedTypeSymbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
         }
 
-        return new(name, typeSyntax.GetNamespaces(model).ToArray(), typeInfo.Type!, isNullable);
+        return new(name, typeSyntax.GetNamespaces(model).ToArray(), namedTypeSymbol, isNullable);
     }
 
     public static TypeDescriptor Create(ITypeSymbol typeSymbol)
@@ -33,13 +34,14 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         var name = typeSymbol.ToString();
         bool isNullable = false;
 
+        var namedTypeSymbol = typeSymbol as INamedTypeSymbol;
+
         if (name[name.Length - 1] == '?')
         {
-            var namedTypeSymbol = typeSymbol as INamedTypeSymbol;
             isNullable = namedTypeSymbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
         }
 
-        return new(name, typeSymbol.GetNamespaces().ToArray(), typeSymbol, isNullable);
+        return new(name, typeSymbol.GetNamespaces().ToArray(), namedTypeSymbol, isNullable);
     }
 
     private static TypeDescriptor? cancellationToken;
@@ -80,7 +82,7 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
 
     private List<string>? hints;
 
-    public TypeDescriptor(string name, string[] namespaces, ITypeSymbol? symbol, bool isNullable = false)
+    public TypeDescriptor(string name, string[] namespaces, INamedTypeSymbol? symbol, bool isNullable = false)
     {
         Name = name;
         Namespaces = namespaces;
@@ -92,7 +94,7 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
 
     public string[] Namespaces { get; }
 
-    public ITypeSymbol? Symbol { get; }
+    public INamedTypeSymbol? Symbol { get; }
 
     public bool IsNullable { get; }
     

@@ -25,21 +25,25 @@ internal class MatchSelection : IEquatable<MatchSelection>
             matches.Add(new PropertyMatch(originProperty, targetSelection, assignDescriptor));
         }
 
-        return new MatchSelection(origin.Type, matches);
+        return new MatchSelection(origin.Type, target.Type, matches);
     }
 
     #endregion
 
     private readonly TypeDescriptor originType;
+    private readonly TypeDescriptor targetType;
     private readonly IReadOnlyList<PropertyMatch> propertyMatches;
 
-    public MatchSelection(TypeDescriptor originType, IReadOnlyList<PropertyMatch> propertyMatches)
+    public MatchSelection(TypeDescriptor originType, TypeDescriptor targetType, IReadOnlyList<PropertyMatch> propertyMatches)
     {
         this.originType = originType;
+        this.targetType = targetType;
         this.propertyMatches = propertyMatches;
     }
 
     public TypeDescriptor OriginType => originType;
+
+    public TypeDescriptor TargetType => targetType;
 
     public IReadOnlyList<PropertyMatch> PropertyMatches => propertyMatches;
 

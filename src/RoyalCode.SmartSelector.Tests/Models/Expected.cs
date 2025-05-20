@@ -32,29 +32,27 @@ public partial class ProdutoDetalhes
 // Generated code
 public partial class ProdutoDetalhes
 {
-    private static readonly Expression<Func<Produto, ProdutoDetalhes>> selectExpression = p => new ProdutoDetalhes
+    private static Func<Produto, ProdutoDetalhes> selectProdutoFunc;
+
+    public static Expression<Func<Produto, ProdutoDetalhes>> SelectProdutoExpression { get; } = p => new ProdutoDetalhes
     {
         Id = p.Id,
         Nome = p.Nome,
         Ativo = p.Ativo
     };
 
-    private static readonly Func<Produto, ProdutoDetalhes> selectFunc = selectExpression.Compile();
-
-    public static Expression<Func<Produto, ProdutoDetalhes>> SelectExpression => selectExpression;
-
-    public static ProdutoDetalhes From(Produto produto) => selectFunc(produto);
+    public static ProdutoDetalhes From(Produto produto) => (selectProdutoFunc ??= SelectProdutoExpression.Compile())(produto);
 }
 
 // Generated code
 public static class ProdutoDetalhes_Extensions
 {
-    public static IQueryable<ProdutoDetalhes> Select(this IQueryable<Produto> produtos)
+    public static IQueryable<ProdutoDetalhes> SelectProdutoDetalhes(this IQueryable<Produto> produtos)
     {
-        return produtos.Select(ProdutoDetalhes.SelectExpression);
+        return produtos.Select(ProdutoDetalhes.SelectProdutoExpression);
     }
 
-    public static IEnumerable<ProdutoDetalhes> Select(this IEnumerable<Produto> produtos)
+    public static IEnumerable<ProdutoDetalhes> SelectProdutoDetalhes(this IEnumerable<Produto> produtos)
     {
         return produtos.Select(ProdutoDetalhes.From);
     }

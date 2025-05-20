@@ -63,38 +63,39 @@ namespace Tests.SmartSelector.Models;
 
 public partial class ProdutoDetalhes
 {
-    private static readonly Expression<Func<Produto, ProdutoDetalhes>> selectExpression = p => new ProdutoDetalhes
+    private static Func<Produto, ProdutoDetalhes> selectProdutoFunc;
+
+    public static Expression<Func<Produto, ProdutoDetalhes>> SelectProdutoExpression { get; } = a => new ProdutoDetalhes
     {
-        Id = p.Id,
-        Nome = p.Nome,
-        Ativo = p.Ativo
+        Id = a.Id,
+        Nome = a.Nome,
+        Ativo = a.Ativo
     };
 
-    private static readonly Func<Produto, ProdutoDetalhes> selectFunc = selectExpression.Compile();
-
-    public static Expression<Func<Produto, ProdutoDetalhes>> SelectExpression => selectExpression;
-
-    public static ProdutoDetalhes From(Produto produto) => selectFunc(produto);
+    public static ProdutoDetalhes From(Produto produto) => (selectProdutoFunc ??= SelectProdutoExpression.Compile())(produto);
 }
+
 """;
 
     public const string ExpectedExtension =
 """
-using System.Linq.Expressions;
 
-using System.Collections.Generic;
+namespace Tests.SmartSelector.Models;
 
 public static class ProdutoDetalhes_Extensions
 {
-    public static IQueryable<ProdutoDetalhes> Select(this IQueryable<Produto> produtos)
+    public static IQueryable<ProdutoDetalhes> SelectProdutoDetalhes(this IQueryable<Produto> query)
     {
-        return produtos.Select(ProdutoDetalhes.SelectExpression);
+        return query.Select(ProdutoDetalhes.SelectProdutoExpression);
     }
 
-    public static IEnumerable<ProdutoDetalhes> Select(this IEnumerable<Produto> produtos)
+    public static IEnumerable<ProdutoDetalhes> SelectProdutoDetalhes(this IEnumerable<Produto> enumerable)
     {
-        return produtos.Select(ProdutoDetalhes.From);
+        return enumerable.Select(ProdutoDetalhes.From);
     }
+
+    public static ProdutoDetalhes ToProdutoDetalhes(this Produto produto) => ProdutoDetalhes.From(produto);
 }
+
 """;
 }

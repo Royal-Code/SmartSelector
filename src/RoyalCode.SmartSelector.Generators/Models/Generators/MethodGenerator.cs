@@ -49,6 +49,8 @@ internal class MethodGenerator : GeneratorNode
 
     public bool IsAbstract { get; set; }
 
+    public bool UseArrow { get; set; }
+
     public void AddUsings(UsingsGenerator usings)
     {
         usings.AddNamespaces(ReturnType);
@@ -87,15 +89,23 @@ internal class MethodGenerator : GeneratorNode
             sb.AppendLine(" { }");
             return;
         }
-        
-        sb.AppendLine();
-        sb.Ident(ident).Append('{');
-        sb.AppendLine();
-        
-        int commandsIdent = ident + 1;
-        commands.Write(sb, commandsIdent);
-        
-        sb.Ident(ident).Append('}');
-        sb.AppendLine();
+
+        if (UseArrow)
+        {
+            sb.Append(" => ");
+            commands.Write(sb, ident + 1);
+        }
+        else
+        {
+            sb.AppendLine();
+            sb.Ident(ident).Append('{');
+            sb.AppendLine();
+
+            int commandsIdent = ident + 1;
+            commands.Write(sb, commandsIdent);
+
+            sb.Ident(ident).Append('}');
+            sb.AppendLine();
+        }
     }
 }

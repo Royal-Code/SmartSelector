@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+using System.Text;
 
 namespace RoyalCode.SmartSelector.Generators.Models.Generators;
 
@@ -6,15 +7,17 @@ internal class PropertyGenerator : GeneratorNode
 {
     private ModifiersGenerator? modifiers;
 
-    public PropertyGenerator(string type, string name)
+    public PropertyGenerator(TypeDescriptor type, string name, bool canGet = true, bool canSet = true)
     {
         Type = type;
         Name = name;
+        CanGet = canGet;
+        CanSet = canSet;
     }
 
     public ModifiersGenerator Modifiers => modifiers ??= new();
 
-    public string Type { get; set; }
+    public TypeDescriptor Type { get; set; }
 
     public string Name { get; set; }
 
@@ -30,7 +33,7 @@ internal class PropertyGenerator : GeneratorNode
         sb.Ident(ident);
         
         modifiers?.Write(sb);
-        sb.Append(Type).Append(' ').Append(Name).Append(" { ");
+        sb.Append(Type.Name).Append(' ').Append(Name).Append(" { ");
         
         if (CanGet)
             sb.Append("get; ");

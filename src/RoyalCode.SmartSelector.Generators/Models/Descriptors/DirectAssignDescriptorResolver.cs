@@ -18,10 +18,12 @@ internal sealed class DirectAssignDescriptorResolver : IAssignDescriptorResolver
             return false;
         }
 
+        var isString = leftType.Symbol?.SpecialType == SpecialType.System_String;
+
         descriptor = new AssignDescriptor
         {
             AssignType = AssignType.Direct,
-            IsEnumerable = leftType.Symbol?.TryGetEnumerableGenericType(out _) ?? false
+            IsEnumerable = !isString && (leftType.Symbol?.TryGetEnumerableGenericType(out _) ?? false)
         };
         return true;
     }

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../tests.targets" />
+
+	<PropertyGroup>
+		<TargetFramework>$(TestFrwkVer)</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Exclude the output of source generators from the compilation -->
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<None Include="Generated/**" Visible="true" />
+		<Compile Remove="Generated\RoyalCode.SmartCommands.Generators\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.16" />
+	</ItemGroup>
+	
+</Project>

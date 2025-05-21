@@ -68,6 +68,7 @@ internal class SelectLambdaGenerator : ValueNode
             AssignType.Direct => AssignDirect,
             AssignType.SimpleCast => AssignCast,
             AssignType.NullableTernary => AssignNullableTernary,
+            AssignType.NullableTernaryCast => AssignNullableTernaryCast,
             _ => AssignDirect
         };
     }
@@ -86,6 +87,13 @@ internal class SelectLambdaGenerator : ValueNode
     private static void AssignNullableTernary(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
         sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".HasValue ? ");
+        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".Value : default");
+    }
+
+    private static void AssignNullableTernaryCast(StringBuilder sb, int ident, char param, AssignProperties assign)
+    {
+        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".HasValue ? ");
+        sb.Append('(').Append(assign.Origin.Type.Name).Append(')');
         sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".Value : default");
     }
 

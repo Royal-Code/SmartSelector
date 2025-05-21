@@ -33,7 +33,7 @@ internal enum AssignType
     /// <remarks>
     /// Example:
     /// <code>
-    ///     LastLogin = e.LastLogin.HasValue ? e.LastLogin.Value : default(DateTime),
+    ///     LastLogin = e.LastLogin.HasValue ? e.LastLogin.Value : default,
     /// </code>
     /// </remarks>
     NullableTernary,
@@ -45,7 +45,7 @@ internal enum AssignType
     /// <remarks>
     /// Example:
     /// <code>
-    ///     LastLogin = e.LastLogin.HasValue ? (DateTime)e.LastLogin.Value : default(DateTime),
+    ///     LastLogin = e.LastLogin.HasValue ? (DateTime)e.LastLogin.Value : default,
     /// </code>
     /// </remarks>
     NullableTernaryCast,

@@ -2,6 +2,8 @@
 
 namespace RoyalCode.SmartSelector.Tests.Models.Expected;
 
+#nullable disable
+
 #region Domain / Entities
 
 public class User : Entity<Guid>
@@ -11,6 +13,7 @@ public class User : Entity<Guid>
         Name = name;
         Status = Status.Active;
     }
+
     public string Name { get; set; }
 
     public Status Status { get; set; }

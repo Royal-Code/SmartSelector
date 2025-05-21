@@ -28,7 +28,8 @@
 		
 		<!-- Make generated files visible in visual studio -->
 		<None Include="$(CompilerGeneratedFilesOutputPath)/**" Visible="true" />
-		
+
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)\RoyalCode.SmartSelector.Generators\**" />
 	</ItemGroup>
 
 	<ItemGroup>

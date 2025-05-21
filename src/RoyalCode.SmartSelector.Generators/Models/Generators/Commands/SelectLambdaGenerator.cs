@@ -37,7 +37,8 @@ internal class SelectLambdaGenerator : ValueNode
             var assignDescriptor = propMatch.AssignDescriptor!;
             var assignGenerator = GetAssignGenerator(assignDescriptor);
 
-            assignGenerator(sb, ident + 1, param, propMatch.Target!);
+            var assign = new AssignProperties(propMatch.Origin, propMatch.Target!);
+            assignGenerator(sb, ident + 1, param, assign);
 
             sb.Append(',');
         }
@@ -65,26 +66,53 @@ internal class SelectLambdaGenerator : ValueNode
         return assignDescriptor.AssignType switch
         {
             AssignType.Direct => AssignDirect,
+            AssignType.SimpleCast => AssignCast,
+            AssignType.NullableTernary => AssignNullableTernary,
             _ => AssignDirect
         };
     }
 
-    private static void AssignDirect(StringBuilder sb, int ident, char param, PropertySelection propertySelection)
+    private static void AssignDirect(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').Append(propertySelection.PropertyType.Name);
+        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name);
     }
 
-    private static void AssignEnumerable(StringBuilder sb, int ident, char param, PropertySelection propertySelection)
+    private static void AssignCast(StringBuilder sb, int ident, char param, AssignProperties assign)
+    {
+        sb.Append('(').Append(assign.Origin.Type.Name).Append(')');
+        AssignDirect(sb, ident, param, assign);
+    }
+
+    private static void AssignNullableTernary(StringBuilder sb, int ident, char param, AssignProperties assign)
+    {
+        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".HasValue ? ");
+        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".Value : default");
+    }
+
+    private static void AssignEnumerable(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
         sb.Append("[.. ");
-        AssignDirect(sb, ident, param, propertySelection);
+        AssignDirect(sb, ident, param, assign);
         sb.Append(']');
     }
 
-    private static void AssignSelectDirect(StringBuilder sb, int ident, char param, PropertySelection propertySelection)
+    private static void AssignSelectDirect(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
         // TODO
     }
 
-    private delegate void AssignGenerator(StringBuilder sb, int ident, char param, PropertySelection propertySelection);
+    private delegate void AssignGenerator(StringBuilder sb, int ident, char param, AssignProperties assign);
+
+    private ref struct AssignProperties(PropertyDescriptor origin, PropertySelection target)
+    {
+        /// <summary>
+        /// The origin property type descriptor. (DTO property)
+        /// </summary>
+        public PropertyDescriptor Origin { get; } = origin;
+
+        /// <summary>
+        /// The target property selection. (Entity property)
+        /// </summary>
+        public PropertySelection Target { get; } = target;
+    }
 }

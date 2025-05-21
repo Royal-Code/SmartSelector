@@ -1,5 +1,7 @@
 ﻿namespace RoyalCode.SmartSelector.Tests.Models.Expected;
 
+#nullable disable // generated code
+
 // Generated code
 public static class ProductDetails_Extensions
 {

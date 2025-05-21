@@ -41,7 +41,11 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
             isNullable = namedTypeSymbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
         }
 
-        return new(name, typeSymbol.GetNamespaces().ToArray(), namedTypeSymbol, isNullable);
+        return new(
+            namedTypeSymbol?.Name ?? name, 
+            typeSymbol.GetNamespaces().ToArray(),
+            namedTypeSymbol, 
+            isNullable);
     }
 
     private static TypeDescriptor? cancellationToken;

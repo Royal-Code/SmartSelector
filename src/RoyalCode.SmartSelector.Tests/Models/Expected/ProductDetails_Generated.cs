@@ -2,6 +2,8 @@
 
 namespace RoyalCode.SmartSelector.Tests.Models.Expected;
 
+#nullable disable // generated code
+
 // Generated code
 public partial class ProductDetails
 {

@@ -2,16 +2,11 @@
 
 #nullable disable // poco
 
-public abstract class Entity<TId>
-{
-    public TId Id { get; protected set; }
-}
-
 public class Product : Entity<Guid>
 {
-    public Product(string nome)
+    public Product(string name)
     {
-        Name = nome;
+        Name = name;
         Active = true;
     }
     public string Name { get; set; }

@@ -6,7 +6,7 @@ namespace RoyalCode.SmartSelector.Tests.Tests;
 public partial class NullableAndCastSelectorTests
 {
     [Fact]
-    public void Select_UserDetails()
+    public void SimpleCast_NullableTernary_Select_UserDetails()
     {
         Util.Compile(Code.Types, out var output, out var diagnostics);
 

@@ -3,10 +3,10 @@ using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
 
-public class SimpleSelectorTests
+public partial class SimpleSelectorTests
 {
     [Fact]
-    public void Select_ProductDetails()
+    public void Direct_Select_ProductDetails()
     {
         Util.Compile(Code.Types, out var output, out var diagnostics);
 

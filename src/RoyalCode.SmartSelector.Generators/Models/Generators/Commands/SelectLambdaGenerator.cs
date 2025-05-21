@@ -1,4 +1,5 @@
-﻿using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+﻿using RoyalCode.SmartSelector.Generators.Extensions;
+using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 using System.Text;
 
 namespace RoyalCode.SmartSelector.Generators.Models.Generators.Commands;
@@ -75,7 +76,7 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static void AssignDirect(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name);
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target);
     }
 
     private static void AssignCast(StringBuilder sb, int ident, char param, AssignProperties assign)
@@ -86,15 +87,15 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static void AssignNullableTernary(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".HasValue ? ");
-        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".Value : default");
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".HasValue ? ");
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Value : default");
     }
 
     private static void AssignNullableTernaryCast(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".HasValue ? ");
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".HasValue ? ");
         sb.Append('(').Append(assign.Origin.Type.Name).Append(')');
-        sb.Append(param).Append('.').Append(assign.Target.PropertyType.Name).Append(".Value : default");
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Value : default");
     }
 
     private static void AssignEnumerable(StringBuilder sb, int ident, char param, AssignProperties assign)

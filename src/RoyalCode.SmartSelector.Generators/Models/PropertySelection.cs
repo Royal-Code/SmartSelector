@@ -1,5 +1,6 @@
 ﻿using RoyalCode.SmartSelector.Generators.Extensions;
 using RoyalCode.SmartSelector.Generators.Models.Descriptors;
+using System.Text;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
@@ -27,6 +28,20 @@ internal class PropertySelection : IEquatable<PropertySelection>
     /// The parent <see cref="PropertySelection"/>. Can be null.
     /// </summary>
     public PropertySelection? Parent { get; private set; }
+
+    /// <summary>
+    /// Writes the property path to a <see cref="StringBuilder"/>.
+    /// </summary>
+    /// <param name="sb"></param>
+    public void WritePropertyPath(StringBuilder sb)
+    {
+        if (Parent is not null)
+        {
+            Parent.WritePropertyPath(sb);
+            sb.Append('.');
+        }
+        sb.Append(property.Name);
+    }
 
     public static PropertySelection? Select(PropertyDescriptor property, MatchTypeInfo targetType)
     {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using RoyalCode.SmartSelector.Generators.Models;
 using RoyalCode.SmartSelector.Generators.Models.Descriptors;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -527,5 +528,11 @@ internal static class ExtensionMethods
 
         underlyingType = null;
         return false;
+    }
+
+    public static StringBuilder AppendPropertyPath(this StringBuilder sb, PropertySelection property)
+    {
+        property.WritePropertyPath(sb);
+        return sb;
     }
 }

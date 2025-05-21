@@ -13,6 +13,8 @@ public class User : Entity<Guid>
     public UserStatus Status { get; set; }
 
     public DateTimeOffset? LastLogin { get; set; }
+
+    public UserSpecialization? Specialization { get; set; }
 }
 
 public enum UserStatus
@@ -21,4 +23,13 @@ public enum UserStatus
     Inactive,
     Blocked,
     Suspended,
+}
+
+public enum UserSpecialization
+{
+    None,
+    Developer,
+    Designer,
+    Manager,
+    Tester,
 }

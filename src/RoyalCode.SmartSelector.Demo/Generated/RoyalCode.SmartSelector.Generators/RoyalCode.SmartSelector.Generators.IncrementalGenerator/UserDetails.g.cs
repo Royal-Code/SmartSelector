@@ -11,8 +11,9 @@ public partial class UserDetails
     {
         Id = a.Id,
         Name = a.Name,
-        Status = (UserStatusDetails)a.Status,
-        LastLogin = a.LastLogin.HasValue ? a.LastLogin.Value : default
+        Status = (StatusDetails)a.Status,
+        LastLogin = a.LastLogin.HasValue ? a.LastLogin.Value : default,
+        Specialization = a.Specialization.HasValue ? (UserSpecializationDetails)a.Specialization.Value : default
     };
 
     public static UserDetails From(User user) => (selectUserFunc ??= SelectUserExpression.Compile())(user);

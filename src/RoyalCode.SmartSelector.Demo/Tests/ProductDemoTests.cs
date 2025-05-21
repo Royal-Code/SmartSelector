@@ -58,6 +58,7 @@ public class ProductDemoTests
         db.Products.Add(new Product("Hot dog 2"));
         db.Products.Add(new Product("Hot dog 3"));
         db.SaveChanges();
+        db.ChangeTracker.Clear();
 
         // act
         var details = db.Products

@@ -35,23 +35,23 @@ public abstract class Entity<TId>
     public TId Id { get; protected set; }
 }
 
-public class Produto : Entity<Guid>
+public class Product : Entity<Guid>
 {
-    public Produto(string nome)
+    public Product(string nome)
     {
-        Nome = nome;
-        Ativo = true;
+        Name = nome;
+        Active = true;
     }
-    public string Nome { get; set; }
-    public bool Ativo { get; set; }
+    public string Name { get; set; }
+    public bool Active { get; set; }
 }
 
-[AutoSelect<Produto>]
-public partial class ProdutoDetalhes
+[AutoSelect<Product>]
+public partial class ProductDetails
 {
     public Guid Id { get; set; }
-    public string Nome { get; set; }
-    public bool Ativo { get; set; }
+    public string Name { get; set; }
+    public bool Active { get; set; }
 }
 """;
 
@@ -61,18 +61,18 @@ using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
 
-public partial class ProdutoDetalhes
+public partial class ProductDetails
 {
-    private static Func<Produto, ProdutoDetalhes> selectProdutoFunc;
+    private static Func<Product, ProductDetails> selectProductFunc;
 
-    public static Expression<Func<Produto, ProdutoDetalhes>> SelectProdutoExpression { get; } = a => new ProdutoDetalhes
+    public static Expression<Func<Product, ProductDetails>> SelectProductExpression { get; } = a => new ProductDetails
     {
         Id = a.Id,
-        Nome = a.Nome,
-        Ativo = a.Ativo
+        Name = a.Name,
+        Active = a.Active
     };
 
-    public static ProdutoDetalhes From(Produto produto) => (selectProdutoFunc ??= SelectProdutoExpression.Compile())(produto);
+    public static ProductDetails From(Product product) => (selectProductFunc ??= SelectProductExpression.Compile())(product);
 }
 
 """;
@@ -82,19 +82,19 @@ public partial class ProdutoDetalhes
 
 namespace Tests.SmartSelector.Models;
 
-public static class ProdutoDetalhes_Extensions
+public static class ProductDetails_Extensions
 {
-    public static IQueryable<ProdutoDetalhes> SelectProdutoDetalhes(this IQueryable<Produto> query)
+    public static IQueryable<ProductDetails> SelectProductDetails(this IQueryable<Product> query)
     {
-        return query.Select(ProdutoDetalhes.SelectProdutoExpression);
+        return query.Select(ProductDetails.SelectProductExpression);
     }
 
-    public static IEnumerable<ProdutoDetalhes> SelectProdutoDetalhes(this IEnumerable<Produto> enumerable)
+    public static IEnumerable<ProductDetails> SelectProductDetails(this IEnumerable<Product> enumerable)
     {
-        return enumerable.Select(ProdutoDetalhes.From);
+        return enumerable.Select(ProductDetails.From);
     }
 
-    public static ProdutoDetalhes ToProdutoDetalhes(this Produto produto) => ProdutoDetalhes.From(produto);
+    public static ProductDetails ToProductDetails(this Product product) => ProductDetails.From(product);
 }
 
 """;

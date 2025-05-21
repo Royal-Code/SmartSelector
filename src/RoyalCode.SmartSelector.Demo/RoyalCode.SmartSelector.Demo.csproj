@@ -12,15 +12,23 @@
 	</ItemGroup>
 
 	<PropertyGroup>
+		
+		<!-- Write the source generator files in disc -->
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		
+		<!-- The path where the source generator files are written -->
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+		
 	</PropertyGroup>
 
 	<ItemGroup>
+		
 		<!-- Exclude the output of source generators from the compilation -->
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
-		<None Include="Generated/**" Visible="true" />
-		<Compile Remove="Generated\RoyalCode.SmartCommands.Generators\**" />
+		
+		<!-- Make generated files visible in visual studio -->
+		<None Include="$(CompilerGeneratedFilesOutputPath)/**" Visible="true" />
+		
 	</ItemGroup>
 
 	<ItemGroup>

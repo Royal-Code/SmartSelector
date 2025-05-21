@@ -6,17 +6,14 @@ namespace RoyalCode.SmartSelector.Tests.Tests;
 public partial class NullableAndCastSelectorTests
 {
     [Fact]
-    public void Select_UserDetails()
+    public void Select_UserDetails_CanNotCastNullable()
     {
         Util.Compile(Code.Types, out var output, out var diagnostics);
 
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
+        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().ContainSingle();
 
-        var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
-        generatedInterface.Should().Be(Code.ExpectedPartial);
-
-        var generatedHandler = output.SyntaxTrees.Skip(2).FirstOrDefault()?.ToString();
-        generatedHandler.Should().Be(Code.ExpectedExtension);
+        var error = diagnostics.First(d => d.Severity == DiagnosticSeverity.Error);
+        error.Id.Should().Be("RCSS002");
     }
 }
 
@@ -60,18 +57,7 @@ public enum Status
 [AutoSelect<User>]
 public partial class UserDetails
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; }
-    public StatusDetails Status { get; set; }
-    public DateTimeOffset LastLogin { get; set; }
-}
-
-public enum StatusDetails
-{
-    Active,
-    Inactive,
-    Blocked,
-    Suspended,
+    public DateTime? LastLogin { get; set; }
 }
 """;
 
@@ -87,10 +73,7 @@ public partial class UserDetails
 
     public static Expression<Func<User, UserDetails>> SelectUserExpression { get; } = a => new UserDetails
     {
-        Id = a.Id,
-        Name = a.Name,
-        Status = (StatusDetails)a.Status,
-        LastLogin = a.LastLogin.HasValue ? a.LastLogin.Value : default
+        LastLogin = a.LastLogin.HasValue ? (DateTime)a.LastLogin.Value : default
     };
 
     public static UserDetails From(User user) => (selectUserFunc ??= SelectUserExpression.Compile())(user);

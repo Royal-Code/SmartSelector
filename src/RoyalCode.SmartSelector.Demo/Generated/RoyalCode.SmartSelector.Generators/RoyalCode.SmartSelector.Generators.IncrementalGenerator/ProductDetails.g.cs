@@ -11,7 +11,9 @@ public partial class ProductDetails
     {
         Id = a.Id,
         Name = a.Name,
-        IsActive = a.IsActive
+        IsActive = a.IsActive,
+        CreatedAt = a.CreatedAt,
+        UpdatedAt = a.UpdatedAt
     };
 
     public static ProductDetails From(Product product) => (selectProductFunc ??= SelectProductExpression.Compile())(product);

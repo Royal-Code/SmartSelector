@@ -42,7 +42,7 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         }
 
         return new(
-            namedTypeSymbol?.Name ?? name, 
+            isNullable ? name : namedTypeSymbol?.Name ?? name, 
             typeSymbol.GetNamespaces().ToArray(),
             namedTypeSymbol, 
             isNullable);

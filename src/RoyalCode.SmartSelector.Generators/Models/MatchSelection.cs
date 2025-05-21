@@ -7,14 +7,27 @@ internal class MatchSelection : IEquatable<MatchSelection>
 {
     #region Factory
 
-    public static MatchSelection Create(MatchTypeInfo origin, MatchTypeInfo target, SemanticModel model)
+    public static MatchSelection Create(TypeDescriptor origin, TypeDescriptor target, SemanticModel model)
+    {
+        var originProperties = origin.CreateProperties(p => p.SetMethod is not null);
+        var targetProperties = target.CreateProperties(p => p.GetMethod is not null);
+
+        return Create(origin, originProperties, target, targetProperties, model);
+    }
+
+    public static MatchSelection Create(
+        TypeDescriptor origin, IReadOnlyList<PropertyDescriptor> originProperties,
+        TypeDescriptor target, IReadOnlyList<PropertyDescriptor> targetProperties,
+        SemanticModel model)
     {
         List<PropertyMatch> matches = [];
 
-        foreach (var originProperty in origin.Properties)
+        var targetType = new MatchTypeInfo(target, targetProperties);
+
+        foreach (var originProperty in originProperties)
         {
             // para cada propriedade, seleciona a propriedade correspondente no target
-            var targetSelection = PropertySelection.Select(originProperty, target);
+            var targetSelection = PropertySelection.Select(originProperty, targetType);
 
             // se a propriedade for encontrada, avalia os tipos entre elas e a forma de atribuíção.
             AssignDescriptor? assignDescriptor = targetSelection is not null
@@ -25,7 +38,7 @@ internal class MatchSelection : IEquatable<MatchSelection>
             matches.Add(new PropertyMatch(originProperty, targetSelection, assignDescriptor));
         }
 
-        return new MatchSelection(origin.Type, target.Type, matches);
+        return new MatchSelection(origin, target, matches);
     }
 
     #endregion

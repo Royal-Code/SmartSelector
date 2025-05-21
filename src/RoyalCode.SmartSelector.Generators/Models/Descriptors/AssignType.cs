@@ -57,12 +57,11 @@ internal enum AssignType
     /// <remarks>
     /// Example:
     /// <code>
-    ///     User = new UserDto
+    ///     CreatedBy = new UserDto
     ///     {
-    ///         Name = e.Name,
-    ///         Status = (Status)e.Status
+    ///         Name = a.CreatedBy.Name
     ///     },
     /// </code>
     /// </remarks>
-    NewInsatance,
+    NewInstance,
 }

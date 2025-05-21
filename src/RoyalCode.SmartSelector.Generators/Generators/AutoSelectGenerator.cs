@@ -31,6 +31,27 @@ internal static class AutoSelectGenerator
         // extrai o symbol do classDeclaration
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
+        // se não existe o símbolo, não é um tipo válido
+        if (classSymbol is null)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+                location: classDeclaration.Identifier.GetLocation(),
+
+                "The AutoSelectAttribute must be used with a class.");
+            return new AutoSelectInformation(diagnostic);
+        }
+
+        // a classe com o atributo deve ter um construtor público sem parâmetros
+        var constructor = classSymbol.Constructors.FirstOrDefault(c => c.Parameters.Length == 0);
+        if (constructor is null)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+                location: classDeclaration.Identifier.GetLocation(),
+                "The class with the AutoSelectAttribute must have a public constructor without parameters.");
+
+            return new AutoSelectInformation(diagnostic);
+        }
+
         // lê o atributo AutoSelectAttribute
         if (!classDeclaration.TryGetAttribute(AutoSelectAttributeName, out var attr))
         {
@@ -55,30 +76,34 @@ internal static class AutoSelectGenerator
         var syntax = (GenericNameSyntax)attr!.Name;
         var fromSyntaxType = syntax.TypeArgumentList.Arguments[0];
 
-        var fromType = TypeDescriptor.Create(fromSyntaxType, context.SemanticModel);
-        var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
-
-        // obtém as propriedades da classe que podem ser atribuídas { set; }
-        var properties = modelType.CreateProperties(p => p.SetMethod is not null);
-
-        // obtém as propriedades do tipo from que podem ser lidas { get; }
-        var fromProperties = fromType.CreateProperties(p => p.GetMethod is not null);
-
-        if (fromProperties is null || !fromProperties.Any())
+        // from type deve ser uma classe
+        if (fromSyntaxType is not IdentifierNameSyntax fromIdentifierName)
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
-                "It was not possible to read the properties of the type from.");
+                "Invalid type for AutoSelectAttribute, it must be a class.");
 
             return new AutoSelectInformation(diagnostic);
         }
 
-        // entrada para realizar o match
-        var origin = new MatchTypeInfo(modelType, properties);
-        var target = new MatchTypeInfo(fromType, fromProperties);
+        var fromType = TypeDescriptor.Create(fromSyntaxType, context.SemanticModel);
+        var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
+
+        // obtém o símbolo do fromType
+        var fromSymbol = fromType.Symbol;
         
-        // match das propriedades da classe com o attributo com a classe from.
-        var matchSelection = MatchSelection.Create(origin, target, context.SemanticModel);
+        // se não existe o símbolo, não é um tipo válido
+        if (fromSymbol is null)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+                location: classDeclaration.Identifier.GetLocation(),
+                "Unsupported type for AutoSelectAttribute, it must be a class.");
+
+            return new AutoSelectInformation(diagnostic);
+        }
+
+        // match das propriedades da classe com o attributo e a classe definida no TFrom.
+        var matchSelection = MatchSelection.Create(modelType, fromType, context.SemanticModel);
 
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))

@@ -168,6 +168,31 @@ internal static class ExtensionMethods
         }
     }
 
+    public static string GetName(this INamedTypeSymbol symbol)
+    {
+        // se for genérico, monta os tipos genéricos entre <>
+        if (symbol.IsGenericType)
+        {
+            StringBuilder sb = new StringBuilder(symbol.Name);
+            sb.Append('<');
+
+            foreach(var typeArgument in symbol.TypeArguments)
+            {
+                if (typeArgument is INamedTypeSymbol namedTypeArgument)
+                {
+                    sb.Append(namedTypeArgument.GetName() + ",");
+                }
+            }
+            sb.Length--;
+            sb.Append('>');
+            return sb.ToString();
+        }
+        else
+        {
+            return symbol.Name;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEntity(this ParameterSyntax syntax, SemanticModel model)
     {

@@ -115,7 +115,9 @@ internal class SelectLambdaGenerator : ValueNode
         var inner = assign.InnerSelection;
         if (inner is null)
             throw new ArgumentException("Inner selection is null.", nameof(inner));
-        
+
+        inner.AddParentProperty(assign.Target);
+
         sb.Append("new ").AppendLine(assign.Origin.Type.Name)
             .Ident(ident).Append("{");
         
@@ -131,30 +133,21 @@ internal class SelectLambdaGenerator : ValueNode
 
     private delegate void AssignGenerator(StringBuilder sb, int ident, char param, AssignProperties assign);
 
-    private readonly ref struct AssignProperties
+    private readonly ref struct AssignProperties(PropertyDescriptor origin, PropertySelection target, MatchSelection? inner)
     {
-        public AssignProperties(PropertyDescriptor origin, PropertySelection target, MatchSelection? inner)
-        {
-            Origin = origin;
-            Target = target;
-            InnerSelection = inner;
-
-            inner?.AddParentProperty(target);
-        }
-
         /// <summary>
         /// The origin property type descriptor. (DTO property)
         /// </summary>
-        public PropertyDescriptor Origin { get; }
+        public PropertyDescriptor Origin { get; } = origin;
 
         /// <summary>
         /// The target property selection. (Entity property)
         /// </summary>
-        public PropertySelection Target { get; }
+        public PropertySelection Target { get; } = target;
 
         /// <summary>
         /// The inner selection of the target property. (Entity property)
         /// </summary>
-        public MatchSelection? InnerSelection { get; }
+        public MatchSelection? InnerSelection { get; } = inner;
     }
 }

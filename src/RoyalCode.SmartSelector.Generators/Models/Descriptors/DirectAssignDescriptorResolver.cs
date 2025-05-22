@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using RoyalCode.SmartSelector.Generators.Extensions;
 
 namespace RoyalCode.SmartSelector.Generators.Models.Descriptors;
 
@@ -18,12 +17,9 @@ internal sealed class DirectAssignDescriptorResolver : IAssignDescriptorResolver
             return false;
         }
 
-        var isString = leftType.Symbol?.SpecialType == SpecialType.System_String;
-
         descriptor = new AssignDescriptor
         {
             AssignType = AssignType.Direct,
-            IsEnumerable = !isString && (leftType.Symbol?.TryGetEnumerableGenericType(out _) ?? false)
         };
         return true;
     }

@@ -64,4 +64,20 @@ internal enum AssignType
     /// </code>
     /// </remarks>
     NewInstance,
+
+    /// <summary>
+    /// It is required to apply the Select method to the target property type,
+    /// to transform the elements accordingly.
+    /// </summary>
+    /// <remarks>
+    /// Example:
+    /// <code>
+    ///     Posts = e.Posts.Select(p => new PostDto
+    ///     {
+    ///         Title = p.Title,
+    ///         Content = p.Content
+    ///     }),
+    /// </code>
+    /// </remarks>
+    Select,
 }

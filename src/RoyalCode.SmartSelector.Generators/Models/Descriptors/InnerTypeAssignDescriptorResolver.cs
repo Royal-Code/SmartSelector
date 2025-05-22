@@ -44,8 +44,6 @@ internal class InnerTypeAssignDescriptorResolver : IAssignDescriptorResolver
         descriptor = new AssignDescriptor()
         {
             AssignType = AssignType.NewInstance,
-            IsEnumerable = false,
-            RequireSelect = false,
             InnerSelection = matchSelection
         };
         

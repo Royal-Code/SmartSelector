@@ -50,6 +50,12 @@ internal class SelectLambdaGenerator : ValueNode
             var assign = new AssignProperties(propMatch.Origin, propMatch.Target!, assignDescriptor.InnerSelection);
             assignGenerator(sb, ident, param, assign);
 
+            // check ToList
+            if (assignDescriptor.RequireToList)
+            {
+                sb.Append('.').Append("ToList()");
+            }
+
             sb.Append(',');
         }
         sb.Length--;
@@ -57,17 +63,6 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static AssignGenerator GetAssignGenerator(AssignDescriptor assignDescriptor)
     {
-        if (assignDescriptor.IsEnumerable)
-        {
-            return assignDescriptor.AssignType switch
-            {
-                AssignType.Direct => assignDescriptor.RequireSelect
-                    ? AssignSelectDirect
-                    : AssignEnumerable,
-                _ => AssignEnumerable
-            };
-        }
-
         return assignDescriptor.AssignType switch
         {
             AssignType.Direct => AssignDirect,
@@ -75,6 +70,7 @@ internal class SelectLambdaGenerator : ValueNode
             AssignType.NullableTernary => AssignNullableTernary,
             AssignType.NullableTernaryCast => AssignNullableTernaryCast,
             AssignType.NewInstance => AssignNewInstance,
+            AssignType.Select => AssignSelect,
             _ => AssignDirect
         };
     }
@@ -103,13 +99,6 @@ internal class SelectLambdaGenerator : ValueNode
         sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Value : default");
     }
 
-    private static void AssignEnumerable(StringBuilder sb, int ident, char param, AssignProperties assign)
-    {
-        sb.Append("[.. ");
-        AssignDirect(sb, ident, param, assign);
-        sb.Append(']');
-    }
-
     private static void AssignNewInstance(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
         var inner = assign.InnerSelection;
@@ -126,9 +115,22 @@ internal class SelectLambdaGenerator : ValueNode
         sb.AppendLine().Ident(ident).Append('}');
     }
 
-    private static void AssignSelectDirect(StringBuilder sb, int ident, char param, AssignProperties assign)
+    private static void AssignSelect(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
-        // TODO
+        var inner = assign.InnerSelection;
+        if (inner is null)
+            throw new ArgumentException("Inner selection is null.", nameof(inner));
+
+        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Select(");
+
+        var nextParam = (char)(param + 1);
+
+        sb.Append(nextParam).Append(" => new ").AppendLine(assign.Origin.Type.GenericType)
+            .Ident(ident).Append('{');
+
+        GeneratePropertyCode(ident + 1, sb, nextParam, inner.PropertyMatches);
+
+        sb.AppendLine().Ident(ident).Append("})");
     }
 
     private delegate void AssignGenerator(StringBuilder sb, int ident, char param, AssignProperties assign);

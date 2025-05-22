@@ -14,7 +14,12 @@ public partial class PostDetails
         Author = new AuthorDetails
         {
             Name = a.Author.Name
-        }
+        },
+        Comments = a.Comments.Select(b => new CommentDetails
+        {
+            Content = b.Content,
+            AuthorName = b.Author.Name
+        }).ToList()
     };
 
     public static PostDetails From(Post post) => (selectPostFunc ??= SelectPostExpression.Compile())(post);

@@ -4,9 +4,7 @@ internal class AssignDescriptor : IEquatable<AssignDescriptor>
 {
     public AssignType AssignType { get; set; }
 
-    public bool IsEnumerable { get; set; }
-
-    public bool RequireSelect { get; set; }
+    public bool RequireToList { get; set; }
 
     public MatchSelection? InnerSelection { get; set; }
 
@@ -18,9 +16,9 @@ internal class AssignDescriptor : IEquatable<AssignDescriptor>
         if (ReferenceEquals(this, other)) 
             return true;
 
-        return AssignType == other.AssignType && 
-            IsEnumerable == other.IsEnumerable &&
-            RequireSelect == other.RequireSelect;
+        return AssignType == other.AssignType &&
+            RequireToList == other.RequireToList &&
+            Equals(InnerSelection, other.InnerSelection);
     }
 
     public override bool Equals(object? obj)
@@ -35,8 +33,8 @@ internal class AssignDescriptor : IEquatable<AssignDescriptor>
     {
         int hashCode = -2066519001;
         hashCode = hashCode * -1521134295 + AssignType.GetHashCode();
-        hashCode = hashCode * -1521134295 + IsEnumerable.GetHashCode();
-        hashCode = hashCode * -1521134295 + RequireSelect.GetHashCode();
+        hashCode = hashCode * -1521134295 + RequireToList.GetHashCode();
+        hashCode = hashCode * -1521134295 + (InnerSelection?.GetHashCode() ?? 0);
         return hashCode;
     }
 }

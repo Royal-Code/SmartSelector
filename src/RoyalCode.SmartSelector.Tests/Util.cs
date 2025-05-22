@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using RoyalCode.SmartSelector.Generators;
@@ -15,14 +16,17 @@ internal static class Util
         // the source code to be compiled
         var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
 
-        // assemblies references requered to compile the source code
+        // assemblies references required to compile the source code
         var references = new List<MetadataReference>
         {
             MetadataReference.CreateFromFile(typeof(Util).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Guid).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(IEnumerable).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(IEnumerable<>).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(ICollection<>).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(IReadOnlyList<>).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Task).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(AutoSelectAttribute<>).Assembly.Location),

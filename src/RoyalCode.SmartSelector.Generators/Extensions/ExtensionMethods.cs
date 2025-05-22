@@ -445,6 +445,7 @@ internal static class ExtensionMethods
             action(v);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ToLowerCamelCase(this string value)
     {
         if (string.IsNullOrEmpty(value))
@@ -555,6 +556,7 @@ internal static class ExtensionMethods
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static StringBuilder AppendPropertyPath(this StringBuilder sb, PropertySelection property)
     {
         property.WritePropertyPath(sb);

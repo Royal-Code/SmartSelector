@@ -141,6 +141,8 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
 
     public bool IsArray => Name.EndsWith("[]") || Name.EndsWith("[]?");
 
+    public bool IsEnumerable => Name.StartsWith("IEnumerable<") || Name.Equals("IEnumerable");
+
     public string UnderlyingType => IsNullable || Name[Name.Length - 1] == '?' ? Name.Substring(0, Name.Length - 1) : Name;
 
     public string ArrayType => Name.EndsWith("[]")
@@ -167,11 +169,20 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
         if (Symbol is null)
             return [];
 
-        var properties = new List<PropertyDescriptor>();
+        var typeSymbols = new List<INamedTypeSymbol>();
         var typeSymbol = Symbol;
 
-        // Traverse base types to collect all public instance properties
+        // Collect all base types up to object, including the current type
         while (typeSymbol is INamedTypeSymbol namedType)
+        {
+            typeSymbols.Insert(0, namedType); // Insert at the beginning to reverse the order
+            typeSymbol = namedType.BaseType;
+        }
+
+        var properties = new List<PropertyDescriptor>();
+
+        // For each type, from base to derived, add its properties in declaration order
+        foreach (var namedType in typeSymbols)
         {
             var props = namedType
                 .GetMembers()
@@ -181,14 +192,12 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
                 .Select(PropertyDescriptor.Create);
 
             properties.AddRange(props);
-
-            typeSymbol = namedType.BaseType;
         }
 
         // Remove duplicates by property name (derived class property hides base class property)
         var distinctProperties = properties
             .GroupBy(p => p.Name)
-            .Select(g => g.First())
+            .Select(g => g.Last()) // Now, the most derived property is last, so take Last()
             .ToList();
 
         return distinctProperties;

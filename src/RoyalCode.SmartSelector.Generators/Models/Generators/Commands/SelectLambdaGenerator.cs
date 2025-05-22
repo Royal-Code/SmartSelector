@@ -28,27 +28,31 @@ internal class SelectLambdaGenerator : ValueNode
         sb.Append(param).Append(" => new ").AppendLine(match.OriginType.Name)
             .Ident(ident).Append('{');
 
-        foreach (var propMatch in match.PropertyMatches)
+        GeneratePropertyCode(ident + 1, sb, param, match.PropertyMatches);
+
+        sb.AppendLine().Ident(ident).Append('}');
+
+        return sb.ToString();
+    }
+
+    private static void GeneratePropertyCode(int ident, StringBuilder sb, char param, IReadOnlyList<PropertyMatch> properties)
+    {
+        foreach (var propMatch in properties)
         {
             sb.AppendLine();
 
             //     PropertyName = 
-            sb.IdentPlus(ident).Append(propMatch.Origin.Name).Append(" = ");
+            sb.Ident(ident).Append(propMatch.Origin.Name).Append(" = ");
 
             var assignDescriptor = propMatch.AssignDescriptor!;
             var assignGenerator = GetAssignGenerator(assignDescriptor);
 
-            var assign = new AssignProperties(propMatch.Origin, propMatch.Target!);
-            assignGenerator(sb, ident + 1, param, assign);
+            var assign = new AssignProperties(propMatch.Origin, propMatch.Target!, assignDescriptor.InnerSelection);
+            assignGenerator(sb, ident, param, assign);
 
             sb.Append(',');
         }
-
         sb.Length--;
-        sb.AppendLine();
-        sb.Ident(ident).Append('}');
-
-        return sb.ToString();
     }
 
     private static AssignGenerator GetAssignGenerator(AssignDescriptor assignDescriptor)
@@ -70,6 +74,7 @@ internal class SelectLambdaGenerator : ValueNode
             AssignType.SimpleCast => AssignCast,
             AssignType.NullableTernary => AssignNullableTernary,
             AssignType.NullableTernaryCast => AssignNullableTernaryCast,
+            AssignType.NewInstance => AssignNewInstance,
             _ => AssignDirect
         };
     }
@@ -105,6 +110,20 @@ internal class SelectLambdaGenerator : ValueNode
         sb.Append(']');
     }
 
+    private static void AssignNewInstance(StringBuilder sb, int ident, char param, AssignProperties assign)
+    {
+        var inner = assign.InnerSelection;
+        if (inner is null)
+            throw new ArgumentException("Inner selection is null.", nameof(inner));
+        
+        sb.Append("new ").AppendLine(assign.Origin.Type.Name)
+            .Ident(ident).Append("{");
+        
+        GeneratePropertyCode(ident + 1, sb, param, inner.PropertyMatches);
+
+        sb.AppendLine().Ident(ident).Append('}');
+    }
+
     private static void AssignSelectDirect(StringBuilder sb, int ident, char param, AssignProperties assign)
     {
         // TODO
@@ -112,16 +131,30 @@ internal class SelectLambdaGenerator : ValueNode
 
     private delegate void AssignGenerator(StringBuilder sb, int ident, char param, AssignProperties assign);
 
-    private ref struct AssignProperties(PropertyDescriptor origin, PropertySelection target)
+    private readonly ref struct AssignProperties
     {
+        public AssignProperties(PropertyDescriptor origin, PropertySelection target, MatchSelection? inner)
+        {
+            Origin = origin;
+            Target = target;
+            InnerSelection = inner;
+
+            inner?.AddParentProperty(target);
+        }
+
         /// <summary>
         /// The origin property type descriptor. (DTO property)
         /// </summary>
-        public PropertyDescriptor Origin { get; } = origin;
+        public PropertyDescriptor Origin { get; }
 
         /// <summary>
         /// The target property selection. (Entity property)
         /// </summary>
-        public PropertySelection Target { get; } = target;
+        public PropertySelection Target { get; }
+
+        /// <summary>
+        /// The inner selection of the target property. (Entity property)
+        /// </summary>
+        public MatchSelection? InnerSelection { get; }
     }
 }

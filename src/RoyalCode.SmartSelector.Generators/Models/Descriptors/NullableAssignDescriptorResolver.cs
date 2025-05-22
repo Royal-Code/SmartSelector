@@ -16,7 +16,7 @@ internal class NullableAssignDescriptorResolver : IAssignDescriptorResolver
         if (!rightType.IsNullable || leftType.IsNullable || rightType.Symbol is not INamedTypeSymbol rightSymbol)
         {
             descriptor = null;
-            return true;
+            return false;
         }
 
         var nullUnderType = rightSymbol.TypeArguments[0];
@@ -43,6 +43,6 @@ internal class NullableAssignDescriptorResolver : IAssignDescriptorResolver
         }
 
         descriptor = null;
-        return true;
+        return false;
     }
 }

@@ -74,6 +74,14 @@ internal class MatchSelection : IEquatable<MatchSelection>
         return notAssignable.Count > 0;
     }
 
+    public void AddParentProperty(PropertySelection parent)
+    {
+        foreach (var propertyMatch in propertyMatches)
+        {
+            propertyMatch.Target?.WithParent(parent);
+        }
+    }
+
     public bool Equals(MatchSelection other)
     {
         if (other is null)

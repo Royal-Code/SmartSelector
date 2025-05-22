@@ -112,6 +112,14 @@ internal class PropertySelection : IEquatable<PropertySelection>
         return newSelection;
     }
 
+    public void WithParent(PropertySelection parent)
+    {
+        if (Parent is null)
+            Parent = parent;
+        else
+            Parent.WithParent(parent);
+    }
+
     public bool Equals(PropertySelection other)
     {
         if (other is null)
@@ -136,4 +144,6 @@ internal class PropertySelection : IEquatable<PropertySelection>
         hashCode = hashCode * -1521134295 + EqualityComparer<PropertySelection?>.Default.GetHashCode(Parent);
         return hashCode;
     }
+
+    
 }

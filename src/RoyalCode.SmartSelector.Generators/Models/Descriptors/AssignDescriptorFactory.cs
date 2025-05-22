@@ -9,7 +9,8 @@ internal class AssignDescriptorFactory
             new DirectAssignDescriptorResolver(),
             new CastAssignDescriptorResolver(),
             new NullableAssignDescriptorResolver(),
-            new EnumerableAssignDescriptorResolver()
+            new EnumerableAssignDescriptorResolver(),
+            new InnerTypeAssignDescriptorResolver(),
         ];
 
     public static AssignDescriptor? Create(TypeDescriptor leftType, TypeDescriptor rightType, SemanticModel model)

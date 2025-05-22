@@ -8,6 +8,8 @@ internal class AssignDescriptor : IEquatable<AssignDescriptor>
 
     public bool RequireSelect { get; set; }
 
+    public MatchSelection? InnerSelection { get; set; }
+
     public bool Equals(AssignDescriptor other)
     {
         if (other is null) 

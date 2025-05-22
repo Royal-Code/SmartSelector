@@ -35,7 +35,19 @@ internal class InnerTypeAssignDescriptorResolver : IAssignDescriptorResolver
         // match das propriedades da classe com o attributo e a classe definida no TFrom.
         var matchSelection = MatchSelection.Create(leftType, leftProperties, rightType, rightProperties, model);
 
+        // se tem problemas, não é possível fazer o match.
+        if (matchSelection.HasMissingProperties(out _) || matchSelection.HasNotAssignableProperties(out _))
+        {
+            return false;
+        }
 
-        throw new NotImplementedException();
+        descriptor = new AssignDescriptor()
+        {
+            AssignType = AssignType.NewInstance,
+            IsEnumerable = false,
+            RequireSelect = false
+        };
+        
+        return true;
     }
 }

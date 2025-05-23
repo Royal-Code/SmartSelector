@@ -1,7 +1,10 @@
 ﻿#nullable disable
 
+using RoyalCode.SmartSelector.Demo.Entities.Blogs;
+
 namespace RoyalCode.SmartSelector.Demo.Details.Blogs;
 
+[AutoSelect<Blog>]
 public partial class BlogDetails
 {
     public string Id { get; set; }

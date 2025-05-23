@@ -116,6 +116,7 @@ public partial class EnumNullsDto
     public static EnumNullsDto From(EnumNulls enumNulls) => (selectEnumNullsFunc ??= SelectEnumNullsExpression.Compile())(enumNulls);
 }
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -149,4 +150,129 @@ public partial class EnumNullsTypeDto
     };
 
     public static EnumNullsTypeDto From(EnumNulls enumNulls) => (selectEnumNullsTypeFunc ??= SelectEnumNullsTypeExpression.Compile())(enumNulls);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+public class EnumerableNulls
+{
+    public IEnumerable<string> Value1 { get; set; } = default!;
+    public IEnumerable<string> Value2 { get; set; } = default!;
+    public IEnumerable<string>? Value3 { get; set; }
+    public IEnumerable<string>? Value4 { get; set; }
+}
+
+[AutoSelect<EnumerableNulls>]
+public partial class EnumerableNullsDto
+{
+    public IEnumerable<string> Value1 { get; set; } = default!;
+    public IEnumerable<string>? Value2 { get; set; }
+    public IEnumerable<string> Value3 { get; set; } = default!;
+    public IEnumerable<string>? Value4 { get; set; }
+}
+
+// expected
+public partial class EnumerableNullsDto
+{
+    private static Func<EnumerableNulls, EnumerableNullsDto> selectEnumerableNullsFunc;
+
+    public static Expression<Func<EnumerableNulls, EnumerableNullsDto>> SelectEnumerableNullsExpression { get; } = a => new EnumerableNullsDto
+    {
+        Value1 = a.Value1,
+        Value2 = a.Value2,
+        Value3 = a.Value3,
+        Value4 = a.Value4
+    };
+
+    public static EnumerableNullsDto From(EnumerableNulls enumerableNulls) => (selectEnumerableNullsFunc ??= SelectEnumerableNullsExpression.Compile())(enumerableNulls);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+[AutoSelect<EnumerableNulls>]
+public partial class CollectionsNullsDto
+{
+    public ICollection<string> Value1 { get; set; } = default!;
+    public ICollection<string>? Value2 { get; set; }
+    public ICollection<string> Value3 { get; set; } = default!;
+    public ICollection<string>? Value4 { get; set; }
+}
+
+// expected
+public partial class CollectionsNullsDto
+{
+    private static Func<EnumerableNulls, CollectionsNullsDto> selectEnumerableNullsFunc;
+
+    public static Expression<Func<EnumerableNulls, CollectionsNullsDto>> SelectEnumerableNullsExpression { get; } = a => new CollectionsNullsDto
+    {
+        Value1 = a.Value1.ToList(),
+        Value2 = a.Value2.ToList(),
+        Value3 = a.Value3.ToList(),
+        Value4 = a.Value4.ToList()
+    };
+
+    public static CollectionsNullsDto From(EnumerableNulls enumerableNulls) => (selectEnumerableNullsFunc ??= SelectEnumerableNullsExpression.Compile())(enumerableNulls);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+public class ValueObject
+{
+    public string Value { get; set; } = default!;
+}
+
+public class ValueSelectNulls
+{
+    public ICollection<ValueObject> Value1 { get; set; } = default!;
+    public ICollection<ValueObject> Value2 { get; set; } = default!;
+    public ICollection<ValueObject>? Value3 { get; set; }
+    public ICollection<ValueObject>? Value4 { get; set; }
+}
+
+public class ValueDto
+{
+    public string Value { get; set; } = default!;
+}
+
+[AutoSelect<ValueSelectNulls>]
+public partial class ValueSelectNullsDto
+{
+    public IReadOnlyList<ValueDto> Value1 { get; set; } = default!;
+    public IReadOnlyList<ValueDto>? Value2 { get; set; }
+    public IReadOnlyList<ValueDto> Value3 { get; set; } = default!;
+    public IReadOnlyList<ValueDto>? Value4 { get; set; }
+}
+
+// expected
+public partial class ValueSelectNullsDto
+{
+    private static Func<ValueSelectNulls, ValueSelectNullsDto> selectValueSelectNullsFunc;
+
+    public static Expression<Func<ValueSelectNulls, ValueSelectNullsDto>> SelectValueSelectNullsExpression { get; } = a => new ValueSelectNullsDto
+    {
+        Value1 = a.Value1.Select(b => new ValueDto 
+        { 
+            Value = b.Value 
+        }).ToList(),
+        Value2 = a.Value2.Select(b => new ValueDto 
+        { 
+            Value = b.Value 
+        }).ToList(),
+        Value3 = a.Value3.Select(b => new ValueDto 
+        { 
+            Value = b.Value 
+        }).ToList(),
+        Value4 = a.Value4.Select(b => new ValueDto 
+        { 
+            Value = b.Value 
+        }).ToList()
+    };
+    
+    public static ValueSelectNullsDto From(ValueSelectNulls valueSelectNulls) => (selectValueSelectNullsFunc ??= SelectValueSelectNullsExpression.Compile())(valueSelectNulls);
 }

@@ -3,7 +3,8 @@
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<DocumentationFile>$(BaseOutputPath)\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		<DocumentationFile Condition="'$(Configuration)' != 'Release'">$(BaseOutputPath)/$(Configuration)/$(TargetFramework)/$(AssemblyName).xml</DocumentationFile>
+		<DocumentationFile Condition="'$(Configuration)' == 'Release'">.publish/$(AssemblyName)/$(AssemblyName).xml</DocumentationFile>\
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Authors>Royal Code</Authors>
 		<Copyright>Royal Code Copyright ©  2025</Copyright>

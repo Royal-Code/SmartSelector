@@ -23,7 +23,7 @@ public partial class NullableAndCastSelectorTests
 file static class Code
 {
     public const string Types =
-    """
+"""
 using RoyalCode.SmartSelector;
 
 namespace Tests.SmartSelector.Models;

@@ -35,6 +35,22 @@ internal class CastAssignDescriptorResolver : IAssignDescriptorResolver
                 return false;
             }
 
+            // check if left are nullable
+            if (leftSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                // get the nullable underlying type of the enum leftSymbol
+                if (leftSymbol.TypeArguments[0] is INamedTypeSymbol leftUnderlyingSymbol)
+                    leftSymbol = leftUnderlyingSymbol;
+
+                // check if right are nullable
+                if (rightSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                {
+                    // get the nullable underlying type of the enum rightSymbol
+                    if (rightSymbol.TypeArguments[0] is INamedTypeSymbol rightUnderlyingSymbol)
+                        rightSymbol = rightUnderlyingSymbol;
+                }
+            }
+
             // check if the rightType property is an enum and the leftType property is a enum.
             var isEnums = leftSymbol.TypeKind == TypeKind.Enum && rightSymbol.TypeKind == TypeKind.Enum;
 

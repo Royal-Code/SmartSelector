@@ -43,9 +43,16 @@ internal sealed class TypeDescriptor : IEquatable<TypeDescriptor>
 
         var namespaces = typeSymbol.GetNamespaces().ToArray();
 
-        if (!isNullable && namedTypeSymbol is not null)
+        if (namedTypeSymbol is not null)
         {
-            name = namedTypeSymbol.GetName();
+            if (isNullable && namedTypeSymbol.TypeArguments[0] is INamedTypeSymbol underlyingSymbol)
+            {
+                name = underlyingSymbol.GetName() + "?";
+            }
+            else
+            {
+                name = namedTypeSymbol.GetName();
+            }
         }
 
         return new(name, namespaces, namedTypeSymbol, isNullable);

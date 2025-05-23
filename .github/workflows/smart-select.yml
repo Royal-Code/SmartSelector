@@ -1,0 +1,30 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: smart-select-nuget
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build and pack SmartSearch Abstractions
+        run: dotnet build ./src/RoyalCode.SmartSelector/RoyalCode.SmartSelector.csproj -c Release -o ./publish/RoyalCode.SmartSelector
+        
+      - name: Build and pack SmartSearch Persistence Abstractions
+        run: dotnet build ./src/RoyalCode.SmartSelector.Generators/RoyalCode.SmartSelector.Generators.csproj -c Release -o ./publish/RoyalCode.SmartSelector.Generators
+
+      - name: Publish
+        run: dotnet nuget push ./**/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

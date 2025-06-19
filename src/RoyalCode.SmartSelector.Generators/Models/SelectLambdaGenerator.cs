@@ -1,8 +1,6 @@
-﻿using RoyalCode.SmartSelector.Generators.Extensions;
-using RoyalCode.SmartSelector.Generators.Models.Descriptors;
-using System.Text;
+﻿using System.Text;
 
-namespace RoyalCode.SmartSelector.Generators.Models.Generators.Commands;
+namespace RoyalCode.SmartSelector.Generators.Models;
 
 internal class SelectLambdaGenerator : ValueNode
 {

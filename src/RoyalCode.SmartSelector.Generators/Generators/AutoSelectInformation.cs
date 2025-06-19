@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using RoyalCode.SmartSelector.Generators.Models;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 

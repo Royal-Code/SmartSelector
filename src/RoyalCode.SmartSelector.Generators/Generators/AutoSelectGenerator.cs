@@ -1,11 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RoyalCode.SmartSelector.Generators.Extensions;
 using RoyalCode.SmartSelector.Generators.Models;
-using RoyalCode.SmartSelector.Generators.Models.Descriptors;
-using RoyalCode.SmartSelector.Generators.Models.Generators;
-using RoyalCode.SmartSelector.Generators.Models.Generators.Commands;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
@@ -53,7 +49,7 @@ internal static class AutoSelectGenerator
         }
 
         // lê o atributo AutoSelectAttribute
-        if (!classDeclaration.TryGetAttribute(AutoSelectAttributeName, out var attr))
+        if (!classDeclaration.TryGetAttribute(AutoSelectAttributeName, out AttributeSyntax? attr))
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
@@ -193,7 +189,6 @@ internal static class AutoSelectGenerator
 
         // 1.2.3 adiciona o campo à classe
         partialClass.Fields.Add(funcField);
-        partialClass.Usings.AddNamespaces(funcType);
 
         // 1.3 propriedade expression: Expression<Func<Target, Origin>> Select{Target}Expression
 
@@ -214,7 +209,6 @@ internal static class AutoSelectGenerator
 
         // 1.3.4 adiciona a propriedade à classe
         partialClass.Properties.Add(expressionProperty);
-        partialClass.Usings.AddNamespaces(expressionType);
 
         // 1.4 cria método static From
 
@@ -237,7 +231,6 @@ internal static class AutoSelectGenerator
 
         // 1.4.4 adiciona o método à classe
         partialClass.Methods.Add(method);
-        partialClass.Usings.AddNamespaces(method);
 
         // 1.5 Gera o código da classe
         partialClass.Generate(context);
@@ -284,7 +277,6 @@ internal static class AutoSelectGenerator
 
         // 2.1.5 adiciona o método 
         extensionClass.Methods.Add(queryMethod);
-        extensionClass.Usings.AddNamespaces(queryMethod);
 
         // 2.2 Criação do método select para enumerable
         
@@ -323,7 +315,6 @@ internal static class AutoSelectGenerator
 
         // 2.2.5 adiciona o método
         extensionClass.Methods.Add(enumerableMethod);
-        extensionClass.Usings.AddNamespaces(enumerableMethod);
 
         // 2.3 Cria método To{Origin} a partir do Target
 
@@ -351,7 +342,6 @@ internal static class AutoSelectGenerator
 
         // 2.3.4 adiciona o método à classe
         extensionClass.Methods.Add(toMethod);
-        extensionClass.Usings.AddNamespaces(toMethod);
 
         // 2.4 Gera o código da classe de extensão
         extensionClass.Generate(context);

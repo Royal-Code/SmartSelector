@@ -7,10 +7,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
+		
+		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" 
+						  OutputItemType="Analyzer" 
+						  ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\utils\RoyalCode.Utils\RoyalCode.Extensions.SourceGenerator\RoyalCode.Extensions.SourceGenerator.csproj"
+						  ReferenceOutputAssembly="false"/>
+	</ItemGroup>
+	
 	<PropertyGroup>
 		
 		<!-- Write the source generator files in disc -->
@@ -34,6 +42,10 @@
 
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.16" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Generated\RoyalCode.SmartSelector.Generators\" />
 	</ItemGroup>
 	
 </Project>

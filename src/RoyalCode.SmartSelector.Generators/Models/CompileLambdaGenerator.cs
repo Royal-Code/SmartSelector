@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace RoyalCode.SmartSelector.Generators.Models.Generators.Commands;
+namespace RoyalCode.SmartSelector.Generators.Models;
 
 internal class CompileLambdaGenerator : GeneratorNode
 {

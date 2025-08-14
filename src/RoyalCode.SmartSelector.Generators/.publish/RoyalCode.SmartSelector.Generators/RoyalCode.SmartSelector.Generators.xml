@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RoyalCode.SmartSelector.Generators</name>
+    </assembly>
+    <members>
+        <member name="T:RoyalCode.SmartSelector.Generators.IncrementalGenerator">
+            <summary>
+            Incremental source generator that generates code for the AutoSelectAttribute{TFrom} attribute.
+            </summary>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.Generators.IncrementalGenerator.Initialize(Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext)">
+            <inheritdoc />
+        </member>
+        <member name="P:RoyalCode.SmartSelector.Generators.Models.SelectLambdaGenerator.AssignProperties.Origin">
+            <summary>
+            The origin property type descriptor. (DTO property)
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.Generators.Models.SelectLambdaGenerator.AssignProperties.Target">
+            <summary>
+            The target property selection. (Entity property)
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.Generators.Models.SelectLambdaGenerator.AssignProperties.InnerSelection">
+            <summary>
+            The inner selection of the target property. (Entity property)
+            </summary>
+        </member>
+    </members>
+</doc>

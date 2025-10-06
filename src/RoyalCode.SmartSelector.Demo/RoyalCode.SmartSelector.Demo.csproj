@@ -13,12 +13,12 @@
 						  OutputItemType="Analyzer" 
 						  ReferenceOutputAssembly="false" />
 
-		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="0.1.0" 
+		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="0.1.4" 
 						  PrivateAssets="all" 
 						  ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<ItemGroup>
-		<Analyzer Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\0.1.0\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" />
+		<Analyzer Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\0.1.4\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" />
 	</ItemGroup>
 	
 	<PropertyGroup>

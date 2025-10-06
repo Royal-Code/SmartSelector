@@ -8,8 +8,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="14.0.0" />
-		<PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
+		<PackageReference Include="AutoMapper" Version="15.0.1" />
+		<PackageReference Include="BenchmarkDotNet" Version="0.15.4" />
 		<PackageReference Include="Mapster" Version="7.4.0" />
 	</ItemGroup>
 
@@ -18,9 +18,9 @@
 
 		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
-		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="0.1.0" PrivateAssets="all" ReferenceOutputAssembly="false" />
+		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="0.1.4" PrivateAssets="all" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<ItemGroup>
-		<Analyzer Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\0.1.0\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" />
+		<Analyzer Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\0.1.4\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" />
 	</ItemGroup>
 </Project>

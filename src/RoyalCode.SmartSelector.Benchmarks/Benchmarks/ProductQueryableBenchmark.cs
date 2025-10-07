@@ -25,7 +25,9 @@ public class ProductQueryableBenchmark
         _queryable = data.AsQueryable();
 
         // AutoMapper configuration
-        var mapperConfig = new AutoMapper.MapperConfiguration(cfg => cfg.CreateMap<Product, ProductDetails>());
+        var mapperConfig = new AutoMapper.MapperConfiguration(
+            cfg => cfg.CreateMap<Product, ProductDetails>(), 
+            Logger.CreateLoggerFactory());
         _autoMapper = mapperConfig.CreateMapper();
 
         // Mapster configuration for projection

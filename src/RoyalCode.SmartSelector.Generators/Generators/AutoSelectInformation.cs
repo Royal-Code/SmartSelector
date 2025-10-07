@@ -4,8 +4,9 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 {
-    private Diagnostic[]? diagnostics;
-    private MatchSelection? matchSelection;
+    private readonly Diagnostic[]? diagnostics;
+    private readonly MatchSelection? matchSelection;
+    private readonly AutoPropertyInformation? autoPropertyInformation;
 
     public AutoSelectInformation(Diagnostic diagnostic)
     {
@@ -17,8 +18,11 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         this.diagnostics = diagnostics;
     }
 
-    public AutoSelectInformation(MatchSelection matchSelection)
+    public AutoSelectInformation(
+        MatchSelection matchSelection,
+        AutoPropertyInformation? autoPropertyInformation)
     {
+        this.autoPropertyInformation = autoPropertyInformation;
         this.matchSelection = matchSelection;
     }
 
@@ -30,6 +34,11 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
             {
                 context.ReportDiagnostic(diagnostic);
             }
+        }
+
+        if (autoPropertyInformation is not null)
+        {
+            AutoPropertyGenerator.Generate(autoPropertyInformation, context);
         }
 
         if (matchSelection is not null)

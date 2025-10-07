@@ -8,8 +8,11 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 internal static class AutoSelectGenerator
 {
     public const string AutoSelectAttributeFullName = "RoyalCode.SmartSelector.AutoSelectAttribute`1";
+    public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
+    public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
 
     private const string AutoSelectAttributeName = "AutoSelect";
+    private const string AutoPropertiesAttributeName = "AutoProperties";
 
     public static bool Predicate(SyntaxNode node, CancellationToken _)
     {
@@ -98,8 +101,29 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
+        // verifica se existe o atributo AutoProperty na classe
+        AutoPropertyInformation? propertiesInfo = null;
+        if (classDeclaration.TryGetAttribute(AutoPropertiesAttributeName, out AttributeSyntax? autoPropAttr))
+        {
+            // o atributo AutoProperty não pode ser genérico
+            if (autoPropAttr!.Name is GenericNameSyntax)
+            {
+                var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoProperty,
+                    location: classDeclaration.Identifier.GetLocation(),
+                    classDeclaration.Identifier.Text);
+
+                return new AutoSelectInformation(diagnostic);
+            }
+
+            propertiesInfo = AutoPropertyGenerator.CreateInformation(modelType, fromType, autoPropAttr!);
+        }
+
         // match das propriedades da classe com o attributo e a classe definida no TFrom.
-        var matchSelection = MatchSelection.Create(modelType, fromType, context.SemanticModel);
+        var matchSelection = MatchSelection.Create(
+            modelType,
+            fromType,
+            context.SemanticModel,
+            AutoPropertyGenerator.MatchOptions);
 
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))
@@ -146,7 +170,7 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostics.ToArray());
         }
 
-        return new AutoSelectInformation(matchSelection);
+        return new AutoSelectInformation(matchSelection, propertiesInfo);
     }
 
     public static void Generate(MatchSelection match, SourceProductionContext context)

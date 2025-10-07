@@ -5,10 +5,11 @@
 		<GenFrwkVer>netstandard2.0</GenFrwkVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<DotNetCoreVersion>8.0.15</DotNetCoreVersion>
+		<DotNetCoreVersion>8.0.20</DotNetCoreVersion>
+		<ExtSrcGenVer>0.1.7</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<Ver>0.0.1</Ver>
-		<Prev>-betha-1</Prev>
+		<Ver>0.1.0</Ver>
+		<Prev></Prev>
 	</PropertyGroup>
 </Project>

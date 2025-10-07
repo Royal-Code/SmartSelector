@@ -11,7 +11,7 @@ public class NewInstanceTests
         Util.Compile(Code.Types, out var output, out var diagnostics);
 
         diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
+        
         var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }

@@ -7,7 +7,7 @@
 		<DocumentationFile Condition="'$(Configuration)' == 'Release'">.publish/$(AssemblyName)/$(AssemblyName).xml</DocumentationFile>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Authors>Royal Code</Authors>
-		<Copyright>Royal Code Copyright ©  $([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
+		<Copyright>Royal Code Copyright © $([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
 		<RepositoryUrl>https://github.com/Royal-Code/SmartSelector</RepositoryUrl>
 		<RepositoryType>Git</RepositoryType>
 		<Configurations>Debug;Release</Configurations>

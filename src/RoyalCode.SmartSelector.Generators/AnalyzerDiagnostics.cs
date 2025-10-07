@@ -30,4 +30,12 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor InvalidAutoProperty = new(
+        id: "RCSS003",
+        title: "Invalid Auto Property attribute usage",
+        messageFormat: "Invalid use of AutoPropertyAttribute<TFrom> in class {0}, when using AutoSelectAttribute, use the non-generic version AutoPropertyAttribute",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
 }

@@ -25,7 +25,9 @@ public class ProductMappingBenchmark
             .ToList();
 
         // AutoMapper configuration
-        var mapperConfig = new MapperConfiguration(cfg => cfg.CreateMap<Product, ProductDetails>());
+        var mapperConfig = new MapperConfiguration(
+            cfg => cfg.CreateMap<Product, ProductDetails>(),
+            Logger.CreateLoggerFactory());
         _autoMapper = mapperConfig.CreateMapper();
 
         // Mapster configuration

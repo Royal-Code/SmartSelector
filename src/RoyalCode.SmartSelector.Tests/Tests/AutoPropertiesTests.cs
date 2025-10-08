@@ -60,8 +60,8 @@ public class AutoPropertiesTests
 
         var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
 
-        generated.Should().Contain("Id { get; set; }"); // not excluded
-        generated.Should().NotContain("Name { get; set; }"); // excluded by nameof in ctor
+        generated.Should().Contain("Id { get; set; }");        // not excluded
+        generated.Should().NotContain("Name { get; set; }");   // excluded by nameof in ctor
         generated.Should().NotContain("Active { get; set; }"); // excluded by named argument nameof
     }
 

@@ -102,7 +102,7 @@ internal static class AutoSelectGenerator
         }
 
         // verifica se existe o atributo AutoProperty na classe
-        AutoPropertyInformation? propertiesInfo = null;
+        AutoPropertiesInformation? propertiesInfo = null;
         if (classDeclaration.TryGetAttribute(AutoPropertiesAttributeName, out AttributeSyntax? autoPropAttr))
         {
             // o atributo AutoProperty não pode ser genérico
@@ -115,7 +115,7 @@ internal static class AutoSelectGenerator
                 return new AutoSelectInformation(diagnostic);
             }
 
-            propertiesInfo = AutoPropertyGenerator.CreateInformation(modelType, fromType, autoPropAttr!);
+            propertiesInfo = AutoPropertiesGenerator.CreateInformation(modelType, fromType, autoPropAttr!);
         }
 
         // match das propriedades da classe com o attributo e a classe definida no TFrom.
@@ -123,7 +123,7 @@ internal static class AutoSelectGenerator
             modelType,
             fromType,
             context.SemanticModel,
-            AutoPropertyGenerator.MatchOptions);
+            AutoPropertiesGenerator.MatchOptions);
 
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))

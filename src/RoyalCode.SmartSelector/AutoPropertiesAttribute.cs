@@ -20,15 +20,15 @@ public class AutoPropertiesAttribute : Attribute
     /// </summary>
     public AutoPropertiesAttribute() { }
 
-    /// <summary>
-    /// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
-    /// automatic processing.
-    /// </summary>
-    /// <param name="excludeProperties">
-    ///     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-    ///     Can be empty to include all properties.
-    /// </param>
-    public AutoPropertiesAttribute(params string[] excludeProperties) { }
+    /////// <summary>
+    /////// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
+    /////// automatic processing.
+    /////// </summary>
+    /////// <param name="excludeProperties">
+    ///////     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
+    ///////     Can be empty to include all properties.
+    /////// </param>
+    ////public AutoPropertiesAttribute(params string[] excludeProperties) { }
 }
 
 /// <summary>
@@ -52,13 +52,13 @@ public class AutoPropertiesAttribute<TFrom> : Attribute
     /// </summary>
     public AutoPropertiesAttribute() { }
 
-    /// <summary>
-    /// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
-    /// automatic processing.
-    /// </summary>
-    /// <param name="excludeProperties">
-    ///     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-    ///     Can be empty to include all properties.
-    /// </param>
-    public AutoPropertiesAttribute(params string[] excludeProperties) { }
+    /////// <summary>
+    /////// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
+    /////// automatic processing.
+    /////// </summary>
+    /////// <param name="excludeProperties">
+    ///////     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
+    ///////     Can be empty to include all properties.
+    /////// </param>
+    ////public AutoPropertiesAttribute(params string[] excludeProperties) { }
 }

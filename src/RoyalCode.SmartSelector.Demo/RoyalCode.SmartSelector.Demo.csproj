@@ -9,13 +9,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
 		
-		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" 
-						  OutputItemType="Analyzer" 
-						  ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
-		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="$(ExtSrcGenVer)" 
-						  PrivateAssets="all" 
-						  ReferenceOutputAssembly="false" />
+		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="$(ExtSrcGenVer)" PrivateAssets="all" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<ItemGroup>
 		<Analyzer Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\$(ExtSrcGenVer)\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" />

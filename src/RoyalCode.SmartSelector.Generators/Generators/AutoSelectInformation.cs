@@ -6,7 +6,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 {
     private readonly Diagnostic[]? diagnostics;
     private readonly MatchSelection? matchSelection;
-    private readonly AutoPropertyInformation? autoPropertyInformation;
+    private readonly AutoPropertiesInformation? autoPropertyInformation;
 
     public AutoSelectInformation(Diagnostic diagnostic)
     {
@@ -20,7 +20,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
     public AutoSelectInformation(
         MatchSelection matchSelection,
-        AutoPropertyInformation? autoPropertyInformation)
+        AutoPropertiesInformation? autoPropertyInformation)
     {
         this.autoPropertyInformation = autoPropertyInformation;
         this.matchSelection = matchSelection;
@@ -38,7 +38,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
         if (autoPropertyInformation is not null)
         {
-            AutoPropertyGenerator.Generate(autoPropertyInformation, context);
+            AutoPropertiesGenerator.Generate(autoPropertyInformation, context);
         }
 
         if (matchSelection is not null)

@@ -2,23 +2,23 @@
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
-internal class AutoPropertyInformation : IEquatable<AutoPropertyInformation>
+internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
 {
     private readonly Diagnostic[]? diagnostics;
     private readonly PropertyDescriptor[]? properties;
     private readonly TypeDescriptor originType;
 
-    public AutoPropertyInformation(Diagnostic diagnostic)
+    public AutoPropertiesInformation(Diagnostic diagnostic)
     {
         diagnostics = [diagnostic];
     }
 
-    public AutoPropertyInformation(Diagnostic[] diagnostics)
+    public AutoPropertiesInformation(Diagnostic[] diagnostics)
     {
         this.diagnostics = diagnostics;
     }
 
-    public AutoPropertyInformation(TypeDescriptor originType, PropertyDescriptor[] properties)
+    public AutoPropertiesInformation(TypeDescriptor originType, PropertyDescriptor[] properties)
     {
         this.originType = originType;
         this.properties = properties;
@@ -28,7 +28,7 @@ internal class AutoPropertyInformation : IEquatable<AutoPropertyInformation>
 
     public TypeDescriptor OriginType => originType;
 
-    public bool Equals(AutoPropertyInformation other)
+    public bool Equals(AutoPropertiesInformation other)
     {
         if (other == null)
         {

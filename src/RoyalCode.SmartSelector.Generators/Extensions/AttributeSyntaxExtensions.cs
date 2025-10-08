@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;
 
-namespace RoyalCode.SmartSelector.Generators.Generators;
+namespace System;
 
 internal static class AttributeSyntaxExtensions
 {

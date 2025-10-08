@@ -28,10 +28,7 @@
 		<ItemGroup>
 			<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 			<Analyzer Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" />
-			<None Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\$(ExtSrcGenVer)\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll"
-				  Pack="true"
-				  PackagePath="analyzers/dotnet/cs"
-				  Visible="false" />
+			<None Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\$(ExtSrcGenVer)\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 		</ItemGroup>
 	</Target>
 

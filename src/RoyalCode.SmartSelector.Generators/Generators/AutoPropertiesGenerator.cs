@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
-internal static class AutoPropertyGenerator
+internal static class AutoPropertiesGenerator
 {
     internal static MatchOptions MatchOptions { get; } = new()
     {
@@ -11,7 +11,7 @@ internal static class AutoPropertyGenerator
         //TargetPropertiesRetriever = new AutoPropertyTargetPropertiesRetriever(),
     };
 
-    internal static AutoPropertyInformation CreateInformation(
+    internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
         AttributeSyntax properties)
@@ -19,8 +19,9 @@ internal static class AutoPropertyGenerator
         // collect excluded property names using extension helpers
         var excluded = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var name in properties.GetConstructorStringSet())
-            excluded.Add(name);
+        // removido por hora
+        ////foreach (var name in properties.GetConstructorStringSet())
+        ////    excluded.Add(name);
 
         foreach (var name in properties.GetNamedArgumentStringSet("Exclude"))
             excluded.Add(name);
@@ -28,18 +29,22 @@ internal static class AutoPropertyGenerator
         return CreateInformation(modelType, fromType, excluded);
     }
 
-    internal static AutoPropertyInformation CreateInformation(
+    internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         ITypeSymbol fromType,
         AttributeData autoPropertyAttribute)
     {
-        // obtém excluded do ctor ou propriedade Exclude
         var excluded = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var name in autoPropertyAttribute.ConstructorArguments)
-            if (name.Kind == TypedConstantKind.Array && name.Values != null)
-                foreach (var v in name.Values)
-                    if (v.Value is string s)
-                        excluded.Add(s);
+
+        // removido por hora
+        ////// obtém excluded do ctor ou propriedade Exclude
+        ////foreach (var name in autoPropertyAttribute.ConstructorArguments)
+        ////    if (name.Kind == TypedConstantKind.Array && name.Values != null)
+        ////        foreach (var v in name.Values)
+        ////            if (v.Value is string s)
+        ////                excluded.Add(s);
+
+        // obtém Exclude de NamedArguments
         foreach (var namedArg in autoPropertyAttribute.NamedArguments)
             if (namedArg.Key == "Exclude" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
                 foreach (var v in namedArg.Value.Values)
@@ -47,12 +52,12 @@ internal static class AutoPropertyGenerator
                         excluded.Add(s);
 
         // gera o TypeDescriptor do fromType
-        var fromTypeDescriptor = TypeDescriptor.Create(fromType);
+        var fromTypeDescriptor = fromType.CreateTypeDescriptor();
 
         return CreateInformation(modelType, fromTypeDescriptor, excluded);
     }
 
-    internal static AutoPropertyInformation CreateInformation(
+    internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
         HashSet<string> excluded)
@@ -62,18 +67,82 @@ internal static class AutoPropertyGenerator
             excluded.Add(p.Name);
 
         var sourceProps = fromType.CreateProperties(p => p.GetMethod is not null);
+
+        // filtra propriedades do source,
+        // remove propriedades que estão na lista de excluídas,
+        // removendo o que não for tipo primitivo, string, decimal, DateTime,
+        // enum ou nullable desses tipos, além de coleções de tipos primitivos,
+        // aceita structs também.
+        sourceProps = sourceProps
+            .Where(p => !excluded.Contains(p.Name))
+            .Where(IsSupportedType)
+            .ToArray();
+
         var generated = new List<PropertyDescriptor>();
         foreach (var p in sourceProps)
         {
-            if (excluded.Contains(p.Name))
-                continue;
             generated.Add(new PropertyDescriptor(p.Type, p.Name, p.Symbol));
         }
 
-        return new AutoPropertyInformation(modelType, [.. generated]);
+        return new AutoPropertiesInformation(modelType, [.. generated]);
     }
 
-    internal static void Generate(AutoPropertyInformation propertiesInfo, SourceProductionContext context)
+    private static readonly HashSet<string> SupportedPrimitiveTypes = new(StringComparer.Ordinal)
+    {
+        "bool",
+        "Boolean",
+        "string", "char",
+        "String", "Char",
+        "byte", "short", "int", "long", "float", "double", "decimal",
+        "Byte", "Int16", "Int32", "Int64", "Single", "Double", "Decimal",
+        "sbyte", "ushort", "uint", "ulong",
+        "SByte", "UInt16", "UInt32", "UInt64",
+        "DateTime", "DateTime?",
+    };
+
+    private static bool IsSupportedType(PropertyDescriptor descriptor)
+    {
+        var type = descriptor.Type;
+        var typeName = type.Name;
+
+        if (SupportedPrimitiveTypes.Contains(typeName))
+            return true;
+
+        if (!type.HasNamedTypeSymbol(out var namedType))
+            return false;
+
+        // se tem symbol, verifica se é enum
+        if (namedType.TypeKind == TypeKind.Enum)
+            return true;
+
+        // struct é considerado um value object, não é um tipo complexo e deve ser aceito
+        if (namedType.TypeKind == TypeKind.Struct)
+            return true;
+
+        // se for genérico, verifica se coleção suportada
+        if (namedType.IsGenericType)
+        {
+            // verifica se namedType implementa ou herda IEnumerable<>
+            if (!namedType.AllInterfaces.Any(i =>
+                i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T))
+            {
+                return false;
+            }
+
+            var arg = namedType.TypeArguments.FirstOrDefault();
+            if (arg != null)
+            {
+                var argType = arg.CreateTypeDescriptor();
+                return SupportedPrimitiveTypes.Contains(argType.Name) 
+                    || arg.TypeKind == TypeKind.Enum
+                    || arg.TypeKind == TypeKind.Struct;
+            }
+        }
+
+        return false;
+    }
+
+    internal static void Generate(AutoPropertiesInformation propertiesInfo, SourceProductionContext context)
     {
         // gera o código de propriedades automáticas em uma classe partial
 
@@ -109,11 +178,15 @@ internal static class AutoPropertyGenerator
         // 2 - criação das propriedades
         foreach (var p in properties)
         {
-            var prop = new PropertyGenerator(p.Type, p.Name);
-            
+            var propertyType = p.Type.HasNamedTypeSymbol(out var typeSymbol)
+                ? typeSymbol.CreateTypeDescriptor()
+                : p.Type;
+
+            var prop = new PropertyGenerator(propertyType, p.Name);
+
             // 2.1 modificadores
             prop.Modifiers.Public();
-            
+
             // 2.3 adiciona a propriedade na classe
             partialClass.Properties.Add(prop);
         }
@@ -157,7 +230,7 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
                 return MatchOptions.GetOriginProperties(origin);
 
             // cria a informação
-            var info = AutoPropertyGenerator.CreateInformation(origin, fromType, autoSelectAttribute);
+            var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoSelectAttribute);
 
             // pega as propriedades da origem mais as da informação
             return [.. MatchOptions.GetOriginProperties(origin), .. info.Properties];
@@ -175,12 +248,12 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
                 return MatchOptions.GetOriginProperties(origin);
 
             // cria a informação
-            var info = AutoPropertyGenerator.CreateInformation(origin, fromType, autoPropertiesAttribute);
+            var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoPropertiesAttribute);
 
             // pega as propriedades da origem mais as da informação
             return [.. MatchOptions.GetOriginProperties(origin), .. info.Properties];
         }
-        
+
         return MatchOptions.GetOriginProperties(origin);
     }
 }

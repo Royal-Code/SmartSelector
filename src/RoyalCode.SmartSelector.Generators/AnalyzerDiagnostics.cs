@@ -38,4 +38,19 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor ConflictingAutoPropertiesAttributes = new(
+        id: "RCSS004",
+        title: "Conflicting AutoProperties attributes",
+        messageFormat: "The class {0} cannot use both AutoPropertiesAttribute and AutoPropertiesAttribute<TFrom>",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor InvalidAutoPropertiesTypeArgument = new(
+        id: "RCSS005",
+        title: "Invalid AutoProperties type argument",
+        messageFormat: "Invalid type argument '{0}' for AutoPropertiesAttribute<TFrom>; it must be a valid class or struct type",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

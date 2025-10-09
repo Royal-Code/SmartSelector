@@ -9,6 +9,11 @@ public partial class BookDetails
 
     public static Expression<Func<Book, BookDetails>> SelectBookExpression { get; } = a => new BookDetails
     {
+        Shelf = new ShelfDetails
+        {
+            Id = a.Shelf.Id,
+            Location = a.Shelf.Location
+        },
         Id = a.Id,
         Title = a.Title,
         Author = a.Author,

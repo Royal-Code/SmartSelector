@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using RoyalCode.SmartSelector.Demo.Entities;
 using RoyalCode.SmartSelector.Demo.Entities.Blogs;
+using RoyalCode.SmartSelector.Demo.Entities.Library; // added for Book & Shelf
 
 namespace RoyalCode.SmartSelector.Demo.Infra;
 
@@ -25,6 +26,10 @@ public class AppDbContext : DbContext
 
     public DbSet<Author> Authors { get; set; } = default!;
 
+    public DbSet<Book> Books { get; set; } = default!;
+
+    public DbSet<Shelf> Shelves { get; set; } = default!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Product>().ToTable("Products");
@@ -36,6 +41,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Post>().ToTable("Posts");
         modelBuilder.Entity<Comment>().ToTable("Comments");
         modelBuilder.Entity<Author>().ToTable("Authors");
+        modelBuilder.Entity<Book>().ToTable("Books");
+        modelBuilder.Entity<Shelf>().ToTable("Shelves");
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

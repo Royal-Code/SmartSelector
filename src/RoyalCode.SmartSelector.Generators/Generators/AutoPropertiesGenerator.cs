@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
@@ -6,6 +7,9 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 internal static class AutoPropertiesGenerator
 {
     public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
+
+    private const string AutoPropertiesAttributeName = "AutoProperties";              // non generic form
+    private const string AutoPropertiesGenericAttributeName = "AutoProperties";       // generic form base identifier
 
     internal static MatchOptions MatchOptions { get; } = new()
     {
@@ -22,8 +26,86 @@ internal static class AutoPropertiesGenerator
     internal static AutoPropertiesInformation Transform(
         GeneratorAttributeSyntaxContext context, CancellationToken token)
     {
-        // ainda não implementado
-        return new(null, null);
+        // Classe alvo (onde o atributo está aplicado)
+        var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+
+        // Obtém symbol da classe
+        var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, token);
+        if (classSymbol is null)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+                classDeclaration.Identifier.GetLocation(),
+                classDeclaration.Identifier.Text);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        // A classe deve ser partial (seguindo o padrão usado pelo AutoSelect)
+        if (!classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+                classDeclaration.Identifier.GetLocation(),
+                classDeclaration.Identifier.Text);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        // Recupera TODOS os atributos de AutoProperties na declaração (genérico e não genérico)
+        var allAutoProps = classDeclaration.AttributeLists
+            .SelectMany(l => l.Attributes)
+            .Where(a => a.Name is IdentifierNameSyntax id && id.Identifier.Text == AutoPropertiesAttributeName
+                        || a.Name is GenericNameSyntax g && g.Identifier.Text == AutoPropertiesGenericAttributeName)
+            .ToArray();
+
+        if (allAutoProps.Length == 0)
+        {
+            // Não deveria acontecer pois o pipeline só chama se tem o atributo, mas retorna vazio por segurança.
+            return new AutoPropertiesInformation(
+                classSymbol is null
+                    ? null!
+                    : new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol),
+                []);
+        }
+
+        // Verifica conflito: uso simultâneo do genérico e não-genérico.
+        bool hasNonGeneric = allAutoProps.Any(a => a.Name is IdentifierNameSyntax);
+        if (hasNonGeneric)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.ConflictingAutoPropertiesAttributes,
+                classDeclaration.Identifier.GetLocation(),
+                classDeclaration.Identifier.Text);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        // Cria TypeDescriptor do modelo
+        var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
+
+        // Localiza o AttributeSyntax exato para extrair parâmetros nomeados (Exclude)
+        var attrSyntax = allAutoProps.First(a => a.Name is GenericNameSyntax);
+
+        var genericAttr = (GenericNameSyntax)attrSyntax.Name;
+
+        // Pega o argumento de tipo TFrom
+        if (genericAttr.TypeArgumentList.Arguments.Count != 1)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+                classDeclaration.Identifier.GetLocation(),
+                "<missing>");
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        var fromTypeSyntax = genericAttr.TypeArgumentList.Arguments[0];
+
+        // Tentamos criar TypeDescriptor para o tipo origem
+        var fromType = TypeDescriptor.Create(fromTypeSyntax, context.SemanticModel);
+        if (fromType.Symbol is null)
+        {
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+                fromTypeSyntax.GetLocation(),
+                fromTypeSyntax.ToString());
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        // Cria a informação
+        return CreateInformation(modelType, fromType, attrSyntax);
     }
 
     internal static AutoPropertiesInformation CreateInformation(
@@ -148,7 +230,7 @@ internal static class AutoPropertiesGenerator
             if (arg != null)
             {
                 var argType = arg.CreateTypeDescriptor();
-                return SupportedPrimitiveTypes.Contains(argType.Name) 
+                return SupportedPrimitiveTypes.Contains(argType.Name)
                     || arg.TypeKind == TypeKind.Enum
                     || arg.TypeKind == TypeKind.Struct;
             }
@@ -211,7 +293,7 @@ internal static class AutoPropertiesGenerator
         partialClass.Generate(context);
     }
 
-    
+
 }
 
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever

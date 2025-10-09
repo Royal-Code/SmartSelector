@@ -21,6 +21,9 @@ internal class SelectLambdaGenerator : ValueNode
 
     private string GetValue(int ident, StringBuilder sb, char param)
     {
+        if (match.PropertyMatches.Count is 0)
+            return sb.Append(param).Append(" => new ").AppendLine(match.OriginType.Name).Append("()").ToString();
+
         // ......... a => new T
         // { 
         sb.Append(param).Append(" => new ").AppendLine(match.OriginType.Name)

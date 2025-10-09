@@ -12,10 +12,20 @@ public class IncrementalGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        var pipelineProperties = context.SyntaxProvider.ForAttributeWithMetadataName(
+            fullyQualifiedMetadataName: AutoPropertiesGenerator.AutoPropertiesAttributeTypedFullName,
+            predicate: AutoPropertiesGenerator.Predicate,
+            transform: AutoPropertiesGenerator.Transform);
+
         var pipelineSelect = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: AutoSelectGenerator.AutoSelectAttributeFullName,
             predicate: AutoSelectGenerator.Predicate,
             transform: AutoSelectGenerator.Transform);
+
+        context.RegisterSourceOutput(pipelineProperties, static (context, model) =>
+        {
+            model.Generate(context);
+        });
 
         context.RegisterSourceOutput(pipelineSelect, static (context, model) =>
         {

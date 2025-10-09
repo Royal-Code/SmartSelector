@@ -5,11 +5,26 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal static class AutoPropertiesGenerator
 {
+    public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
+
     internal static MatchOptions MatchOptions { get; } = new()
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
         //TargetPropertiesRetriever = new AutoPropertyTargetPropertiesRetriever(),
     };
+
+    internal static bool Predicate(SyntaxNode node, CancellationToken token)
+    {
+        var accept = node is ClassDeclarationSyntax;
+        return accept;
+    }
+
+    internal static AutoPropertiesInformation Transform(
+        GeneratorAttributeSyntaxContext context, CancellationToken token)
+    {
+        // ainda não implementado
+        return new(null, null);
+    }
 
     internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
@@ -195,10 +210,16 @@ internal static class AutoPropertiesGenerator
         partialClass.FileName = $"{origin.Name}.AutoProperties.g.cs";
         partialClass.Generate(context);
     }
+
+    
 }
 
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever
 {
+    private const string AutoSelectAttributeName = "AutoSelectAttribute";
+    private const string AutoPropertiesAttributeName = "AutoPropertiesAttribute";
+    private const string TypedAutoPropertiesAttributeName = "AutoPropertiesAttribute<";
+
     public IReadOnlyList<PropertyDescriptor> GetProperties(TypeDescriptor origin)
     {
         var typeSymbol = origin.Symbol;
@@ -208,17 +229,23 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
         // Verifica se no type existe:
         // - o AutoPropertiesAttribute com AutoSelectAttribute<TFrom>
         // - ou AutoPropertiesAttribute<TFrom>
-        var atrributes = typeSymbol.GetAttributes();
+        var attributes = typeSymbol.GetAttributes();
 
         // obtém o AutoPropertiesAttribute
-        var autoPropertiesAttribute = atrributes.FirstOrDefault(
-            attr => attr.AttributeClass?.ToDisplayString() == "RoyalCode.SmartSelector.AutoPropertiesAttribute");
+        var autoPropertiesAttribute = attributes.FirstOrDefault(attr =>
+        {
+            var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            return attrName == AutoPropertiesAttributeName;
+        });
 
         if (autoPropertiesAttribute is not null)
         {
             // quando tem AutoPropertiesAttribute, deve ter o AutoSelectAttribute<TFrom>
-            var autoSelectAttribute = atrributes.FirstOrDefault(
-                attr => attr.AttributeClass?.ToDisplayString() == "RoyalCode.SmartSelector.AutoSelectAttribute`1");
+            var autoSelectAttribute = attributes.FirstOrDefault(attr =>
+            {
+                var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                return attrName?.StartsWith(AutoSelectAttributeName) ?? false;
+            });
 
             // se não tiver, retorna o padrão
             if (autoSelectAttribute == null)
@@ -237,8 +264,11 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
         }
 
         // obtém o AutoPropertiesAttribute<TFrom>
-        autoPropertiesAttribute = atrributes.FirstOrDefault(
-            attr => attr.AttributeClass?.ToDisplayString() == "RoyalCode.SmartSelector.AutoPropertiesAttribute`1");
+        autoPropertiesAttribute = attributes.FirstOrDefault(attr =>
+        {
+            var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            return attrName?.StartsWith(TypedAutoPropertiesAttributeName) ?? false;
+        });
 
         if (autoPropertiesAttribute is not null)
         {

@@ -9,7 +9,6 @@ internal static class AutoSelectGenerator
 {
     public const string AutoSelectAttributeFullName = "RoyalCode.SmartSelector.AutoSelectAttribute`1";
     public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
-    public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
 
     private const string AutoSelectAttributeName = "AutoSelect";
     private const string AutoPropertiesAttributeName = "AutoProperties";

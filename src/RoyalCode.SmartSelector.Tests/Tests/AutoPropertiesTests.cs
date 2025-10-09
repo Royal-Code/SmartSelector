@@ -24,6 +24,17 @@ public class AutoPropertiesTests
         generated.Should().Contain("public List<String> Tags { get; set; }");
         // user complex types should NOT be generated
         generated.Should().NotContain("public NestedNested NestedNested { get; set; }");
+
+        // check the select expression
+        generated.Should().Contain("a => new Dto");
+        generated.Should().Contain("Id = a.Id,");
+        generated.Should().Contain("Name = a.Name,");
+        generated.Should().Contain("Active = a.Active,");
+        generated.Should().Contain("CreatedAt = a.CreatedAt,");
+        generated.Should().Contain("UpdatedAt = a.UpdatedAt,");
+        generated.Should().Contain("Price = a.Price,");
+        generated.Should().Contain("Nested = a.Nested,");
+        generated.Should().Contain("Tags = a.Tags");
     }
 
     [Fact]

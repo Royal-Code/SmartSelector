@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using RoyalCode.Extensions.SourceGenerator.Descriptors.PropertySelection;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
@@ -40,5 +41,21 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         }
         return diagnostics?.SequenceEqual(other.diagnostics) == true &&
                properties?.SequenceEqual(other.properties) == true;
+    }
+
+    internal void Generate(SourceProductionContext context)
+    {
+        if (diagnostics is not null)
+        {
+            foreach (var diagnostic in diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
+
+        if (properties is not null && originType is not null)
+        {
+            AutoPropertiesGenerator.Generate(this, context);
+        }
     }
 }

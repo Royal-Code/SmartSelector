@@ -7,6 +7,7 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
     private readonly Diagnostic[]? diagnostics;
     private readonly PropertyDescriptor[]? properties;
     private readonly TypeDescriptor originType;
+    private readonly AutoDetailsInformation[]? autoDetails;
 
     public AutoPropertiesInformation(Diagnostic diagnostic)
     {
@@ -18,15 +19,21 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         this.diagnostics = diagnostics;
     }
 
-    public AutoPropertiesInformation(TypeDescriptor originType, PropertyDescriptor[] properties)
+    public AutoPropertiesInformation(
+        TypeDescriptor originType, 
+        PropertyDescriptor[] properties,
+        AutoDetailsInformation[]? autoDetails = null)
     {
         this.originType = originType;
         this.properties = properties;
+        this.autoDetails = autoDetails;
     }
 
     public PropertyDescriptor[] Properties => properties ?? [];
 
     public TypeDescriptor OriginType => originType;
+
+    public AutoDetailsInformation[] AutoDetails => autoDetails ?? [];
 
     public bool Equals(AutoPropertiesInformation other)
     {
@@ -39,7 +46,8 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
             return true;
         }
         return diagnostics?.SequenceEqual(other.diagnostics) == true &&
-               properties?.SequenceEqual(other.properties) == true;
+               properties?.SequenceEqual(other.properties) == true &&
+               autoDetails?.SequenceEqual(other.autoDetails) == true;
     }
 
     internal void Generate(SourceProductionContext context)

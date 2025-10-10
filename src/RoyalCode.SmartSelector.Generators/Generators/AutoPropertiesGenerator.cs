@@ -151,7 +151,7 @@ internal static class AutoPropertiesGenerator
                                 flattening.Add(fs);
 
         // gera o TypeDescriptor do fromType
-        var fromTypeDescriptor = fromType.CreateTypeDescriptor();
+        var fromTypeDescriptor = TypeDescriptor.Create(fromType);
 
         return CreateInformation(modelType, fromTypeDescriptor, excluded, flattening);
     }
@@ -219,7 +219,7 @@ internal static class AutoPropertiesGenerator
                 continue;
 
             // obtém as propriedades do tipo
-            var nestedProps = namedType.CreateTypeDescriptor().CreateProperties(p => p.GetMethod is not null);
+            var nestedProps = TypeDescriptor.Create(namedType).CreateProperties(p => p.GetMethod is not null);
             foreach (var np in nestedProps.Where(IsSupportedType))
             {
                 // cria nova propriedade com o nome composto
@@ -276,7 +276,7 @@ internal static class AutoPropertiesGenerator
             var arg = namedType.TypeArguments.FirstOrDefault();
             if (arg != null)
             {
-                var argType = arg.CreateTypeDescriptor();
+                var argType = TypeDescriptor.Create(arg);
                 return SupportedPrimitiveTypes.Contains(argType.Name)
                     || arg.TypeKind == TypeKind.Enum
                     || arg.TypeKind == TypeKind.Struct;
@@ -323,7 +323,7 @@ internal static class AutoPropertiesGenerator
         foreach (var p in properties)
         {
             var propertyType = p.Type.HasNamedTypeSymbol(out var typeSymbol)
-                ? typeSymbol.CreateTypeDescriptor()
+                ? TypeDescriptor.Create(typeSymbol)
                 : p.Type;
 
             var prop = new PropertyGenerator(propertyType, p.Name);

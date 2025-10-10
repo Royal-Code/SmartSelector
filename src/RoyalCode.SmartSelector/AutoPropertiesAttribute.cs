@@ -20,11 +20,6 @@ public class AutoPropertiesAttribute : Attribute
     /// Property names are case-sensitive.
     /// </summary>
     public string[]? Flattening { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of the AutoPropertiesAttribute class.
-    /// </summary>
-    public AutoPropertiesAttribute() { }
 }
 
 /// <summary>
@@ -48,9 +43,4 @@ public class AutoPropertiesAttribute<TFrom> : Attribute
     /// Property names are case-sensitive.
     /// </summary>
     public string[]? Flattening { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of the AutoPropertiesAttribute class.
-    /// </summary>
-    public AutoPropertiesAttribute() { }
 }

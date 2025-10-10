@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
@@ -14,7 +15,6 @@ internal static class AutoPropertiesGenerator
     internal static MatchOptions MatchOptions { get; } = new()
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
-        //TargetPropertiesRetriever = new AutoPropertyTargetPropertiesRetriever(),
     };
 
     internal static bool Predicate(SyntaxNode node, CancellationToken token)
@@ -111,19 +111,24 @@ internal static class AutoPropertiesGenerator
     internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
-        AttributeSyntax properties)
+        AttributeSyntax autoPropertyAttribute)
     {
         // collect excluded property names using extension helpers
         var excluded = new HashSet<string>(StringComparer.Ordinal);
 
-        // removido por hora
-        ////foreach (var name in properties.GetConstructorStringSet())
-        ////    excluded.Add(name);
-
-        foreach (var name in properties.GetNamedArgumentStringSet("Exclude"))
+        foreach (var name in autoPropertyAttribute.GetNamedArgumentStrings("Exclude"))
             excluded.Add(name);
 
-        return CreateInformation(modelType, fromType, excluded);
+        // collect flattening property names using extension helpers
+        HashSet<string>? flattening = null;
+        var flatteningNames = autoPropertyAttribute.GetNamedArgumentStrings("Flattening");
+        foreach (var name in flatteningNames)
+        {
+            flattening ??= new HashSet<string>(StringComparer.Ordinal);
+            flattening.Add(name);
+        }
+
+        return CreateInformation(modelType, fromType, excluded, flattening);
     }
 
     internal static AutoPropertiesInformation CreateInformation(
@@ -132,14 +137,7 @@ internal static class AutoPropertiesGenerator
         AttributeData autoPropertyAttribute)
     {
         var excluded = new HashSet<string>(StringComparer.Ordinal);
-
-        // removido por hora
-        ////// obtém excluded do ctor ou propriedade Exclude
-        ////foreach (var name in autoPropertyAttribute.ConstructorArguments)
-        ////    if (name.Kind == TypedConstantKind.Array && name.Values != null)
-        ////        foreach (var v in name.Values)
-        ////            if (v.Value is string s)
-        ////                excluded.Add(s);
+        var flattening = new HashSet<string>(StringComparer.Ordinal);
 
         // obtém Exclude de NamedArguments
         foreach (var namedArg in autoPropertyAttribute.NamedArguments)
@@ -147,17 +145,22 @@ internal static class AutoPropertiesGenerator
                 foreach (var v in namedArg.Value.Values)
                     if (v.Value is string s)
                         excluded.Add(s);
+            else if (namedArg.Key == "Flattening" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
+                        foreach (var fv in namedArg.Value.Values)
+                            if (fv.Value is string fs)
+                                flattening.Add(fs);
 
         // gera o TypeDescriptor do fromType
         var fromTypeDescriptor = fromType.CreateTypeDescriptor();
 
-        return CreateInformation(modelType, fromTypeDescriptor, excluded);
+        return CreateInformation(modelType, fromTypeDescriptor, excluded, flattening);
     }
 
     internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
-        HashSet<string> excluded)
+        HashSet<string> excluded,
+        HashSet<string>? flattening)
     {
         // declared properties in model type are always excluded
         foreach (var p in modelType.CreateProperties(p => p.SetMethod is not null))
@@ -167,21 +170,65 @@ internal static class AutoPropertiesGenerator
 
         // filtra propriedades do source,
         // remove propriedades que estão na lista de excluídas,
+        // remove propriedades de flattening (serão recriadas depois)
         // removendo o que não for tipo primitivo, string, decimal, DateTime,
         // enum ou nullable desses tipos, além de coleções de tipos primitivos,
         // aceita structs também.
-        sourceProps = sourceProps
+        var autoProps = sourceProps
             .Where(p => !excluded.Contains(p.Name))
+            .Where(p => flattening is null || !flattening.Contains(p.Name))
             .Where(IsSupportedType)
-            .ToArray();
+            .ToList();
+
+        // processa flattening se houver
+        if (flattening is not null)
+            foreach (var fp in CreateFlattening(fromType, sourceProps, flattening))
+                if (!autoProps.Any(p => p.Name == fp.Name))
+                    autoProps.Add(fp);
 
         var generated = new List<PropertyDescriptor>();
-        foreach (var p in sourceProps)
+        foreach (var p in autoProps)
         {
             generated.Add(new PropertyDescriptor(p.Type, p.Name, p.Symbol));
         }
 
         return new AutoPropertiesInformation(modelType, [.. generated]);
+    }
+
+    private static IReadOnlyList<PropertyDescriptor> CreateFlattening(
+        TypeDescriptor fromType,
+        IReadOnlyList<PropertyDescriptor> sourceProps,
+        HashSet<string> flattening)
+    {
+        var list = new List<PropertyDescriptor>();
+        var matchTypeInfo = new MatchTypeInfo(fromType, sourceProps, MatchOptions.Default);
+
+        foreach (var flattenPropName in flattening)
+        {
+            var flattenProp = new PropertyDescriptor(TypeDescriptor.Void(), flattenPropName, null);
+            var selection = PropertySelection.Select(flattenProp, matchTypeInfo);
+
+            if (selection == null)
+                continue;
+
+            if (!selection.PropertyType.Type.HasNamedTypeSymbol(out var namedType))
+                continue;
+
+            // se não for classe ou struct, não faz flattening
+            if (namedType.TypeKind != TypeKind.Class && namedType.TypeKind != TypeKind.Struct)
+                continue;
+
+            // obtém as propriedades do tipo
+            var nestedProps = namedType.CreateTypeDescriptor().CreateProperties(p => p.GetMethod is not null);
+            foreach (var np in nestedProps.Where(IsSupportedType))
+            {
+                // cria nova propriedade com o nome composto
+                var newPropName = $"{flattenPropName}{np.Name}";
+                list.Add(new PropertyDescriptor(np.Type, newPropName, np.Symbol));
+            }
+        }
+
+        return list;
     }
 
     private static readonly HashSet<string> SupportedPrimitiveTypes = new(StringComparer.Ordinal)
@@ -369,11 +416,3 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
         return MatchOptions.GetOriginProperties(origin);
     }
 }
-
-//internal class AutoPropertyTargetPropertiesRetriever : ITargetPropertiesRetriever
-//{
-//    public IReadOnlyList<PropertyDescriptor> GetProperties(TypeDescriptor target)
-//    {
-//        throw new NotImplementedException();
-//    }
-//}

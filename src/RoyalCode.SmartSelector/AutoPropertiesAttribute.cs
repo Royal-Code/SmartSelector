@@ -16,19 +16,15 @@ public class AutoPropertiesAttribute : Attribute
     public string[]? Exclude { get; set; }
 
     /// <summary>
+    /// An array of property names to generate flattening for complex/nested properties.
+    /// Property names are case-sensitive.
+    /// </summary>
+    public string[]? Flattening { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the AutoPropertiesAttribute class.
     /// </summary>
     public AutoPropertiesAttribute() { }
-
-    /////// <summary>
-    /////// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
-    /////// automatic processing.
-    /////// </summary>
-    /////// <param name="excludeProperties">
-    ///////     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-    ///////     Can be empty to include all properties.
-    /////// </param>
-    ////public AutoPropertiesAttribute(params string[] excludeProperties) { }
 }
 
 /// <summary>
@@ -48,17 +44,13 @@ public class AutoPropertiesAttribute<TFrom> : Attribute
     public string[]? Exclude { get; set; }
 
     /// <summary>
+    /// An array of property names to generate flattening for complex/nested properties.
+    /// Property names are case-sensitive.
+    /// </summary>
+    public string[]? Flattening { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the AutoPropertiesAttribute class.
     /// </summary>
     public AutoPropertiesAttribute() { }
-
-    /////// <summary>
-    /////// Initializes a new instance of the AutoPropertiesAttribute class, specifying property names to exclude from
-    /////// automatic processing.
-    /////// </summary>
-    /////// <param name="excludeProperties">
-    ///////     An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-    ///////     Can be empty to include all properties.
-    /////// </param>
-    ////public AutoPropertiesAttribute(params string[] excludeProperties) { }
 }

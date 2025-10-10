@@ -6,7 +6,7 @@
 	</PropertyGroup>
 	<PropertyGroup>
 		<DotNetCoreVersion>8.0.20</DotNetCoreVersion>
-		<ExtSrcGenVer>0.1.7</ExtSrcGenVer>
+		<ExtSrcGenVer>0.1.8</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Ver>0.2.0</Ver>

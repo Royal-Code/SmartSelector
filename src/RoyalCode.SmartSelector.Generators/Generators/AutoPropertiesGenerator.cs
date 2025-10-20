@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Text;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
@@ -15,6 +14,7 @@ internal static class AutoPropertiesGenerator
     internal static MatchOptions MatchOptions { get; } = new()
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
+        AdditionalAssignDescriptorResolvers = [new AutoDetailsAssignDescriptorResolver()],
     };
 
     internal static bool Predicate(SyntaxNode node, CancellationToken token)
@@ -136,24 +136,36 @@ internal static class AutoPropertiesGenerator
         ITypeSymbol fromType,
         AttributeData autoPropertyAttribute)
     {
+        // gera o TypeDescriptor do fromType
+        var fromTypeDescriptor = TypeDescriptor.Create(fromType);
+
+        return CreateInformation(modelType, fromTypeDescriptor, autoPropertyAttribute);
+    }
+
+    internal static AutoPropertiesInformation CreateInformation(
+        TypeDescriptor modelType,
+        TypeDescriptor fromType,
+        AttributeData autoPropertyAttribute)
+    {
         var excluded = new HashSet<string>(StringComparer.Ordinal);
         var flattening = new HashSet<string>(StringComparer.Ordinal);
 
         // obtém Exclude de NamedArguments
         foreach (var namedArg in autoPropertyAttribute.NamedArguments)
             if (namedArg.Key == "Exclude" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
+            {
                 foreach (var v in namedArg.Value.Values)
                     if (v.Value is string s)
                         excluded.Add(s);
+            }
             else if (namedArg.Key == "Flattening" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
-                        foreach (var fv in namedArg.Value.Values)
-                            if (fv.Value is string fs)
-                                flattening.Add(fs);
+            {
+                foreach (var fv in namedArg.Value.Values)
+                    if (fv.Value is string fs)
+                        flattening.Add(fs);
+            }
 
-        // gera o TypeDescriptor do fromType
-        var fromTypeDescriptor = TypeDescriptor.Create(fromType);
-
-        return CreateInformation(modelType, fromTypeDescriptor, excluded, flattening);
+        return CreateInformation(modelType, fromType, excluded, flattening);
     }
 
     internal static AutoPropertiesInformation CreateInformation(
@@ -162,10 +174,19 @@ internal static class AutoPropertiesGenerator
         HashSet<string> excluded,
         HashSet<string>? flattening)
     {
+        var autoDetails = new List<AutoDetailsInformation>();
+
         // declared properties in model type are always excluded
         foreach (var p in modelType.CreateProperties(p => p.SetMethod is not null))
+        {
             excluded.Add(p.Name);
 
+            // processa se propriedade se tem atributo AutoDetails
+            if(AutoDetailsGenerator.TryCreate(p, fromType, out var autoDetailInfo))
+            {
+                autoDetails.Add(autoDetailInfo!);
+            }
+        }
         var sourceProps = fromType.CreateProperties(p => p.GetMethod is not null);
 
         // filtra propriedades do source,
@@ -192,7 +213,7 @@ internal static class AutoPropertiesGenerator
             generated.Add(new PropertyDescriptor(p.Type, p.Name, p.Symbol));
         }
 
-        return new AutoPropertiesInformation(modelType, [.. generated]);
+        return new AutoPropertiesInformation(modelType, [.. generated], [.. autoDetails]);
     }
 
     private static IReadOnlyList<PropertyDescriptor> CreateFlattening(
@@ -339,8 +360,6 @@ internal static class AutoPropertiesGenerator
         partialClass.FileName = $"{origin.Name}.AutoProperties.g.cs";
         partialClass.Generate(context);
     }
-
-
 }
 
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever
@@ -351,9 +370,12 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
 
     public IReadOnlyList<PropertyDescriptor> GetProperties(TypeDescriptor origin)
     {
+        var originProperties = MatchOptions.GetOriginProperties(origin);
+        origin.DefinedProperties = originProperties;
         var typeSymbol = origin.Symbol;
+
         if (typeSymbol == null)
-            return MatchOptions.GetOriginProperties(origin);
+            return originProperties;
 
         // Verifica se no type existe:
         // - o AutoPropertiesAttribute com AutoSelectAttribute<TFrom>
@@ -378,18 +400,18 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
 
             // se não tiver, retorna o padrão
             if (autoSelectAttribute == null)
-                return MatchOptions.GetOriginProperties(origin);
+                return originProperties;
 
             // obtém o tipo TFrom
             var fromType = autoSelectAttribute.AttributeClass?.TypeArguments.FirstOrDefault();
             if (fromType == null)
-                return MatchOptions.GetOriginProperties(origin);
+                return originProperties;
 
             // cria a informação
             var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoSelectAttribute);
 
             // pega as propriedades da origem mais as da informação
-            return [.. MatchOptions.GetOriginProperties(origin), .. info.Properties];
+            return [.. originProperties, .. info.Properties];
         }
 
         // obtém o AutoPropertiesAttribute<TFrom>
@@ -404,15 +426,64 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
             // obtém o tipo TFrom
             var fromType = autoPropertiesAttribute.AttributeClass?.TypeArguments.FirstOrDefault();
             if (fromType == null)
-                return MatchOptions.GetOriginProperties(origin);
+                return originProperties;
 
             // cria a informação
             var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoPropertiesAttribute);
 
             // pega as propriedades da origem mais as da informação
-            return [.. MatchOptions.GetOriginProperties(origin), .. info.Properties];
+            return [.. originProperties, .. info.Properties];
         }
 
-        return MatchOptions.GetOriginProperties(origin);
+        return originProperties;
+    }
+}
+
+internal class AutoDetailsAssignDescriptorResolver : IAssignDescriptorResolver
+{
+    public bool TryCreateAssignDescriptor(
+        TypeDescriptor leftType,
+        TypeDescriptor rightType,
+        SemanticModel model,
+        MatchOptions options,
+        out AssignDescriptor? descriptor)
+    {
+        descriptor = null;
+
+        // check if the left type has defined properties
+        if (!leftType.HasDefinedProperties())
+            return false;
+
+        // obtém propriedades do tipo de origem
+        var leftProperties = options.OriginPropertiesRetriever.GetProperties(leftType);
+
+        // valida se tem propriedades
+        if (leftProperties.Count == 0)
+            return false;
+
+        // obtém propriedades do tipo de destino
+        var rightProperties = options.TargetPropertiesRetriever.GetProperties(rightType);
+
+        // valida se tem propriedades
+        if (rightProperties.Count == 0)
+            return false;
+
+        // faz o match entre as propriedades
+        // match das propriedades da classe com o attributo e a classe definida no TFrom.
+        var matchSelection = MatchSelection.Create(leftType, leftProperties, rightType, rightProperties, model, options);
+
+        // se tem problemas, não é possível fazer o match.
+        if (matchSelection.HasMissingProperties(out _) || matchSelection.HasNotAssignableProperties(out _))
+        {
+            return false;
+        }
+
+        descriptor = new AssignDescriptor()
+        {
+            AssignType = AssignType.NewInstance,
+            InnerSelection = matchSelection
+        };
+
+        return true;
     }
 }

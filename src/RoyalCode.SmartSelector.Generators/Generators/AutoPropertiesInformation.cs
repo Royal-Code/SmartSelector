@@ -50,6 +50,20 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
                autoDetails?.SequenceEqual(other.autoDetails) == true;
     }
 
+    public override bool Equals(object obj)
+    {
+        return obj is AutoPropertiesInformation other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        int hashCode = 2147442367;
+        hashCode = (hashCode * -1521134295) + (diagnostics != null ? diagnostics.GetHashCode() : 0);
+        hashCode = (hashCode * -1521134295) + (properties != null ? properties.GetHashCode() : 0);
+        hashCode = (hashCode * -1521134295) + (autoDetails != null ? autoDetails.GetHashCode() : 0);
+        return hashCode;
+    }
+
     internal void Generate(SourceProductionContext context)
     {
         if (diagnostics is not null)
@@ -57,6 +71,14 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
             foreach (var diagnostic in diagnostics)
             {
                 context.ReportDiagnostic(diagnostic);
+            }
+        }
+
+        if (autoDetails is not null)
+        {
+            foreach (var autoDetail in autoDetails)
+            {
+                autoDetail.Generate(context);
             }
         }
 

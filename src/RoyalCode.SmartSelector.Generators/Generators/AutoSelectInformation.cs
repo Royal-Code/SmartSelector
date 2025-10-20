@@ -38,7 +38,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
         if (autoPropertyInformation is not null)
         {
-            AutoPropertiesGenerator.Generate(autoPropertyInformation, context);
+            autoPropertyInformation.Generate(context);
         }
 
         if (matchSelection is not null)

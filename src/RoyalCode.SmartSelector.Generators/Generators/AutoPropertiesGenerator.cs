@@ -10,11 +10,13 @@ internal static class AutoPropertiesGenerator
 
     private const string AutoPropertiesAttributeName = "AutoProperties";              // non generic form
     private const string AutoPropertiesGenericAttributeName = "AutoProperties";       // generic form base identifier
+    internal const string MapFromAttributeName = "MapFromAttribute";
 
     internal static MatchOptions MatchOptions { get; } = new()
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
         AdditionalAssignDescriptorResolvers = [new AutoDetailsAssignDescriptorResolver()],
+        PropertyNameResolvers = [new MapFromPropertyNameResolver()],
     };
 
     internal static bool Predicate(SyntaxNode node, CancellationToken token)
@@ -485,5 +487,109 @@ internal class AutoDetailsAssignDescriptorResolver : IAssignDescriptorResolver
         };
 
         return true;
+    }
+}
+
+internal class MapFromPropertyNameResolver : IPropertyNameResolver
+{
+    public bool TryResolvePropertyName(IPropertySymbol symbol, out string? propertyName)
+    {
+        propertyName = null;
+
+        // check if the symbol has the MapFrom attribute
+        var attr = symbol.GetAttributes()
+            .FirstOrDefault(attr => attr.AttributeClass?.Name == AutoPropertiesGenerator.MapFromAttributeName);
+
+        if (attr is not null)
+        {
+            // First, try constructor argument (preferred usage)
+            if (attr.ConstructorArguments.Length == 1)
+            {
+                propertyName = attr.ConstructorArguments[0].Value as string;
+                if (!string.IsNullOrEmpty(propertyName))
+                    return true;
+            }
+
+            // Fallback: try named argument on the attribute (PropertyName setter)
+            if (attr.NamedArguments.Length > 0)
+            {
+                var named = attr.NamedArguments.FirstOrDefault(a => a.Key == "PropertyName");
+                if (named.Value.Value is string s && !string.IsNullOrEmpty(s))
+                {
+                    propertyName = s;
+                    return true;
+                }
+            }
+
+            // Last resort: inspect declaration syntax to extract literal or nameof
+            // This handles cases where Roslyn didn't materialize ConstructorArguments in this pipeline
+            foreach (var decl in symbol.DeclaringSyntaxReferences)
+            {
+                var syntax = decl.GetSyntax();
+                if (syntax is not PropertyDeclarationSyntax pds)
+                    continue;
+
+                foreach (var al in pds.AttributeLists)
+                {
+                    foreach (var a in al.Attributes)
+                    {
+                        var nameText = a.Name switch
+                        {
+                            IdentifierNameSyntax id => id.Identifier.Text,
+                            GenericNameSyntax gn => gn.Identifier.Text,
+                            _ => a.Name.ToString()
+                        };
+
+                        if (!string.Equals(nameText, "MapFrom", StringComparison.Ordinal))
+                            continue;
+
+                        if (a.ArgumentList is { Arguments.Count: > 0 })
+                        {
+                            var expr = a.ArgumentList.Arguments[0].Expression;
+                            switch (expr)
+                            {
+                                case LiteralExpressionSyntax les:
+                                    var text = les.Token.ValueText;
+                                    if (!string.IsNullOrEmpty(text))
+                                    {
+                                        propertyName = text;
+                                        return true;
+                                    }
+                                    break;
+                                case InvocationExpressionSyntax ies:
+                                    // Handle nameof(Member) -> get last identifier as property name
+                                    if (ies.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax ident
+                                        && string.Equals(ident.Identifier.Text, "nameof", StringComparison.Ordinal)
+                                        && ies.ArgumentList.Arguments.Count == 1)
+                                    {
+                                        var argExpr = ies.ArgumentList.Arguments[0].Expression;
+                                        if (argExpr is IdentifierNameSyntax idArg)
+                                        {
+                                            propertyName = idArg.Identifier.Text;
+                                            if (!string.IsNullOrEmpty(propertyName))
+                                                return true;
+                                        }
+                                        else if (argExpr is MemberAccessExpressionSyntax mae)
+                                        {
+                                            propertyName = mae.Name.Identifier.Text;
+                                            if (!string.IsNullOrEmpty(propertyName))
+                                                return true;
+                                        }
+                                    }
+                                    break;
+                                case MemberAccessExpressionSyntax maeExpr:
+                                    // If provided directly as something like Product.Name (rare), take the right side
+                                    propertyName = maeExpr.Name.Identifier.Text;
+                                    if (!string.IsNullOrEmpty(propertyName))
+                                        return true;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -94,4 +94,20 @@ public class ProductDemoTests
         Assert.Contains(details, d => d.Name == "Hot dog 2");
         Assert.Contains(details, d => d.Name == "Hot dog 3");
     }
+
+    [Fact]
+    public void Create_CustomProductDetails_From_Product()
+    {
+        // arrange
+        var product = new Product("Hot dog 1");
+
+        // act
+        var details = CustomProductDetails.From(product);
+
+        // assert
+        Assert.NotNull(details);
+        Assert.Equal(product.Id, details.CustomId);
+        Assert.Equal(product.Name, details.CustomName);
+        Assert.Equal(product.IsActive, details.CustomIsActive);
+    }
 }

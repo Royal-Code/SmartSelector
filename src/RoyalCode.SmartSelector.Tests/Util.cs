@@ -30,6 +30,7 @@ internal static class Util
             MetadataReference.CreateFromFile(typeof(Task).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(AutoSelectAttribute<>).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(MapFromAttribute).Assembly.Location),
         };
 
         // create a compilation for the source code.

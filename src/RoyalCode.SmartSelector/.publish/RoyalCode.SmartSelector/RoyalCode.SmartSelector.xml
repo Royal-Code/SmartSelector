@@ -83,5 +83,17 @@
                 The type to convert from.
             </typeparam>
         </member>
+        <member name="T:RoyalCode.SmartSelector.MapFromAttribute">
+            <summary>
+            Indicates that the decorated property should map its value from another property with the specified name.
+            </summary>
+            <param name="PropertyName">The name of the property to map from.</param>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.MapFromAttribute.#ctor(System.String)">
+            <summary>
+            Indicates that the decorated property should map its value from another property with the specified name.
+            </summary>
+            <param name="PropertyName">The name of the property to map from.</param>
+        </member>
     </members>
 </doc>

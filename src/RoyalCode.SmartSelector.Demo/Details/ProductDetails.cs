@@ -11,3 +11,14 @@ public partial class ProductDetails
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
+
+[AutoSelect<Product>]
+public partial class CustomProductDetails
+{
+    [MapFrom("Id")]
+    public int CustomId { get; set; }
+    [MapFrom(nameof(Product.Name))]
+    public string CustomName { get; set; } = default!;
+    [MapFrom(nameof(Product.IsActive))]
+    public bool CustomIsActive { get; set; }
+}

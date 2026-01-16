@@ -27,11 +27,11 @@ internal class SelectLambdaGenerator : ValueNode
         // ......... a => new T
         // { 
         sb.Append(param).Append(" => new ").AppendLine(match.OriginType.Name)
-            .Ident(ident).Append('{');
+            .Indent(ident).Append('{');
 
         GeneratePropertyCode(ident + 1, sb, param, match.PropertyMatches);
 
-        sb.AppendLine().Ident(ident).Append('}');
+        sb.AppendLine().Indent(ident).Append('}');
 
         return sb.ToString();
     }
@@ -43,7 +43,7 @@ internal class SelectLambdaGenerator : ValueNode
             sb.AppendLine();
 
             //     PropertyName = 
-            sb.Ident(ident).Append(propMatch.Origin.Name).Append(" = ");
+            sb.Indent(ident).Append(propMatch.Origin.Name).Append(" = ");
 
             var assignDescriptor = propMatch.AssignDescriptor!;
             var assignGenerator = GetAssignGenerator(assignDescriptor);
@@ -109,11 +109,11 @@ internal class SelectLambdaGenerator : ValueNode
         inner.AddParentProperty(assign.Target);
 
         sb.Append("new ").AppendLine(assign.Origin.Type.Name)
-            .Ident(ident).Append("{");
+            .Indent(ident).Append("{");
         
         GeneratePropertyCode(ident + 1, sb, param, inner.PropertyMatches);
 
-        sb.AppendLine().Ident(ident).Append('}');
+        sb.AppendLine().Indent(ident).Append('}');
     }
 
     private static void AssignSelect(StringBuilder sb, int ident, char param, AssignProperties assign)
@@ -127,11 +127,11 @@ internal class SelectLambdaGenerator : ValueNode
         var nextParam = (char)(param + 1);
 
         sb.Append(nextParam).Append(" => new ").AppendLine(assign.Origin.Type.GenericType)
-            .Ident(ident).Append('{');
+            .Indent(ident).Append('{');
 
         GeneratePropertyCode(ident + 1, sb, nextParam, inner.PropertyMatches);
 
-        sb.AppendLine().Ident(ident).Append("})");
+        sb.AppendLine().Indent(ident).Append("})");
     }
 
     private delegate void AssignGenerator(StringBuilder sb, int ident, char param, AssignProperties assign);

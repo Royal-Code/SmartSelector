@@ -39,7 +39,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="$(DotNetCoreVersion)" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="$(AspVer)" />
 	</ItemGroup>
 
 	<ItemGroup>

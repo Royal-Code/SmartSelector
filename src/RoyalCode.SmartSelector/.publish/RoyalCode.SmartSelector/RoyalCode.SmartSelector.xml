@@ -4,6 +4,72 @@
         <name>RoyalCode.SmartSelector</name>
     </assembly>
     <members>
+        <member name="T:RoyalCode.SmartSelector.AutoDetailsAttribute">
+            <summary>
+            <para>
+                This attribute should be used in properties of DTO/Details class types that have 
+                the <see cref="T:RoyalCode.SmartSelector.AutoPropertiesAttribute`1"/> or
+                <see cref="T:RoyalCode.SmartSelector.AutoSelectAttribute`1"/> with <see cref="T:RoyalCode.SmartSelector.AutoPropertiesAttribute"/>.
+            </para>
+            <para>
+                The class of the property type will be generated.
+                <br />
+                This generation will be similar to AutoProperties, using the property related to TFrom as the source type.
+            </para>
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude">
+            <summary>
+            An array of property names to exclude from automatic property handling. Property names are case-sensitive.
+            Can be empty to include all properties.
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening">
+            <summary>
+            An array of property names to generate flattening for complex/nested properties.
+            Property names are case-sensitive.
+            </summary>
+        </member>
+        <member name="T:RoyalCode.SmartSelector.AutoPropertiesAttribute">
+            <summary>
+            <para>
+                This attribute is used with the <see cref="T:RoyalCode.SmartSelector.AutoSelectAttribute`1"/> 
+                to indicate that all public properties of the <c>TFrom</c> class should be included in the selection.
+            </para>
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude">
+            <summary>
+            An array of property names to exclude from automatic property handling. Property names are case-sensitive.
+            Can be empty to include all properties.
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening">
+            <summary>
+            An array of property names to generate flattening for complex/nested properties.
+            Property names are case-sensitive.
+            </summary>
+        </member>
+        <member name="T:RoyalCode.SmartSelector.AutoPropertiesAttribute`1">
+            <summary>
+            Specifies that a class should automatically implement properties based on the members of the specified type.
+            </summary>
+            <typeparam name="TFrom">
+                The type whose members are used to generate properties for the attributed class.
+            </typeparam>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute`1.Exclude">
+            <summary>
+            An array of property names to exclude from automatic property handling. Property names are case-sensitive.
+            Can be empty to include all properties.
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute`1.Flattening">
+            <summary>
+            An array of property names to generate flattening for complex/nested properties.
+            Property names are case-sensitive.
+            </summary>
+        </member>
         <member name="T:RoyalCode.SmartSelector.AutoSelectAttribute`1">
             <summary>
             <para>

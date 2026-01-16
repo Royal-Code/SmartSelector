@@ -3,7 +3,7 @@
 	<Import Project="../libs.targets"/>
 	
 	<PropertyGroup>
-		<TargetFramework>$(LibFrwkVer)</TargetFramework>
+		<TargetFrameworks>$(LibFrwkVer)</TargetFrameworks>
 
 		<Version>$(Ver)$(Prev)</Version>
 		<AssemblyVersion>$(Ver)</AssemblyVersion>

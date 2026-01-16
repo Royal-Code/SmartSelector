@@ -17,11 +17,14 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
 	</ItemGroup>
 	<!--<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="$(DotNetCoreVersion)" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="$(DotNetCoreVersion)" />
-		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="$(DotNetCoreVersion)" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="$(AspVer)" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="$(AspVer)" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="$(AspVer)" />
 	</ItemGroup>-->
 	<ItemGroup>
 		<Using Include="Xunit" />
 	</ItemGroup>
+	<PropertyGroup>
+		<AspVer>10.0.0</AspVer>
+	</PropertyGroup>
 </Project>

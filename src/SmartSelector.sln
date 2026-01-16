@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".items", ".items", "{8EC462
 		Directory.Build.props = Directory.Build.props
 		docs.md = docs.md
 		libs.targets = libs.targets
+		..\README.md = ..\README.md
 		tests.targets = tests.targets
 	EndProjectSection
 EndProject

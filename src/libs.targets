@@ -24,7 +24,4 @@
 		<None Include="../icon2.png" Pack="true" PackagePath="/"/>
 		<None Include="../../README.md" Pack="true" PackagePath="/"/>
 	</ItemGroup>
-	<PropertyGroup>
-		<DotNetCoreVersion Condition="'$(TargetFramework)' == 'net8'">8.0.0</DotNetCoreVersion>
-	</PropertyGroup>
 </Project>

@@ -1,15 +1,14 @@
 <Project>
 	<PropertyGroup>
-		<LibFrwkVer>net8.0</LibFrwkVer>
-		<TestFrwkVer>net8.0</TestFrwkVer>
+		<LibFrwkVer>net8.0;net9.0;net10.0</LibFrwkVer>
+		<TestFrwkVer>net10.0</TestFrwkVer>
 		<GenFrwkVer>netstandard2.0</GenFrwkVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<DotNetCoreVersion>8.0.20</DotNetCoreVersion>
-		<ExtSrcGenVer>0.1.10</ExtSrcGenVer>
+		<ExtSrcGenVer>0.1.12</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<Ver>0.3.0</Ver>
+		<Ver>0.4.0</Ver>
 		<Prev></Prev>
 	</PropertyGroup>
 </Project>

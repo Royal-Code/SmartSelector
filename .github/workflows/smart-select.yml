@@ -19,12 +19,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+          include-prerelease: true
 
       - name: Build and pack SmartSearch Abstractions
-        run: dotnet build ./src/RoyalCode.SmartSelector/RoyalCode.SmartSelector.csproj -c Release -o ./publish/RoyalCode.SmartSelector
+        run: dotnet build ./src/RoyalCode.SmartSelector/RoyalCode.SmartSelector.csproj -c Release
         
       - name: Build and pack SmartSearch Persistence Abstractions
-        run: dotnet build ./src/RoyalCode.SmartSelector.Generators/RoyalCode.SmartSelector.Generators.csproj -c Release -o ./publish/RoyalCode.SmartSelector.Generators
+        run: dotnet build ./src/RoyalCode.SmartSelector.Generators/RoyalCode.SmartSelector.Generators.csproj -c Release
 
       - name: Publish
         run: dotnet nuget push ./**/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

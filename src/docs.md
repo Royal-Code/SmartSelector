@@ -12,7 +12,8 @@ Gerador de código (Roslyn Source Generator) para criação de projeções (DTOs
 6. Propriedades Suportadas e Filtragem
 7. Exclusão de Propriedades
 8. Flattening (Projeção de Caminhos Aninhados)
-9. FAQ Rápido
+9. MapFrom (Alias explícito de origem)
+ 10. FAQ Rápido
 
 ---
 ## 1. Visão Geral
@@ -193,10 +194,50 @@ A convenção concatena os identificadores do caminho em PascalCase.
 | `AutoSelect<TFrom>` | Ativa geração de expressão + extensões. |
 | `AutoProperties` / `AutoProperties<TFrom>` | Geração automática de propriedades simples. |
 | Flattening | Casamento por convenção de nomes concatenados para acessar membros aninhados. |
+| `MapFrom` | Mapeia explicitamente a origem de uma propriedade do DTO usando nome de membro da origem. |
 
 ---
 ## 4. Atributos Disponíveis
-Mesmos comportamentos já descritos anteriormente (`AutoSelect<TFrom>`, `AutoProperties`, `AutoProperties<TFrom>`, `Exclude`).
+Mesmos comportamentos já descritos anteriormente (`AutoSelect<TFrom>`, `AutoProperties`, `AutoProperties<TFrom>`, `Exclude`, `MapFrom`).
+
+### 4.1 `MapFromAttribute`
+Permite definir diretamente de qual propriedade de `TFrom` uma propriedade do DTO será mapeada, sem depender de convenções de nome (flattening) ou posição.
+
+Assinatura:
+```csharp
+[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+public sealed class MapFromAttribute : Attribute
+{
+    public MapFromAttribute(string propertyName) { PropertyName = propertyName; }
+    public string PropertyName { get; set; }
+}
+```
+
+Uso:
+```csharp
+[AutoSelect<Product>]
+public partial class CustomProductDetails
+{
+    [MapFrom("Id")]                   // literal
+    public Guid CustomId { get; set; }
+
+    [MapFrom(nameof(Product.Name))]    // nameof evita typos
+    public string CustomName { get; set; }
+
+    [MapFrom(nameof(Product.Active))]
+    public bool CustomActive { get; set; }
+}
+```
+
+Expressão gerada (trecho real):
+```csharp
+new CustomProductDetails
+{
+    CustomId = a.Id,
+    CustomName = a.Name,
+    CustomActive = a.Active
+}
+```
 
 ---
 ## 5. Membros Gerados
@@ -238,10 +279,25 @@ Exemplos:
 
 Limitações atuais do flattening:
 - Não há desambiguação quando múltiplos caminhos possíveis partilham prefixo idêntico; o comportamento depende da ordem de descoberta.
-- Não há hoje suporte a mapeamento customizado (ex: abreviações, alias).
+- Para alias explícito de origem, utilize `MapFrom`.
 
 ---
-## 9. FAQ Rápido
+## 9. MapFrom (Alias explícito de origem)
+`MapFrom` é a forma suportada de declarar alias/renome de mapeamento diretamente no DTO.
+
+Quando usar:
+- Preferir quando o nome do DTO não segue a convenção de flattening ou quando há colisões/ambiguidade.
+- Útil para garantir clareza e evitar dependência da heurística de caminhos.
+
+Boas práticas:
+- Use `nameof(T.Prop)` sempre que possível para segurança em refactors.
+- Evite caminhos inexistentes; o gerador emitirá diagnósticos em caso de propriedade inválida.
+
+Interação com EF Core:
+- O mapeamento gerado por `MapFrom` continua parte da `Expression` e é traduzível pelo provedor.
+
+---
+## 10. FAQ Rápido
 **Flattening precisa de atributo?** Não, é por convenção do nome.  
 **Qual profundidade máxima?** Não fixada; limitada apenas pela cadeia navegável e heurística de casamento.  
 **Posso misturar flattening e objetos aninhados?** Sim.  

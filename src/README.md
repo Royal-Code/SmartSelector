@@ -7,6 +7,7 @@ Gerador/Source Generator para criar automaticamente projeções (`Expression<Fun
 - `[AutoProperties]` ou `[AutoProperties<TFrom>]`: gera propriedades simples automaticamente (primitivos, string, bool, DateTime, enum, struct, coleções simples `IEnumerable<T>` desses tipos).
 - Flattening por convenção: nomes concatenados em PascalCase resolvem cadeias aninhadas (ex.: `CustomerAddressCountryRegionName` ? `a.Customer.Address.Country.Region.Name`).
 - Exclusão de propriedades: `Exclude = [ nameof(Entity.Prop) ]`.
+- `[MapFrom("SourceProp")]`: mapeia explicitamente uma propriedade do DTO a partir de um nome de propriedade de origem (suporta `string` literal e `nameof(...)`).
 - Diagnósticos de compilação para uso incorreto, tipos incompatíveis e conflitos.
 
 ## Quickstart
@@ -185,7 +186,6 @@ public partial class OrderFlat
 - Uso incorreto de atributos (`RCSS003`–`RCSS005`).
 
 ## Limitações Resumidas
-- Sem renome/alias explícito ainda (`MapFrom`).
 - Sem transformações de tipo (formatters / custom converters).
 - Desambiguação de flattening limitada em colisões de prefixo.
 

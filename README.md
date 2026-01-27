@@ -1,6 +1,7 @@
 # SmartSelector
 
-Gerador/Source Generator para criar automaticamente projeções (`Expression<Func<TFrom, TDto>>`), métodos auxiliares e propriedades em DTOs, reduzindo drasticamente boilerplate em consultas LINQ / EF Core.
+Gerador/Source Generator para criar automaticamente projeções (`Expression<Func<TFrom, TDto>>`),
+métodos auxiliares e propriedades em DTOs, reduzindo drasticamente boilerplate em consultas LINQ / EF Core.
 
 ## Principais Recursos
 - `[AutoSelect<TFrom>]`: gera expressão de seleção, método `From`, extensões `Select{Dto}` / `To{Dto}`.

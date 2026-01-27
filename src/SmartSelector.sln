@@ -9,7 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".items", ".items", "{8EC462
 	ProjectSection(SolutionItems) = preProject
 		.github\copilot-instructions.md = .github\copilot-instructions.md
 		Directory.Build.props = Directory.Build.props
-		docs.md = docs.md
 		libs.targets = libs.targets
 		..\README.md = ..\README.md
 		..\.github\workflows\smart-select.yml = ..\.github\workflows\smart-select.yml
@@ -27,6 +26,15 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoyalCode.SmartSelector.Demo", "RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj", "{2746860F-77A4-47CE-B284-A1F23CDF02A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoyalCode.SmartSelector.Benchmarks", "RoyalCode.SmartSelector.Benchmarks\RoyalCode.SmartSelector.Benchmarks.csproj", "{98D04C33-1439-4CF1-BC22-ABD01E7F4BF3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{1FF87D34-490D-4987-B483-74BBB0265CFE}"
+	ProjectSection(SolutionItems) = preProject
+		docs.md = docs.md
+		.docs\problems.md = .docs\problems.md
+		.docs\search.md = .docs\search.md
+		.docs\selector.md = .docs\selector.md
+		.docs\validations.md = .docs\validations.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -108,6 +116,7 @@ Global
 		{91DF0C7E-D88E-496A-908C-EFAE23A92240} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{2746860F-77A4-47CE-B284-A1F23CDF02A5} = {F82C3029-520B-4B6A-9D0B-5E240999873F}
 		{98D04C33-1439-4CF1-BC22-ABD01E7F4BF3} = {F82C3029-520B-4B6A-9D0B-5E240999873F}
+		{1FF87D34-490D-4987-B483-74BBB0265CFE} = {8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3597CAB3-17AD-45BB-8829-54E4B9A311AD}

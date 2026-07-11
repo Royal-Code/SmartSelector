@@ -93,6 +93,10 @@ internal static class AutoDetailsGenerator
         {
             detailsClass.Modifiers.Private();
         }
+        else
+        {
+            detailsClass.Modifiers.Public();
+        }
 
         // 1.2 - partial, para o desenvolvedor poder estender
         detailsClass.Modifiers.Partial();

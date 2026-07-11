@@ -69,7 +69,7 @@ public partial class CustomerDetails
 
 namespace Tests.SmartSelector.Models;
 
-public class AddressDetails
+public partial class AddressDetails
 {
     public string City { get; set; }
 

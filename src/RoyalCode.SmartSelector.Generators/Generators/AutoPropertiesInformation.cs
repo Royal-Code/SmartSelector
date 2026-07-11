@@ -6,7 +6,7 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
 {
     private readonly Diagnostic[]? diagnostics;
     private readonly PropertyDescriptor[]? properties;
-    private readonly TypeDescriptor originType;
+    private readonly TypeDescriptor? originType;
     private readonly AutoDetailsInformation[]? autoDetails;
 
     public AutoPropertiesInformation(Diagnostic diagnostic)
@@ -31,11 +31,11 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
 
     public PropertyDescriptor[] Properties => properties ?? [];
 
-    public TypeDescriptor OriginType => originType;
+    public TypeDescriptor? OriginType => originType;
 
     public AutoDetailsInformation[] AutoDetails => autoDetails ?? [];
 
-    public bool Equals(AutoPropertiesInformation other)
+    public bool Equals(AutoPropertiesInformation? other)
     {
         if (other == null)
         {
@@ -45,23 +45,51 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         {
             return true;
         }
-        return diagnostics?.SequenceEqual(other.diagnostics) == true &&
-               properties?.SequenceEqual(other.properties) == true &&
-               autoDetails?.SequenceEqual(other.autoDetails) == true;
+        return SequenceEqual(diagnostics, other.diagnostics) &&
+               SequenceEqual(properties, other.properties) &&
+               Equals(originType, other.originType) &&
+               SequenceEqual(autoDetails, other.autoDetails);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return obj is AutoPropertiesInformation other && Equals(other);
     }
 
     public override int GetHashCode()
     {
-        int hashCode = 2147442367;
-        hashCode = (hashCode * -1521134295) + (diagnostics != null ? diagnostics.GetHashCode() : 0);
-        hashCode = (hashCode * -1521134295) + (properties != null ? properties.GetHashCode() : 0);
-        hashCode = (hashCode * -1521134295) + (autoDetails != null ? autoDetails.GetHashCode() : 0);
-        return hashCode;
+        unchecked
+        {
+            var hashCode = 17;
+            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + SequenceHashCode(properties);
+            hashCode = (hashCode * 31) + (originType?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 31) + SequenceHashCode(autoDetails);
+            return hashCode;
+        }
+    }
+
+    private static bool SequenceEqual<T>(T[]? left, T[]? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        return left is not null && right is not null && left.SequenceEqual(right);
+    }
+
+    private static int SequenceHashCode<T>(T[]? values)
+    {
+        if (values is null)
+            return 0;
+
+        unchecked
+        {
+            var hashCode = 17;
+            foreach (var value in values)
+                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
+
+            return hashCode;
+        }
     }
 
     internal void Generate(SourceProductionContext context)

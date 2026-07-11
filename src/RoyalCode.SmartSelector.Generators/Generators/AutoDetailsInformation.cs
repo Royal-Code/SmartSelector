@@ -22,7 +22,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         this.autoPropertiesInformation = autoPropertiesInformation;
     }
 
-    public bool Equals(AutoDetailsInformation other)
+    public bool Equals(AutoDetailsInformation? other)
     {
         if (other == null)
         {
@@ -32,23 +32,49 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         {
             return true;
         }
-        return diagnostics?.SequenceEqual(other.diagnostics) == true &&
+        return SequenceEqual(diagnostics, other.diagnostics) &&
                detailsClassName == other.detailsClassName &&
                Equals(autoPropertiesInformation, other.autoPropertiesInformation);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return obj is AutoDetailsInformation other && Equals(other);
     }
 
     public override int GetHashCode()
     {
-        var hashCode = 2147442367;
-        hashCode = (hashCode * -1521134295) + (diagnostics != null ? diagnostics.GetHashCode() : 0);
-        hashCode = (hashCode * -1521134295) + (detailsClassName != null ? detailsClassName.GetHashCode() : 0);
-        hashCode = (hashCode * -1521134295) + (autoPropertiesInformation != null ? autoPropertiesInformation.GetHashCode() : 0);
-        return hashCode;
+        unchecked
+        {
+            var hashCode = 17;
+            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + (detailsClassName?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 31) + (autoPropertiesInformation?.GetHashCode() ?? 0);
+            return hashCode;
+        }
+    }
+
+    private static bool SequenceEqual<T>(T[]? left, T[]? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        return left is not null && right is not null && left.SequenceEqual(right);
+    }
+
+    private static int SequenceHashCode<T>(T[]? values)
+    {
+        if (values is null)
+            return 0;
+
+        unchecked
+        {
+            var hashCode = 17;
+            foreach (var value in values)
+                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
+
+            return hashCode;
+        }
     }
 
     internal void Generate(SourceProductionContext context)

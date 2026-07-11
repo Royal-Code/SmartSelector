@@ -47,7 +47,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         }
     }
 
-    public bool Equals(AutoSelectInformation other)
+    public bool Equals(AutoSelectInformation? other)
     {
         if (other is null)
             return false;
@@ -55,8 +55,9 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         if (ReferenceEquals(this, other))
             return true;
 
-        return diagnostics?.SequenceEqual(other.diagnostics) == true &&
-               matchSelection?.Equals(other.matchSelection!) == true;
+        return SequenceEqual(diagnostics, other.diagnostics) &&
+               Equals(matchSelection, other.matchSelection) &&
+               Equals(autoPropertyInformation, other.autoPropertyInformation);
     }
 
     public override bool Equals(object? obj)
@@ -66,9 +67,36 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
     public override int GetHashCode()
     {
-        int hashCode = 2147442367;
-        hashCode = hashCode * -1521134295 + EqualityComparer<Diagnostic[]?>.Default.GetHashCode(diagnostics);
-        hashCode = hashCode * -1521134295 + EqualityComparer<MatchSelection?>.Default.GetHashCode(matchSelection);
-        return hashCode;
+        unchecked
+        {
+            var hashCode = 17;
+            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + (matchSelection?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 31) + (autoPropertyInformation?.GetHashCode() ?? 0);
+            return hashCode;
+        }
+    }
+
+    private static bool SequenceEqual<T>(T[]? left, T[]? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        return left is not null && right is not null && left.SequenceEqual(right);
+    }
+
+    private static int SequenceHashCode<T>(T[]? values)
+    {
+        if (values is null)
+            return 0;
+
+        unchecked
+        {
+            var hashCode = 17;
+            foreach (var value in values)
+                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
+
+            return hashCode;
+        }
     }
 }

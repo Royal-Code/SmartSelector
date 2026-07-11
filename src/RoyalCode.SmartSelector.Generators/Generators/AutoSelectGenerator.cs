@@ -7,10 +7,17 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal static class AutoSelectGenerator
 {
+    private static readonly SymbolDisplayFormat TypeNameFormat = new(
+        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+        genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+        miscellaneousOptions:
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     public const string AutoSelectAttributeFullName = "RoyalCode.SmartSelector.AutoSelectAttribute`1";
     public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
 
-    private const string AutoSelectAttributeName = "AutoSelect";
     private const string AutoPropertiesAttributeName = "AutoProperties";
 
     public static bool Predicate(SyntaxNode node, CancellationToken _)
@@ -50,8 +57,11 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
-        // lê o atributo AutoSelectAttribute
-        if (!classDeclaration.TryGetAttribute(AutoSelectAttributeName, out AttributeSyntax? attr))
+        // Lê o atributo semanticamente. O argumento pode ter qualquer forma de nome de tipo válida
+        // em C# (qualificado, alias global, tipo aninhado ou tipo genérico).
+        var autoSelectAttribute = context.Attributes.FirstOrDefault();
+        var fromSymbol = autoSelectAttribute?.AttributeClass?.TypeArguments.FirstOrDefault();
+        if (fromSymbol is null)
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
@@ -70,12 +80,8 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
-        // extrai o tipo from
-        var syntax = (GenericNameSyntax)attr!.Name;
-        var fromSyntaxType = syntax.TypeArgumentList.Arguments[0];
-
-        // from type deve ser uma classe
-        if (fromSyntaxType is not IdentifierNameSyntax fromIdentifierName)
+        // O tipo de origem precisa ser uma classe.
+        if (fromSymbol.TypeKind != TypeKind.Class)
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
@@ -84,21 +90,12 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
-        var fromType = TypeDescriptor.Create(fromSyntaxType, context.SemanticModel);
+        var symbolType = TypeDescriptor.Create(fromSymbol);
+        var fromType = new TypeDescriptor(
+            fromSymbol.ToDisplayString(TypeNameFormat),
+            symbolType.Namespaces,
+            fromSymbol);
         var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
-
-        // obtém o símbolo do fromType
-        var fromSymbol = fromType.Symbol;
-        
-        // se não existe o símbolo, não é um tipo válido
-        if (fromSymbol is null)
-        {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
-                location: classDeclaration.Identifier.GetLocation(),
-                "Unsupported type for AutoSelectAttribute, it must be a class.");
-
-            return new AutoSelectInformation(diagnostic);
-        }
 
         // verifica se existe o atributo AutoProperty na classe
         AutoPropertiesInformation? propertiesInfo = null;
@@ -176,6 +173,10 @@ internal static class AutoSelectGenerator
     {
         // gera o código de seleção automática
 
+        // TypeDescriptor.Name representa a sintaxe completa do tipo e pode conter pontos ou
+        // argumentos genéricos. Nomes de membros e parâmetros precisam usar apenas o identificador.
+        var targetTypeIdentifier = match.TargetType.Symbol?.Name ?? match.TargetType.Name;
+
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(match.OriginType.Name, match.OriginType.Namespaces[0]);
 
@@ -206,7 +207,7 @@ internal static class AutoSelectGenerator
             [match.TargetType.Namespaces[0], match.OriginType.Namespaces[0], "System"], null);
 
         // 1.2.2 cria o campo privado para a func "select{Target}Func"
-        var funcField = new FieldGenerator(funcType, $"select{match.TargetType.Name}Func", false);
+        var funcField = new FieldGenerator(funcType, $"select{targetTypeIdentifier}Func", false);
         funcField.Modifiers.Private();
         funcField.Modifiers.Static();
 
@@ -221,7 +222,7 @@ internal static class AutoSelectGenerator
 
         // 1.3.2 cria a propriedade expression: Expression<Func<Target, Origin>> Select{Target}Expression
         var expressionProperty = new PropertyGenerator(
-            expressionType, $"Select{match.TargetType.Name}Expression", true, false);
+            expressionType, $"Select{targetTypeIdentifier}Expression", true, false);
 
         expressionProperty.Modifiers.Public();
         expressionProperty.Modifiers.Static();
@@ -242,7 +243,7 @@ internal static class AutoSelectGenerator
         method.UseArrow = true;
 
         // 1.4.2 cria o parâmetro do método: Target target
-        var paramName = match.TargetType.Name.ToLowerCamelCase();
+        var paramName = targetTypeIdentifier.ToLowerCamelCase();
         method.Parameters.Add(
             new ParameterGenerator(
                 new ParameterDescriptor(
@@ -250,7 +251,7 @@ internal static class AutoSelectGenerator
 
         // 1.4.3 cria o comando de retorno
         method.Commands.Add(new CompileLambdaGenerator(
-            match.TargetType.Name, paramName));
+            targetTypeIdentifier, paramName));
 
         // 1.4.4 adiciona o método à classe
         partialClass.Methods.Add(method);
@@ -348,7 +349,7 @@ internal static class AutoSelectGenerator
         toMethod.UseArrow = true;
 
         // 2.3.2 cria o parâmetro do método: Target target
-        var toParamName = match.TargetType.Name.ToLowerCamelCase();
+        var toParamName = targetTypeIdentifier.ToLowerCamelCase();
         toMethod.Parameters.Add(
             new ParameterGenerator(new ParameterDescriptor(match.TargetType, toParamName))
             { 

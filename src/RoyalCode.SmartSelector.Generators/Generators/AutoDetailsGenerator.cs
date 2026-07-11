@@ -95,7 +95,7 @@ internal static class AutoDetailsGenerator
         }
 
         // 1.2 - partial, para o desenvolvedor poder estender
-        detailsClass.Modifiers.Public();
+        detailsClass.Modifiers.Partial();
 
         // 2 - Criação das propriedades públicas com get/set
         foreach (var p in properties)

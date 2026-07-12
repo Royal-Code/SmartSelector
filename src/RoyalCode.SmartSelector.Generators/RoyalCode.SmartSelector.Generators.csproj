@@ -13,24 +13,30 @@
 		<Version>$(Ver)$(Prev)</Version>
 		<AssemblyVersion>$(Ver)</AssemblyVersion>
 		<FileVersion>$(Ver)</FileVersion>
+
+		<RoslynVersion Condition="'$(RoslynVersion)' == ''">5.6.0</RoslynVersion>
+		<DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/obj/**;$(MSBuildProjectDirectory)/bin/**</DefaultItemExcludes>
 		
-		<NoWarn>$(NoWarn);NU5128;NU1900</NoWarn>	
+		<NoWarn>$(NoWarn);NU5128</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
-		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="$(ExtSrcGenVer)" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" PrivateAssets="all" />
+		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="$(ExtSrcGenVer)" GeneratePathProperty="true" PrivateAssets="all" />
 	</ItemGroup>
 
-	<Target BeforeTargets="Build" Name="Generator">
-		<!-- Package items -->
-		<ItemGroup>
-			<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-			<Analyzer Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" />
-			<None Include="$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\$(ExtSrcGenVer)\lib\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-		</ItemGroup>
+	<Target BeforeTargets="GenerateNuspec" Name="BuildRoslynVariants" Condition="'$(SkipRoslynVariantBuild)' != 'true'">
+		<Exec Command="dotnet build &quot;$(MSBuildProjectFullPath)&quot; -c $(Configuration) -t:Rebuild -p:RoslynVersion=4.8.0 -p:BaseIntermediateOutputPath=&quot;$(MSBuildProjectDirectory)/obj/roslyn4.8/&quot; -p:BaseOutputPath=&quot;$(MSBuildProjectDirectory)/bin/roslyn4.8/&quot; -p:GeneratePackageOnBuild=false -p:SkipRoslynVariantBuild=true" />
+		<Exec Command="dotnet build &quot;$(MSBuildProjectFullPath)&quot; -c $(Configuration) -t:Rebuild -p:RoslynVersion=5.6.0 -p:BaseIntermediateOutputPath=&quot;$(MSBuildProjectDirectory)/obj/roslyn5.6/&quot; -p:BaseOutputPath=&quot;$(MSBuildProjectDirectory)/bin/roslyn5.6/&quot; -p:GeneratePackageOnBuild=false -p:SkipRoslynVariantBuild=true" />
 	</Target>
+
+	<ItemGroup>
+		<None Include="$(MSBuildProjectDirectory)/bin/roslyn4.8/$(Configuration)/$(TargetFramework)/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/roslyn4.8/cs" Visible="false" />
+		<None Include="$(PkgRoyalCode_Extensions_SourceGenerator)/lib/netstandard2.0/RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn4.8/cs" Visible="false" />
+		<None Include="$(MSBuildProjectDirectory)/bin/roslyn5.6/$(Configuration)/$(TargetFramework)/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/roslyn5.6/cs" Visible="false" />
+		<None Include="$(PkgRoyalCode_Extensions_SourceGenerator)/lib/netstandard2.0/RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn5.6/cs" Visible="false" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<AdditionalFiles Include="../AnalyzerReleases.Shipped.md" />

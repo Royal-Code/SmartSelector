@@ -557,12 +557,12 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Trocar `$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\...` por `GeneratePathProperty="true"` + `$(PKGRoyalCode_Extensions_SourceGenerator)` nos 3 csproj que usam o caminho.
-- [ ] Reavaliar `NoWarn` de `NU1900` no generator; remover se o restore não o exigir mais.
-- [ ] No pacote externo 0.1.14, baixar `Microsoft.CodeAnalysis.*` para 4.8.0, corrigir os contratos de equality/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection`, e eliminar os caches estáticos de descritores que retêm símbolos; cobrir as correções com testes antes do release.
-- [ ] Aplicar DF15: multi-target do generator por versão de Roslyn (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`) conforme validado na Fase 0; testes podem permanecer em versão mais nova.
-- [ ] Inspecionar o `.nupkg` gerado (conteúdo das pastas `analyzers/dotnet/...`, incluindo o `RoyalCode.Extensions.SourceGenerator.dll` em cada pasta roslyn quando multi-target).
-- [ ] Documentar no README o SDK mínimo exigido por variante, citando a matriz da Fase 0.
+- [x] Trocar `$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\...` por `GeneratePathProperty="true"` + `$(PKGRoyalCode_Extensions_SourceGenerator)` nos 3 csproj que usam o caminho.
+- [x] Reavaliar `NoWarn` de `NU1900` no generator; remover se o restore não o exigir mais.
+- [x] No pacote externo 0.1.14, baixar `Microsoft.CodeAnalysis.CSharp` para 4.8.0 e usar uma versão compatível de `Microsoft.CodeAnalysis.Analyzers`, corrigir os contratos de equality/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection`, e eliminar os caches estáticos de descritores que retêm símbolos; cobrir as correções com testes antes do release.
+- [x] Aplicar DF15: multi-target do generator por versão de Roslyn (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`) conforme validado na Fase 0; testes podem permanecer em versão mais nova.
+- [x] Inspecionar o `.nupkg` gerado (conteúdo das pastas `analyzers/dotnet/...`, incluindo o `RoyalCode.Extensions.SourceGenerator.dll` em cada pasta roslyn quando multi-target).
+- [x] Documentar no README o SDK mínimo exigido por variante, citando a matriz da Fase 0.
 
 **Critérios de aceite:** externo 0.1.14 publicado com testes de equality/hash e sem caches estáticos que retenham símbolos; `dotnet pack` do generator produz `.nupkg` com layout multi-target correto; projeto de consumo em SDK 8.0.x compila com o generator ativo (verificado com o `.nupkg`); build limpo após remoção do caminho hardcoded.
 
@@ -570,7 +570,17 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 8
 
-*a preencher*
+**Estado:** implementação e validação concluídas; o critério de publicação permanece pendente.
+
+- O pacote externo foi atualizado para `RoyalCode.Extensions.SourceGenerator` 0.1.14 no repositório `RoyalCode/Utils`, commit `b141485` (`fix: harden source generator descriptor contracts`). `Microsoft.CodeAnalysis.CSharp` foi reduzido para 4.8.0; `Microsoft.CodeAnalysis.Analyzers` ficou em 3.3.4 porque não existe versão 4.8.0 desse pacote.
+- Os contratos de igualdade/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection` foram corrigidos. Os caches estáticos de `CancellationToken` e `void` que podiam reter símbolos/compilações foram removidos. A suíte externa passou com 30/30 testes; build Release com 0 avisos e 0 erros.
+- O `.nupkg` externo 0.1.14 foi gerado localmente com metadado de repositório apontando para o commit `b141485`. Em 12/07/2026, o feed público do NuGet ainda lista somente até 0.1.13 e não há API key de publicação configurada neste ambiente.
+- Os caminhos baseados em `$(NuGetPackageRoot)` foram substituídos por `GeneratePathProperty`; `NU1900` foi removido de `NoWarn` sem reaparecer no restore.
+- O generator passou a produzir variantes Roslyn 4.8 e 5.6. O pacote `RoyalCode.SmartSelector.Generators.0.5.0.nupkg` contém o generator e `RoyalCode.Extensions.SourceGenerator.dll` em `analyzers/dotnet/roslyn4.8/cs` e `analyzers/dotnet/roslyn5.6/cs`; as duas cópias da auxiliar correspondem ao binário 0.1.14 testado.
+- A matriz real de consumo do `.nupkg` passou: SDK 8.0.422 e 9.0.100 carregaram `roslyn4.8`; SDK 10.0.301 carregou `roslyn5.6`; todos compilaram e executaram com o generator ativo.
+- Validação do repositório: solução compilada sem erros (16 avisos preexistentes nos modelos esperados), suíte principal 54/54, Demo 25/25 e Benchmarks Release com 0 avisos/0 erros.
+
+Para encerrar o critério de aceite, publicar o `.nupkg` externo 0.1.14 no NuGet.org e repetir o restore sem o feed local antes da Fase 9.
 
 ---
 

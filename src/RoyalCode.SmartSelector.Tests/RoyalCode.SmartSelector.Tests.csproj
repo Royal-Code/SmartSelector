@@ -9,6 +9,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj" />
 		<ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
+		<PackageReference Include="RoyalCode.Extensions.SourceGenerator" Version="$(ExtSrcGenVer)" PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>

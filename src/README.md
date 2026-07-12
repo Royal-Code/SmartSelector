@@ -46,6 +46,18 @@ Frameworks e pacotes suportados
 - Runtime lib: `RoyalCode.SmartSelector` (TFMs: .NET 8, .NET 9, .NET 10)
 - Generator: `RoyalCode.SmartSelector.Generators` (TFM: .NET Standard 2.0, instalado como Analyzer)
 
+### Compatibilidade do generator com SDK/Roslyn
+
+O pacote do generator contém variantes selecionadas automaticamente pela versão da API do compilador:
+
+| SDK validado | Roslyn do SDK | Variante carregada | Requisito mínimo da variante |
+|---|---:|---|---|
+| 8.0.422 | 4.8 | `roslyn4.8` | Roslyn 4.8 / SDK .NET 8.0.4xx |
+| 9.0.100 | 4.12 | `roslyn4.8` | Roslyn 4.8 / SDK .NET 8.0.4xx |
+| 10.0.301 | 5.6 | `roslyn5.6` | Roslyn 5.6 / SDK .NET 10.0.3xx |
+
+A DLL auxiliar `RoyalCode.Extensions.SourceGenerator` é distribuída na mesma pasta de cada variante. Essa matriz foi executada com build e execução do consumidor durante o spike de compatibilidade da Fase 0.
+
 ## Exemplo 1 – Projeção Simples
 
 ```csharp

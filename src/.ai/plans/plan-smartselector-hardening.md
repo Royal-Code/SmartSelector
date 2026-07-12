@@ -618,6 +618,8 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 O repositório público ainda não possui o environment `nuget-production`. Para satisfazer os critérios externos, após publicar estes workflows é necessário configurar required reviewer nesse environment, tornar `Build, test, pack and consume` e `Known limitations baseline` checks obrigatórios de `main`, executar um PR de teste e validar casos negativos/positivo do `workflow_dispatch` de release. A Fase 9 não deve ser marcada concluída até esses gates serem observados no GitHub.
 
+**Atualização 2026-07-12 (decisão do humano):** o workflow `release.yml` (release gated por `ci_run_id`, DF19) foi removido e o workflow manual legado `smart-select.yml` foi restaurado — `workflow_dispatch` fazendo build, pack e `dotnet nuget push` por glob (nomes de etapas corrigidos para SmartSelector; `--skip-duplicate` adicionado). O `ci.yml` permanece ativo e funcional. As tarefas de release com procedência e a tarefa pendente de configurar o environment `nuget-production` ficam sem efeito até nova decisão sobre DF19.
+
 ---
 
 ## Fase 10 - Contrato do AutoDetails

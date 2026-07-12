@@ -570,17 +570,17 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 8
 
-**Estado:** implementação e validação concluídas; o critério de publicação permanece pendente.
+**Estado:** concluída.
 
 - O pacote externo foi atualizado para `RoyalCode.Extensions.SourceGenerator` 0.1.14 no repositório `RoyalCode/Utils`, commit `b141485` (`fix: harden source generator descriptor contracts`). `Microsoft.CodeAnalysis.CSharp` foi reduzido para 4.8.0; `Microsoft.CodeAnalysis.Analyzers` ficou em 3.3.4 porque não existe versão 4.8.0 desse pacote.
 - Os contratos de igualdade/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection` foram corrigidos. Os caches estáticos de `CancellationToken` e `void` que podiam reter símbolos/compilações foram removidos. A suíte externa passou com 30/30 testes; build Release com 0 avisos e 0 erros.
-- O `.nupkg` externo 0.1.14 foi gerado localmente com metadado de repositório apontando para o commit `b141485`. Em 12/07/2026, o feed público do NuGet ainda lista somente até 0.1.13 e não há API key de publicação configurada neste ambiente.
+- O `.nupkg` externo 0.1.14 foi publicado no NuGet.org com metadado de repositório apontando para o commit `b141485`. Um restore limpo, sem feed local, baixou o pacote público; uma validação direta do DLL confirmou os contratos de equality/hash e a ausência dos caches estáticos que retinham símbolos.
 - Os caminhos baseados em `$(NuGetPackageRoot)` foram substituídos por `GeneratePathProperty`; `NU1900` foi removido de `NoWarn` sem reaparecer no restore.
 - O generator passou a produzir variantes Roslyn 4.8 e 5.6. O pacote `RoyalCode.SmartSelector.Generators.0.5.0.nupkg` contém o generator e `RoyalCode.Extensions.SourceGenerator.dll` em `analyzers/dotnet/roslyn4.8/cs` e `analyzers/dotnet/roslyn5.6/cs`; as duas cópias da auxiliar correspondem ao binário 0.1.14 testado.
 - A matriz real de consumo do `.nupkg` passou: SDK 8.0.422 e 9.0.100 carregaram `roslyn4.8`; SDK 10.0.301 carregou `roslyn5.6`; todos compilaram e executaram com o generator ativo.
 - Validação do repositório: solução compilada sem erros (16 avisos preexistentes nos modelos esperados), suíte principal 54/54, Demo 25/25 e Benchmarks Release com 0 avisos/0 erros.
 
-Para encerrar o critério de aceite, publicar o `.nupkg` externo 0.1.14 no NuGet.org e repetir o restore sem o feed local antes da Fase 9.
+O restore da solução, o empacotamento e toda a matriz foram repetidos usando o pacote público. As duas variantes do `.nupkg` do generator incorporaram exatamente o DLL público 0.1.14. Todos os critérios de aceite da Fase 8 foram atendidos.
 
 ---
 
@@ -594,11 +594,12 @@ Para encerrar o critério de aceite, publicar o `.nupkg` externo 0.1.14 no NuGet
 
 **Tarefas:**
 
-- [ ] Criar/ajustar workflow de CI: build + `dotnet test --filter "Category!=KnownLimitation"` + `dotnet pack` em PR e push para main.
-- [ ] Adicionar ao CI um job informativo que executa os testes `KnownLimitation` e valida a baseline nominal (DF9): falha se a quantidade aumentar, se aparecer nome fora da baseline, ou se um teste da baseline passar (deve ser removido da lista); a falha esperada dos testes conhecidos não bloqueia. Publica nomes e contagem no summary.
-- [ ] Criar teste de consumo: instalar os `.nupkg` produzidos em projeto temporário e compilar uma projeção mínima.
-- [ ] Corrigir nomes de etapas que referenciam SmartSearch.
-- [ ] Criar workflow de release `workflow_dispatch` com aprovação (DF19) e prova de procedência: input obrigatório `ci_run_id`; o workflow valida conclusão `success`, branch (`main` ou tag autorizada) e commit SHA do run; baixa os artefatos pelo ID **sem rebuild**; exibe SHA e versões no environment de aprovação; publica exatamente os arquivos baixados (sem glob amplo).
+- [x] Criar/ajustar workflow de CI: build + `dotnet test --filter "Category!=KnownLimitation"` + `dotnet pack` em PR e push para main.
+- [x] Adicionar ao CI um job informativo que executa os testes `KnownLimitation` e valida a baseline nominal (DF9): falha se a quantidade aumentar, se aparecer nome fora da baseline, ou se um teste da baseline passar (deve ser removido da lista); a falha esperada dos testes conhecidos não bloqueia. Publica nomes e contagem no summary.
+- [x] Criar teste de consumo: instalar os `.nupkg` produzidos em projeto temporário e compilar uma projeção mínima.
+- [x] Corrigir nomes de etapas que referenciam SmartSearch.
+- [x] Criar workflow de release `workflow_dispatch` com aprovação (DF19) e prova de procedência: input obrigatório `ci_run_id`; o workflow valida conclusão `success`, branch (`main` ou tag autorizada) e commit SHA do run; baixa os artefatos pelo ID **sem rebuild**; exibe SHA e versões no environment de aprovação; publica exatamente os arquivos baixados (sem glob amplo).
+- [ ] Após o push, configurar o environment `nuget-production` com reviewer obrigatório, configurar os jobs do CI como checks obrigatórios de `main` e executar os testes de aceite no GitHub Actions.
 
 **Critérios de aceite:** PR com teste falhando bloqueia merge; summary do CI mostra nomes e contagem da baseline `KnownLimitation`; teste de consumo compila usando exclusivamente os `.nupkg`; release recusa `ci_run_id` de run falho, de branch não autorizada ou com artefato ausente, e não faz rebuild.
 
@@ -606,7 +607,16 @@ Para encerrar o critério de aceite, publicar o `.nupkg` externo 0.1.14 no NuGet
 
 ### Resultado da Fase 9
 
-*a preencher*
+**Estado:** implementação local concluída; ativação e validação no GitHub pendentes.
+
+- O workflow manual legado `smart-select.yml`, que publicava por glob e ainda citava SmartSearch, foi substituído por `ci.yml` e `release.yml`.
+- O CI executa em PR, push para `main`, tags `v*` e disparo manual. Ele restaura e compila a solução em Release, executa o gate `Category!=KnownLimitation`, testa o Demo, empacota os dois projetos e publica um único artefato imutável com os dois `.nupkg` e um manifesto com commit e SHA-256.
+- O smoke test cria um consumidor temporário sob SDK 8, usa uma fonte NuGet contendo exclusivamente os pacotes produzidos e compila/executa uma projeção gerada. A reprodução local confirmou SDK 8.0.422 e saída `Package consumer OK`; os metadados do cache apontaram somente para o diretório local de artefatos.
+- O job `Known limitations baseline` executa a suíte informativa e exige nominalmente os dois testes restantes. Ele falha em caso de teste inesperado, ausente, aprovado ou com outcome diferente de `Failed`, e publica nomes, outcomes e contagem no summary. A baseline local foi exatamente 2/2 falhas esperadas.
+- O release exige `ci_run_id`, consulta a API do GitHub e recusa run que não pertença a `ci.yml`, não esteja concluído com `success`, não corresponda ao SHA atual de `main` ou a uma tag semântica autorizada, ou não contenha o artefato/manifesto exato. Antes e depois do gate ele valida nomes e SHA-256; não há checkout, build ou pack, e cada arquivo aprovado é publicado por caminho explícito.
+- Validação local: `yaml-lint` aprovado; `actionlint` 1.7.12 aprovado; build Release da solução com 0 erros/0 avisos; dois pacotes 0.5.0 inspecionados; consumidor exclusivo aprovado; baseline nominal aprovada.
+
+O repositório público ainda não possui o environment `nuget-production`. Para satisfazer os critérios externos, após publicar estes workflows é necessário configurar required reviewer nesse environment, tornar `Build, test, pack and consume` e `Known limitations baseline` checks obrigatórios de `main`, executar um PR de teste e validar casos negativos/positivo do `workflow_dispatch` de release. A Fase 9 não deve ser marcada concluída até esses gates serem observados no GitHub.
 
 ---
 

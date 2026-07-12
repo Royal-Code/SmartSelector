@@ -10,7 +10,7 @@ public class NewInstanceTests
     {
         var result = Util.CompileAndAssert(Code.Types);
         
-        var generatedInterface = result.GeneratedSource("PostDetails.g.cs");
+        var generatedInterface = result.GeneratedSource("Tests.SmartSelector.Models.PostDetails.AutoSelect.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }
@@ -81,6 +81,9 @@ public partial class AuthorDetails
 """;
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;

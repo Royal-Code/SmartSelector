@@ -63,6 +63,9 @@ public partial class UserDetails
 
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
@@ -83,6 +86,9 @@ public partial class UserDetails
 
     public const string ExpectedExtension =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Tests.SmartSelector.Models;
 

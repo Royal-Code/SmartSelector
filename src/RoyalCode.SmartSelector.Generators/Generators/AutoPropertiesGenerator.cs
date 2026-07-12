@@ -179,7 +179,7 @@ internal static class AutoPropertiesGenerator
         var autoDetails = new List<AutoDetailsInformation>();
 
         // declared properties in model type are always excluded
-        foreach (var p in modelType.CreateProperties(p => p.SetMethod is not null))
+        foreach (var p in modelType.CreateProperties(_ => true))
         {
             excluded.Add(p.Name);
 
@@ -321,6 +321,7 @@ internal static class AutoPropertiesGenerator
 
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(origin.Name, origin.Namespaces[0]);
+        GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
 
         // 1.1 modificadores
         if (origin.Symbol?.DeclaredAccessibility == Accessibility.Public)
@@ -359,7 +360,10 @@ internal static class AutoPropertiesGenerator
         }
 
         // 3 Gera o código da classe
-        partialClass.FileName = $"{origin.Name}.AutoProperties.g.cs";
+        partialClass.FileName = GeneratedSourceConventions.FileName(
+            origin,
+            origin.Name,
+            "AutoProperties");
         partialClass.Generate(context);
     }
 }

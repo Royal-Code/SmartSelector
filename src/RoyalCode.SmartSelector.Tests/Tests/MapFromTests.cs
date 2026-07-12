@@ -10,10 +10,10 @@ public partial class MapFromTests
     {
         var result = Util.CompileAndAssert(Code.Types);
 
-        var generatedInterface = result.GeneratedSource("ProductDetails.g.cs");
+        var generatedInterface = result.GeneratedSource("Tests.SmartSelector.Models.ProductDetails.AutoSelect.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
 
-        var generatedHandler = result.GeneratedSource("ProductDetails_Extensions.g.cs");
+        var generatedHandler = result.GeneratedSource("Tests.SmartSelector.Models.ProductDetails.Extensions.g.cs");
         generatedHandler.Should().Be(Code.ExpectedExtension);
     }
 }
@@ -60,6 +60,9 @@ public partial class ProductDetails
 
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
@@ -82,6 +85,9 @@ public partial class ProductDetails
 
     public const string ExpectedExtension =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Tests.SmartSelector.Models;
 

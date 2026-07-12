@@ -179,6 +179,11 @@ internal static class AutoSelectGenerator
 
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(match.OriginType.Name, match.OriginType.Namespaces[0]);
+        GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
+        partialClass.FileName = GeneratedSourceConventions.FileName(
+            match.OriginType,
+            match.OriginType.Name,
+            "AutoSelect");
 
         // 1.1 modificadores
         if (match.OriginType.Symbol?.DeclaredAccessibility == Accessibility.Public)
@@ -226,6 +231,10 @@ internal static class AutoSelectGenerator
 
         expressionProperty.Modifiers.Public();
         expressionProperty.Modifiers.Static();
+        if (HasAccessibleBaseMember(match.OriginType.Symbol, expressionProperty.Name))
+        {
+            expressionProperty.Modifiers.New();
+        }
 
         // 1.3.3 cria a expressão lambda selecionando as propriedades
         var lambda = new SelectLambdaGenerator(match);
@@ -240,6 +249,10 @@ internal static class AutoSelectGenerator
         var method = new MethodGenerator("From", match.OriginType);
         method.Modifiers.Public();
         method.Modifiers.Static();
+        if (HasAccessibleBaseMember(match.OriginType.Symbol, method.Name))
+        {
+            method.Modifiers.New();
+        }
         method.UseArrow = true;
 
         // 1.4.2 cria o parâmetro do método: Target target
@@ -261,6 +274,11 @@ internal static class AutoSelectGenerator
 
         // 2 - Criação da classe de extensão
         var extensionClass = new ClassGenerator($"{match.OriginType.Name}_Extensions", match.OriginType.Namespaces[0]);
+        GeneratedSourceConventions.ApplyRequiredNamespaces(extensionClass);
+        extensionClass.FileName = GeneratedSourceConventions.FileName(
+            match.OriginType,
+            match.OriginType.Name,
+            "Extensions");
         extensionClass.Modifiers.Public();
         extensionClass.Modifiers.Static();
 
@@ -369,5 +387,61 @@ internal static class AutoSelectGenerator
 
         // 2.4 Gera o código da classe de extensão
         extensionClass.Generate(context);
+    }
+
+    private static bool HasAccessibleBaseMember(ITypeSymbol? type, string memberName)
+    {
+        if (type is not INamedTypeSymbol namedType)
+        {
+            return false;
+        }
+
+        for (var baseType = namedType.BaseType;
+             baseType is not null && baseType.SpecialType != SpecialType.System_Object;
+             baseType = baseType.BaseType)
+        {
+            if (baseType.GetMembers(memberName).Any(member =>
+                    IsAccessibleFromDerivedType(member, namedType)))
+            {
+                return true;
+            }
+
+            var autoSelectAttribute = baseType.GetAttributes().FirstOrDefault(attribute =>
+            {
+                var attributeType = attribute.AttributeClass?.OriginalDefinition;
+                return attributeType?.MetadataName == "AutoSelectAttribute`1" &&
+                       attributeType.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector";
+            });
+            var sourceType = autoSelectAttribute?.AttributeClass?.TypeArguments.FirstOrDefault();
+            if (sourceType is null)
+            {
+                continue;
+            }
+
+            if (memberName == "From" || memberName == $"Select{sourceType.Name}Expression")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsAccessibleFromDerivedType(ISymbol member, INamedTypeSymbol derivedType)
+    {
+        var hasInternalAccess = SymbolEqualityComparer.Default.Equals(
+                                    member.ContainingAssembly,
+                                    derivedType.ContainingAssembly) ||
+                                member.ContainingAssembly?.GivesAccessTo(derivedType.ContainingAssembly) == true;
+
+        return member.DeclaredAccessibility switch
+        {
+            Accessibility.Public => true,
+            Accessibility.Protected => true,
+            Accessibility.ProtectedOrInternal => true,
+            Accessibility.Internal => hasInternalAccess,
+            Accessibility.ProtectedAndInternal => hasInternalAccess,
+            _ => false,
+        };
     }
 }

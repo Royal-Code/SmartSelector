@@ -53,13 +53,14 @@ internal static class Util
 
     internal static CompileResult CompileAndAssert(
         string sourceCode,
-        bool assertNoWarnings = false)
+        bool assertNoWarnings = false,
+        bool includeImplicitUsings = true)
     {
         CompileResult? snapshotResult = null;
 
         foreach (var targetFramework in Enum.GetValues<TestTargetFramework>())
         {
-            var result = Compile(sourceCode, targetFramework);
+            var result = Compile(sourceCode, targetFramework, includeImplicitUsings);
             result.Errors.Should().BeEmpty(
                 "generated code must compile for {0}; diagnostics:\n{1}",
                 targetFramework,
@@ -81,8 +82,9 @@ internal static class Util
 
     internal static CompileResult Compile(
         string sourceCode,
-        TestTargetFramework targetFramework = TestTargetFramework.Net100) =>
-        CompileCore(sourceCode, GetReferenceAssemblies(targetFramework));
+        TestTargetFramework targetFramework = TestTargetFramework.Net100,
+        bool includeImplicitUsings = true) =>
+        CompileCore(sourceCode, GetReferenceAssemblies(targetFramework), includeImplicitUsings);
 
     /// <summary>
     /// Fast path for tests that intentionally need the test host runtime rather than a supported TFM contract.
@@ -97,22 +99,30 @@ internal static class Util
             .Split(Path.PathSeparator)
             .Select(static path => MetadataReference.CreateFromFile(path));
 
-        return CompileCore(sourceCode, references);
+        return CompileCore(sourceCode, references, includeImplicitUsings: true);
     }
 
     private static CompileResult CompileCore(
         string sourceCode,
-        IEnumerable<MetadataReference> frameworkReferences)
+        IEnumerable<MetadataReference> frameworkReferences,
+        bool includeImplicitUsings)
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
-        var implicitUsingsTree = CSharpSyntaxTree.ParseText(ImplicitUsings, parseOptions);
         var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode, parseOptions);
         var runtimeSyntaxTrees = RuntimeSourceResourceNames.Select(resourceName =>
-            CSharpSyntaxTree.ParseText(ReadEmbeddedSource(resourceName), parseOptions, resourceName));
+            CSharpSyntaxTree.ParseText(
+                $"using System;{Environment.NewLine}{ReadEmbeddedSource(resourceName)}",
+                parseOptions,
+                resourceName));
+        var syntaxTrees = runtimeSyntaxTrees.Append(syntaxTree);
+        if (includeImplicitUsings)
+        {
+            syntaxTrees = syntaxTrees.Prepend(CSharpSyntaxTree.ParseText(ImplicitUsings, parseOptions));
+        }
 
         var compilation = CSharpCompilation.Create(
             "SourceGeneratorTests",
-            [implicitUsingsTree, .. runtimeSyntaxTrees, syntaxTree],
+            syntaxTrees,
             frameworkReferences,
             new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,

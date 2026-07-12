@@ -10,10 +10,10 @@ public partial class NullableAndCastSelectorTests
     {
         var result = Util.CompileAndAssert(Code.Types);
 
-        var generatedInterface = result.GeneratedSource("UserDetails.g.cs");
+        var generatedInterface = result.GeneratedSource("Tests.SmartSelector.Models.UserDetails.AutoSelect.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
 
-        var generatedHandler = result.GeneratedSource("UserDetails_Extensions.g.cs");
+        var generatedHandler = result.GeneratedSource("Tests.SmartSelector.Models.UserDetails.Extensions.g.cs");
         generatedHandler.Should().Be(Code.ExpectedExtension);
     }
 }
@@ -75,6 +75,9 @@ public enum StatusDetails
 
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
@@ -98,6 +101,9 @@ public partial class UserDetails
 
     public const string ExpectedExtension =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Tests.SmartSelector.Models;
 

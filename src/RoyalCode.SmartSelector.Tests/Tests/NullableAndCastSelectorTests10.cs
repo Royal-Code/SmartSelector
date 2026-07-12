@@ -10,7 +10,7 @@ public partial class NullableAndCastSelectorTests
     {
         var result = Util.CompileAndAssert(Code.Types);
 
-        var generatedInterface = result.GeneratedSource("ValueSelectNullsDto.g.cs");
+        var generatedInterface = result.GeneratedSource("Tests.SmartSelector.Models.ValueSelectNullsDto.AutoSelect.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }
@@ -55,6 +55,9 @@ public partial class ValueSelectNullsDto
 
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;

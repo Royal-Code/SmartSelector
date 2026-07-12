@@ -1,6 +1,6 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–3 concluídas; próxima: Fase 4 (bugs de geração de baixo risco)
+## Status: EM ANDAMENTO - Fases 0–4 concluídas; próxima: Fase 5 (diagnósticos completos e localizados)
 
 ## Progresso
 
@@ -12,7 +12,7 @@
 | Fase 1 - Harness de testes com validação de compilação | Concluida |
 | Fase 2 - Typos e documentação | Concluida |
 | Fase 3 - Limpeza de Demo e Benchmarks | Concluida |
-| Fase 4 - Bugs de geração de baixo risco | Pendente |
+| Fase 4 - Bugs de geração de baixo risco | Concluída em 2026-07-11 |
 | Fase 5 - Diagnósticos completos e localizados | Pendente |
 | Fase 6 - AutoProperties<T> semântico | Pendente |
 | Fase 7 - Refactors internos do generator | Pendente |
@@ -408,10 +408,10 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] B1: aplicar DF1 ao hintName de todos os arquivos gerados — `{Namespace}.{ContainingTypes}.{Classe}{Aridade}.{Categoria}.g.cs` com categorias `AutoSelect`, `Extensions`, `AutoProperties`, `AutoDetails`; testes com dois DTOs homônimos em namespaces distintos (a parte de containing types só é exercitável após a Fase 13, mas o formato já fica pronto).
-- [ ] B3: ampliar exclusão de propriedades declaradas para qualquer propriedade declarada no DTO (remover condição `SetMethod is not null` da exclusão); teste com propriedade get-only homônima.
-- [ ] B4: emitir `using System;`, `using System.Linq;`, `using System.Collections.Generic;` (ou nomes `global::`-qualificados) em todos os arquivos gerados; teste compilando sem implicit usings.
-- [ ] B5: detectar semanticamente membro homônimo **acessível** na cadeia de bases do DTO e emitir `new` apenas em `Select{TFrom}Expression` e `From` (nunca no campo privado — CS0109); testes: DTO herdando DTO (com `new`) e DTO sem conflito (sem `new`).
+- [x] B1: aplicar DF1 ao hintName de todos os arquivos gerados — `{Namespace}.{ContainingTypes}.{Classe}{Aridade}.{Categoria}.g.cs` com categorias `AutoSelect`, `Extensions`, `AutoProperties`, `AutoDetails`; testes com dois DTOs homônimos em namespaces distintos (a parte de containing types só é exercitável após a Fase 13, mas o formato já fica pronto).
+- [x] B3: ampliar exclusão de propriedades declaradas para qualquer propriedade declarada no DTO (remover condição `SetMethod is not null` da exclusão); teste com propriedade get-only homônima.
+- [x] B4: emitir `using System;`, `using System.Linq;`, `using System.Collections.Generic;` (ou nomes `global::`-qualificados) em todos os arquivos gerados; teste compilando sem implicit usings.
+- [x] B5: detectar semanticamente membro homônimo **acessível** na cadeia de bases do DTO e emitir `new` apenas em `Select{TFrom}Expression` e `From` (nunca no campo privado — CS0109); testes: DTO herdando DTO (com `new`) e DTO sem conflito (sem `new`).
 
 **Critérios de aceite:** os 4 cenários compilam sem CS8785/CS0102/CS0246/CS0108 e sem introduzir CS0109; snapshots existentes atualizados de forma revisável (diff contém apenas usings/`new` esperados).
 
@@ -419,7 +419,15 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 4
 
-*a preencher*
+**Concluída em 2026-07-11.**
+
+- Os quatro emissores agora compartilham uma convenção de hint name com identidade completa e categoria (`AutoSelect`, `Extensions`, `AutoProperties`, `AutoDetails`); DTOs homônimos em namespaces diferentes não colidem mais. A cadeia de containing types e a aridade já entram no formato, embora o suporte de emissão para DTO aninhado continue reservado à Fase 13.
+- `AutoProperties` exclui toda propriedade pública já presente no DTO, inclusive get-only, eliminando a duplicação CS0102.
+- Todos os arquivos gerados declaram explicitamente `System`, `System.Linq` e `System.Collections.Generic`; o harness ganhou a opção de remover os global usings sintéticos e comprova a compilação nesse modo.
+- A emissão de `new` considera membros acessíveis da cadeia de bases e também membros que serão gerados para uma base com `AutoSelect`; o modificador é aplicado somente à expressão pública e a `From`, nunca ao campo privado.
+- Adicionados cinco testes em `GenerationHardeningTests`: colisão de hint names, get-only, compilação sem implicit usings, herança com conflito e ausência de falso positivo sem herança.
+- Golden tests foram atualizados somente com os três usings explícitos; as referências aos artefatos passaram aos novos hint names. O comportamento de `new` é protegido pelo teste dedicado.
+- Gates: `dotnet build SmartSelector.sln --no-restore` — **0 erros, 16 warnings já mapeados para fases posteriores**; testes principais com `Category!=KnownLimitation` — **43/43 aprovados**; Demo — **25/25 aprovados**. Os três testes `KnownLimitation` permanecem vermelhos por decisão de DF9 e serão tratados nas Fases 6/13.
 
 ---
 

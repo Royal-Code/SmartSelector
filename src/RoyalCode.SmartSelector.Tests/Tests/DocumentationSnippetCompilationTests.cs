@@ -24,9 +24,9 @@ public class DocumentationSnippetCompilationTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "UserDetails.AutoProperties.g.cs",
-            "UserDetails.g.cs",
-            "UserDetails_Extensions.g.cs");
+            "Documentation.Quickstart.UserDetails.AutoProperties.g.cs",
+            "Documentation.Quickstart.UserDetails.AutoSelect.g.cs",
+            "Documentation.Quickstart.UserDetails.Extensions.g.cs");
     }
 
     [Fact]
@@ -48,7 +48,8 @@ public class DocumentationSnippetCompilationTests
             public partial class UserSnapshot { }
             """);
 
-        result.GeneratedSources.Should().ContainKey("UserSnapshot.AutoProperties.g.cs");
+        result.GeneratedSources.Should().ContainKey(
+            "Documentation.AutoProperties.UserSnapshot.AutoProperties.g.cs");
     }
 
     [Fact]
@@ -83,9 +84,9 @@ public class DocumentationSnippetCompilationTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "AddressDetails.AutoDetails.g.cs",
-            "CustomerDetails.g.cs",
-            "CustomerDetails_Extensions.g.cs");
+            "Documentation.AutoDetails.AddressDetails.AutoDetails.g.cs",
+            "Documentation.AutoDetails.CustomerDetails.AutoSelect.g.cs",
+            "Documentation.AutoDetails.CustomerDetails.Extensions.g.cs");
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public class DocumentationSnippetCompilationTests
             }
             """);
 
-        result.GeneratedSource("OrderDetails.g.cs")
+        result.GeneratedSource("Documentation.Flattening.OrderDetails.AutoSelect.g.cs")
             .Should().Contain("CustomerAddressCity = a.Customer.Address.City");
     }
 

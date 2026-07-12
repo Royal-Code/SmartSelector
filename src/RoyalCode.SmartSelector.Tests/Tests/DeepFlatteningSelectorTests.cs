@@ -10,10 +10,10 @@ public class DeepFlatteningSelectorTests
     {
         var result = Util.CompileAndAssert(Code.Types);
 
-        var generatedPartial = result.GeneratedSource("OrderDetails.g.cs");
+        var generatedPartial = result.GeneratedSource("Tests.SmartSelector.Models.OrderDetails.AutoSelect.g.cs");
         generatedPartial.Should().Be(Code.ExpectedPartial);
 
-        var generatedExtensions = result.GeneratedSource("OrderDetails_Extensions.g.cs");
+        var generatedExtensions = result.GeneratedSource("Tests.SmartSelector.Models.OrderDetails.Extensions.g.cs");
         generatedExtensions.Should().Be(Code.ExpectedExtension);
     }
 }
@@ -75,6 +75,9 @@ public partial class OrderDetails
 
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
@@ -98,6 +101,9 @@ public partial class OrderDetails
 
     public const string ExpectedExtension =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Tests.SmartSelector.Models;
 

@@ -10,7 +10,7 @@ public class FullTest
     {
         var result = Util.CompileAndAssert(Code.Types);
 
-        var generatedInterface = result.GeneratedSource("DtoWithSubSelectsAndCollections.g.cs");
+        var generatedInterface = result.GeneratedSource("Tests.SmartSelector.Models.DtoWithSubSelectsAndCollections.AutoSelect.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }
@@ -142,6 +142,9 @@ public class DtoItem
 """;
     public const string ExpectedPartial =
 """
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;

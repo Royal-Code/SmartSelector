@@ -74,7 +74,7 @@ internal static class AutoDetailsGenerator
 
         // 1 - Criação da classe
         var detailsClass = new ClassGenerator(className, originType.Namespaces[0]);
-        
+        GeneratedSourceConventions.ApplyRequiredNamespaces(detailsClass);
 
         // 1.1 - Modificadores (usa a mesma acessibilidade do tipo de origem)
         if (originType.Symbol?.DeclaredAccessibility == Accessibility.Public)
@@ -115,7 +115,10 @@ internal static class AutoDetailsGenerator
         }
 
         // 3 - Configura o nome do arquivo e gera
-        detailsClass.FileName = $"{className}.AutoDetails.g.cs";
+        detailsClass.FileName = GeneratedSourceConventions.FileName(
+            originType,
+            className,
+            "AutoDetails");
         detailsClass.Generate(context);
     }
 }

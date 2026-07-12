@@ -80,6 +80,33 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
+        if (classSymbol.Arity > 0)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
+            return new AutoSelectInformation(diagnostic);
+        }
+
+        if (classSymbol.ContainingType is not null)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.NestedDestinationTypeNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
+            return new AutoSelectInformation(diagnostic);
+        }
+
+        if (classSymbol.ContainingNamespace.IsGlobalNamespace)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.GlobalNamespaceNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
+            return new AutoSelectInformation(diagnostic);
+        }
+
         // O tipo de origem precisa ser uma classe.
         if (fromSymbol.TypeKind != TypeKind.Class)
         {
@@ -166,7 +193,58 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostics.ToArray());
         }
 
-        return new AutoSelectInformation(matchSelection, propertiesInfo);
+        var flatteningDiagnostics = CreateFlatteningDiagnostics(classDeclaration, fromType);
+        return new AutoSelectInformation(matchSelection, propertiesInfo, flatteningDiagnostics);
+    }
+
+    private static Diagnostic[] CreateFlatteningDiagnostics(
+        ClassDeclarationSyntax classDeclaration,
+        TypeDescriptor fromType)
+    {
+        List<Diagnostic> diagnostics = [];
+        foreach (var property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>())
+        {
+            if (CountPropertyPaths(fromType, property.Identifier.Text) < 2)
+            {
+                continue;
+            }
+
+            diagnostics.Add(Diagnostic.Create(
+                AnalyzerDiagnostics.AmbiguousFlattening,
+                property.Identifier.GetLocation(),
+                property.Identifier.Text));
+        }
+
+        return diagnostics.ToArray();
+    }
+
+    private static int CountPropertyPaths(TypeDescriptor type, string remainingName)
+    {
+        var properties = type.CreateProperties(property => property.GetMethod is not null);
+        if (properties.Any(property => property.Name == remainingName))
+        {
+            return 1;
+        }
+
+        var count = 0;
+        foreach (var property in properties)
+        {
+            if (property.Name.Length >= remainingName.Length ||
+                !remainingName.StartsWith(property.Name, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            count += CountPropertyPaths(
+                property.Type,
+                remainingName.Substring(property.Name.Length));
+            if (count > 1)
+            {
+                return count;
+            }
+        }
+
+        return count;
     }
 
     public static void Generate(MatchSelection match, SourceProductionContext context)

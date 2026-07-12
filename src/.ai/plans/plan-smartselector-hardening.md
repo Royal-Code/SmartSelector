@@ -1,6 +1,6 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–4 concluídas; próxima: Fase 5 (diagnósticos completos e localizados)
+## Status: EM ANDAMENTO - Fases 0–5 concluídas; próxima: Fase 6 (AutoProperties<T> semântico)
 
 ## Progresso
 
@@ -13,7 +13,7 @@
 | Fase 2 - Typos e documentação | Concluida |
 | Fase 3 - Limpeza de Demo e Benchmarks | Concluida |
 | Fase 4 - Bugs de geração de baixo risco | Concluída em 2026-07-11 |
-| Fase 5 - Diagnósticos completos e localizados | Pendente |
+| Fase 5 - Diagnósticos completos e localizados | Concluída em 2026-07-11 |
 | Fase 6 - AutoProperties<T> semântico | Pendente |
 | Fase 7 - Refactors internos do generator | Pendente |
 | Fase 8 - Empacotamento e dependências | Pendente |
@@ -441,15 +441,15 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Criar diagnóstico específico para "classe com AutoProperties<T> não é partial" (substituir uso indevido de RCSS005 em `AutoPropertiesGenerator.cs:45-51`).
-- [ ] Criar diagnóstico para `[AutoProperties]` sem `[AutoSelect<T>]` (hoje silencioso).
-- [ ] Criar diagnósticos temporários para DTO genérico e DTO aninhado (removidos/reduzidos na Fase 13).
-- [ ] Adicionar `Location` real ao diagnóstico de `AutoDetailsGenerator.cs:33` (apontar a propriedade).
-- [ ] Criar diagnóstico warning para ambiguidade de flattening (múltiplos caminhos com mesmo prefixo).
-- [ ] Criar diagnóstico (ou suporte) para DTO em namespace global — hoje gera `.g.cs` inválido (achado do spike da Fase 0).
-- [ ] Registrar todos os novos IDs em `AnalyzerReleases.Unshipped.md`.
-- [ ] Criar um teste de diagnóstico por ID novo (asserção de ID + location).
-- [ ] Para cada limitação `KnownLimitation`, criar teste verde que verifica o diagnóstico temporário correspondente; o teste de compilação vermelho permanece com trait até a fase que o resolve (DF9).
+- [x] Criar diagnóstico específico para "classe com AutoProperties<T> não é partial" (substituir uso indevido de RCSS005 em `AutoPropertiesGenerator.cs:45-51`).
+- [x] Criar diagnóstico para `[AutoProperties]` sem `[AutoSelect<T>]` (hoje silencioso).
+- [x] Criar diagnósticos temporários para DTO genérico e DTO aninhado (removidos/reduzidos na Fase 13).
+- [x] Adicionar `Location` real ao diagnóstico de `AutoDetailsGenerator.cs:33` (apontar a propriedade).
+- [x] Criar diagnóstico warning para ambiguidade de flattening (múltiplos caminhos com mesmo prefixo).
+- [x] Criar diagnóstico (ou suporte) para DTO em namespace global — hoje gera `.g.cs` inválido (achado do spike da Fase 0).
+- [x] Registrar todos os novos IDs em `AnalyzerReleases.Unshipped.md`.
+- [x] Criar um teste de diagnóstico por ID novo (asserção de ID + location).
+- [x] Para cada limitação `KnownLimitation`, criar teste verde que verifica o diagnóstico temporário correspondente; o teste de compilação vermelho permanece com trait até a fase que o resolve (DF9).
 
 **Critérios de aceite:** todo cenário rejeitado emite ao menos um RCSS com location válida; nenhum caso do harness gera "0 diagnósticos + 0 código gerado"; cada limitação tem par (teste verde de diagnóstico + teste vermelho de compilação com trait).
 
@@ -457,7 +457,16 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 5
 
-*a preencher*
+**Concluída em 2026-07-11.**
+
+- Criados RCSS006–RCSS012, todos com localização real: classe não-partial com `AutoProperties<T>`, `[AutoProperties]` órfão, DTO genérico, DTO aninhado, flattening ambíguo, DTO no namespace global e sintaxe qualificada/aliased de `AutoProperties<T>` ainda não suportada.
+- RCSS010 é warning e preserva a geração determinística atual; a detecção conta caminhos navegáveis concorrentes para a propriedade declarada. Os demais IDs novos são erros e interrompem somente o cenário rejeitado.
+- O pipeline agora observa também o atributo `AutoPropertiesAttribute` não genérico para diagnosticar o uso sem `AutoSelect<T>`, sem duplicar geração nos usos válidos.
+- O RCSS001 produzido por `AutoDetails` deixou de usar `Location.None` e aponta para o identificador da propriedade problemática.
+- `AutoSelectInformation` pode transportar warnings junto com um resultado válido, permitindo diagnosticar ambiguidade sem suprimir os arquivos gerados.
+- `GeneratorDiagnosticTests` contém um teste por ID novo, sempre verificando ID e texto exato da location, mais a regressão de location do RCSS001. RCSS008, RCSS009 e RCSS012 formam os pares verdes dos três testes de compilação `KnownLimitation`.
+- Todos os IDs foram registrados em `AnalyzerReleases.Unshipped.md`.
+- Gates: testes principais com `Category!=KnownLimitation` — **51/51 aprovados**; Demo — **25/25 aprovados**; solution build — **0 erros**. A execução informativa de `Category=KnownLimitation` permanece com **3/3 falhando por design**, agora exibindo respectivamente RCSS008, RCSS009 e RCSS012.
 
 ---
 

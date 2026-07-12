@@ -20,8 +20,10 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
     public AutoSelectInformation(
         MatchSelection matchSelection,
-        AutoPropertiesInformation? autoPropertyInformation)
+        AutoPropertiesInformation? autoPropertyInformation,
+        Diagnostic[]? diagnostics = null)
     {
+        this.diagnostics = diagnostics;
         this.autoPropertyInformation = autoPropertyInformation;
         this.matchSelection = matchSelection;
     }

@@ -7,6 +7,7 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 internal static class AutoPropertiesGenerator
 {
     public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
+    public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
 
     private const string AutoPropertiesAttributeName = "AutoProperties";              // non generic form
     private const string AutoPropertiesGenericAttributeName = "AutoProperties";       // generic form base identifier
@@ -44,9 +45,36 @@ internal static class AutoPropertiesGenerator
         // A classe deve ser partial (seguindo o padrão usado pelo AutoSelect)
         if (!classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.AutoPropertiesRequiresPartialClass,
                 classDeclaration.Identifier.GetLocation(),
                 classDeclaration.Identifier.Text);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        if (classSymbol.Arity > 0)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        if (classSymbol.ContainingType is not null)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.NestedDestinationTypeNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
+            return new AutoPropertiesInformation(diagnostic);
+        }
+
+        if (classSymbol.ContainingNamespace.IsGlobalNamespace)
+        {
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.GlobalNamespaceNotSupported,
+                classDeclaration.Identifier.GetLocation(),
+                classSymbol.Name);
             return new AutoPropertiesInformation(diagnostic);
         }
 
@@ -59,12 +87,12 @@ internal static class AutoPropertiesGenerator
 
         if (allAutoProps.Length == 0)
         {
-            // Não deveria acontecer pois o pipeline só chama se tem o atributo, mas retorna vazio por segurança.
-            return new AutoPropertiesInformation(
-                classSymbol is null
-                    ? null!
-                    : new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol),
-                []);
+            var attributeSyntax = context.Attributes.FirstOrDefault()?.ApplicationSyntaxReference?.GetSyntax(token)
+                as AttributeSyntax;
+            var diagnostic = Diagnostic.Create(
+                AnalyzerDiagnostics.QualifiedAutoPropertiesNotSupported,
+                attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation());
+            return new AutoPropertiesInformation(diagnostic);
         }
 
         // Verifica conflito: uso simultâneo do genérico e não-genérico.
@@ -108,6 +136,33 @@ internal static class AutoPropertiesGenerator
 
         // Cria a informação
         return CreateInformation(modelType, fromType, attrSyntax);
+    }
+
+    internal static Diagnostic? ValidateNonGenericUsage(
+        GeneratorAttributeSyntaxContext context,
+        CancellationToken token)
+    {
+        var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+        var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, token);
+        if (classSymbol is null)
+        {
+            return null;
+        }
+
+        var hasAutoSelect = classSymbol.GetAttributes().Any(attribute =>
+            attribute.AttributeClass?.OriginalDefinition.MetadataName == "AutoSelectAttribute`1" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
+        if (hasAutoSelect)
+        {
+            return null;
+        }
+
+        var attributeSyntax = context.Attributes.FirstOrDefault()?.ApplicationSyntaxReference?.GetSyntax(token)
+            as AttributeSyntax;
+        return Diagnostic.Create(
+            AnalyzerDiagnostics.AutoPropertiesRequiresAutoSelect,
+            attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
+            classSymbol.Name);
     }
 
     internal static AutoPropertiesInformation CreateInformation(

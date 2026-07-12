@@ -17,6 +17,11 @@ public class IncrementalGenerator : IIncrementalGenerator
             predicate: AutoPropertiesGenerator.Predicate,
             transform: AutoPropertiesGenerator.Transform);
 
+        var pipelineNonGenericProperties = context.SyntaxProvider.ForAttributeWithMetadataName(
+            fullyQualifiedMetadataName: AutoPropertiesGenerator.AutoPropertiesAttributeFullName,
+            predicate: AutoPropertiesGenerator.Predicate,
+            transform: AutoPropertiesGenerator.ValidateNonGenericUsage);
+
         var pipelineSelect = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: AutoSelectGenerator.AutoSelectAttributeFullName,
             predicate: AutoSelectGenerator.Predicate,
@@ -25,6 +30,14 @@ public class IncrementalGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(pipelineProperties, static (context, model) =>
         {
             model.Generate(context);
+        });
+
+        context.RegisterSourceOutput(pipelineNonGenericProperties, static (context, diagnostic) =>
+        {
+            if (diagnostic is not null)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
         });
 
         context.RegisterSourceOutput(pipelineSelect, static (context, model) =>

@@ -29,8 +29,12 @@ internal static class AutoDetailsGenerator
         // if not found, return error diagnostic
         if (fromProperty is null)
         {
+            var location = property.Symbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()
+                is Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax propertySyntax
+                    ? propertySyntax.Identifier.GetLocation()
+                    : property.Symbol?.Locations.FirstOrDefault(static candidate => candidate.IsInSource);
             autoDetailInfo = new AutoDetailsInformation(
-                Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch, null, property.Name));
+                Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch, location, property.Name));
             return true;
         }
 

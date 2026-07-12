@@ -53,4 +53,60 @@ internal static class AnalyzerDiagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor AutoPropertiesRequiresPartialClass = new(
+        id: "RCSS006",
+        title: "AutoProperties requires a partial class",
+        messageFormat: "The class '{0}' must be partial to use AutoPropertiesAttribute<TFrom>",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor AutoPropertiesRequiresAutoSelect = new(
+        id: "RCSS007",
+        title: "AutoProperties requires AutoSelect",
+        messageFormat: "AutoPropertiesAttribute requires AutoSelectAttribute<TFrom> on class '{0}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor GenericDestinationTypeNotSupported = new(
+        id: "RCSS008",
+        title: "Generic destination DTOs are not supported",
+        messageFormat: "The destination DTO '{0}' cannot be generic; generic DTO support is not available",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor NestedDestinationTypeNotSupported = new(
+        id: "RCSS009",
+        title: "Nested destination DTOs are not supported",
+        messageFormat: "The destination DTO '{0}' cannot be nested; nested DTO support is not available",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor AmbiguousFlattening = new(
+        id: "RCSS010",
+        title: "Ambiguous flattened property path",
+        messageFormat: "The property '{0}' matches multiple flattened paths in the source type; rename it or use MapFromAttribute",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor GlobalNamespaceNotSupported = new(
+        id: "RCSS011",
+        title: "Destination DTOs in the global namespace are not supported",
+        messageFormat: "The destination DTO '{0}' must be declared inside a namespace",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor QualifiedAutoPropertiesNotSupported = new(
+        id: "RCSS012",
+        title: "Qualified AutoProperties syntax is not supported",
+        messageFormat: "Qualified or aliased AutoPropertiesAttribute<TFrom> syntax is not supported yet; use the simple attribute name",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

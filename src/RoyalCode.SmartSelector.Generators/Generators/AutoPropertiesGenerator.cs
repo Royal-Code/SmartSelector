@@ -174,6 +174,7 @@ internal static class AutoPropertiesGenerator
         HashSet<string>? flattening)
     {
         var autoDetails = new List<AutoDetailsInformation>();
+        var autoDetailsTypeKeys = new HashSet<string>(StringComparer.Ordinal);
 
         // Propriedades já declaradas no modelo são sempre excluídas.
         foreach (var p in modelType.CreateProperties(_ => true))
@@ -181,7 +182,7 @@ internal static class AutoPropertiesGenerator
             excluded.Add(p.Name);
 
             // processa a propriedade se ela tem o atributo AutoDetails
-            if(AutoDetailsGenerator.TryCreate(p, fromType, out var autoDetailInfo))
+            if(AutoDetailsGenerator.TryCreate(p, fromType, autoDetailsTypeKeys, out var autoDetailInfo))
             {
                 autoDetails.Add(autoDetailInfo!);
             }

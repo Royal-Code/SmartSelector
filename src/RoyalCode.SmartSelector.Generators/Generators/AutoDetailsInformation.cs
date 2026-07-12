@@ -9,9 +9,10 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
     private readonly string? detailsClassName;
     private readonly AutoPropertiesInformation? autoPropertiesInformation;
 
-    public AutoDetailsInformation(Diagnostic diagnostic)
+    public AutoDetailsInformation(Diagnostic diagnostic, string? propertyName = null)
     {
         diagnostics = [diagnostic];
+        PropertyName = propertyName;
     }
 
     public AutoDetailsInformation(
@@ -21,6 +22,13 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         this.detailsClassName = detailsClassName;
         this.autoPropertiesInformation = autoPropertiesInformation;
     }
+
+    /// <summary>
+    /// Nome da propriedade com AutoDetails que originou os diagnósticos, quando houver.
+    /// </summary>
+    internal string? PropertyName { get; }
+
+    internal Diagnostic[]? Diagnostics => diagnostics;
 
     public bool Equals(AutoDetailsInformation? other)
     {
@@ -33,6 +41,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
             return true;
         }
         return InformationEquality.SequenceEqual(diagnostics, other.diagnostics) &&
+               PropertyName == other.PropertyName &&
                detailsClassName == other.detailsClassName &&
                Equals(autoPropertiesInformation, other.autoPropertiesInformation);
     }
@@ -48,6 +57,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         {
             var hashCode = 17;
             hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + (PropertyName?.GetHashCode() ?? 0);
             hashCode = (hashCode * 31) + (detailsClassName?.GetHashCode() ?? 0);
             hashCode = (hashCode * 31) + (autoPropertiesInformation?.GetHashCode() ?? 0);
             return hashCode;

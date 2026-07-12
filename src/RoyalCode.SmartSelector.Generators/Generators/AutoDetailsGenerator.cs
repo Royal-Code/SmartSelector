@@ -1,4 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RoyalCode.SmartSelector.Generators.Generators;
 
@@ -9,6 +11,7 @@ internal static class AutoDetailsGenerator
     internal static bool TryCreate(
         PropertyDescriptor property,
         TypeDescriptor fromType,
+        HashSet<string> generatedTypeKeys,
         out AutoDetailsInformation? autoDetailInfo)
     {
         autoDetailInfo = null;
@@ -29,36 +32,132 @@ internal static class AutoDetailsGenerator
         // Se não for encontrada, retorna um diagnóstico de erro.
         if (fromProperty is null)
         {
-            var location = property.Symbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()
-                is Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax propertySyntax
-                    ? propertySyntax.Identifier.GetLocation()
-                    : property.Symbol?.Locations.FirstOrDefault(static candidate => candidate.IsInSource);
             autoDetailInfo = new AutoDetailsInformation(
-                Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch, location, property.Name));
+                Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch, GetPropertyLocation(property), property.Name),
+                property.Name);
             return true;
         }
 
-        // Obtém os descritores dos tipos.
-        var propertyType = property.Type;
+        // O tipo declarado na propriedade é a fonte de verdade do tipo gerado (DF2).
+        var declaredType = property.Type;
         var fromPropertyType = fromProperty.Type;
 
+        // Verifica se o tipo declarado já existe na compilação (símbolo real, não error type).
+        var existingType = declaredType.HasNamedTypeSymbol(out var namedTypeSymbol) && namedTypeSymbol.TypeKind != TypeKind.Error
+            ? namedTypeSymbol
+            : null;
+
+        string? targetNamespace;
+        if (existingType is not null)
+        {
+            // Um tipo existente só pode ser completado se for uma classe partial declarada nesta compilação.
+            if (!IsPartialClassInSource(existingType))
+            {
+                autoDetailInfo = new AutoDetailsInformation(
+                    Diagnostic.Create(
+                        AnalyzerDiagnostics.AutoDetailsTypeMustBePartial,
+                        GetPropertyLocation(property),
+                        existingType.Name,
+                        property.Name),
+                    property.Name);
+                return true;
+            }
+
+            if (!IsAccessibilityCompatible(existingType, property.Symbol))
+            {
+                autoDetailInfo = new AutoDetailsInformation(
+                    Diagnostic.Create(
+                        AnalyzerDiagnostics.AutoDetailsTypeAccessibilityMismatch,
+                        GetPropertyLocation(property),
+                        existingType.Name,
+                        property.Name),
+                    property.Name);
+                return true;
+            }
+
+            targetNamespace = existingType.ContainingNamespace.IsGlobalNamespace
+                ? null
+                : existingType.ContainingNamespace.ToDisplayString();
+        }
+        else
+        {
+            // Tipo novo: gerado no namespace do tipo que declara a propriedade.
+            targetNamespace = property.Symbol?.ContainingNamespace?.ToDisplayString();
+        }
+
+        // Descriptor novo para o tipo gerado; o descriptor da propriedade não é mutado.
+        var generatedType = new TypeDescriptor(
+            declaredType.Name,
+            targetNamespace is not null ? [targetNamespace] : declaredType.Namespaces,
+            declaredType.Symbol);
+
+        // Duas propriedades [AutoDetails] não podem gerar o mesmo tipo.
+        var generatedTypeKey = $"{generatedType.Namespaces.FirstOrDefault()}.{generatedType.Name}";
+        if (!generatedTypeKeys.Add(generatedTypeKey))
+        {
+            autoDetailInfo = new AutoDetailsInformation(
+                Diagnostic.Create(
+                    AnalyzerDiagnostics.DuplicatedAutoDetailsType,
+                    GetPropertyLocation(property),
+                    generatedType.Name,
+                    property.Name),
+                property.Name);
+            return true;
+        }
+
         // Cria as informações de propriedades automáticas.
-        var autoPropertiesInfo = AutoPropertiesGenerator.CreateInformation(propertyType, fromPropertyType, autoDetailsAttribute);
+        var autoPropertiesInfo = AutoPropertiesGenerator.CreateInformation(generatedType, fromPropertyType, autoDetailsAttribute);
 
-        // Atualiza o namespace do tipo gerado com o namespace do tipo que declara a propriedade.
-        var propertyNamespace = property.Symbol?.ContainingNamespace?.ToDisplayString();
-        if (propertyNamespace is not null)
-            propertyType.Namespaces[0] = propertyNamespace;
-
-        // Define as propriedades conhecidas para as informações de AutoDetails.
-        propertyType.DefinedProperties = autoPropertiesInfo.Properties;
+        // Define as propriedades conhecidas para o tipo gerado e para a correspondência da propriedade.
+        generatedType.DefinedProperties = autoPropertiesInfo.Properties;
+        declaredType.DefinedProperties = autoPropertiesInfo.Properties;
 
         // Cria as informações de AutoDetails.
         autoDetailInfo = new AutoDetailsInformation(
-            $"{fromPropertyType.Name}Details",
+            generatedType.Name,
             autoPropertiesInfo);
 
         return true;
+    }
+
+    private static Location? GetPropertyLocation(PropertyDescriptor property)
+    {
+        return property.Symbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()
+            is PropertyDeclarationSyntax propertySyntax
+                ? propertySyntax.Identifier.GetLocation()
+                : property.Symbol?.Locations.FirstOrDefault(static candidate => candidate.IsInSource);
+    }
+
+    private static bool IsPartialClassInSource(INamedTypeSymbol type)
+    {
+        if (type.TypeKind != TypeKind.Class)
+            return false;
+
+        var declarations = type.DeclaringSyntaxReferences;
+        if (declarations.Length == 0)
+            return false;
+
+        return declarations
+            .Select(static reference => reference.GetSyntax())
+            .OfType<ClassDeclarationSyntax>()
+            .Any(static declaration => declaration.Modifiers.Any(SyntaxKind.PartialKeyword));
+    }
+
+    private static bool IsAccessibilityCompatible(INamedTypeSymbol existingType, IPropertySymbol? propertySymbol)
+    {
+        if (propertySymbol is null)
+            return true;
+
+        // Exposição efetiva da propriedade: o menor nível entre a propriedade e a classe que a declara.
+        // A comparação numérica do enum é uma aproximação suficiente para tipos de nível de namespace
+        // (public/internal), que é o cenário do AutoDetails.
+        var propertyAccessibility = propertySymbol.DeclaredAccessibility;
+        var containingAccessibility = propertySymbol.ContainingType?.DeclaredAccessibility ?? Accessibility.Public;
+        var requiredAccessibility = propertyAccessibility < containingAccessibility
+            ? propertyAccessibility
+            : containingAccessibility;
+
+        return existingType.DeclaredAccessibility >= requiredAccessibility;
     }
 
     internal static void Generate(

@@ -146,12 +146,18 @@ internal static class AutoSelectGenerator
             context.SemanticModel,
             AutoPropertiesGenerator.MatchOptions);
 
+        // Diagnósticos de AutoDetails prevalecem sobre as falhas de correspondência das mesmas propriedades.
+        var autoDetailsDiagnostics = GetAutoDetailsDiagnostics(propertiesInfo, out var autoDetailsFailedProperties);
+
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))
         {
-            List<Diagnostic> diagnostics = [];
+            List<Diagnostic> diagnostics = [.. autoDetailsDiagnostics];
             foreach (var property in missingProperties)
             {
+                if (autoDetailsFailedProperties.Contains(property.Name))
+                    continue;
+
                 // Obtém o token sintático da propriedade na declaração da classe.
                 var propertySyntax = classDeclaration.Members
                     .OfType<PropertyDeclarationSyntax>()
@@ -170,9 +176,12 @@ internal static class AutoSelectGenerator
         // se há propriedades que não podem ser atribuídas, exibe o(s) erro(s)
         if (matchSelection.HasNotAssignableProperties(out var notAssignableProperties))
         {
-            List<Diagnostic> diagnostics = [];
+            List<Diagnostic> diagnostics = [.. autoDetailsDiagnostics];
             foreach (var property in notAssignableProperties)
             {
+                if (autoDetailsFailedProperties.Contains(property.Origin.Name))
+                    continue;
+
                 // Obtém o token sintático da propriedade na declaração da classe.
                 var propertySyntax = classDeclaration.Members
                     .OfType<PropertyDeclarationSyntax>()
@@ -193,6 +202,28 @@ internal static class AutoSelectGenerator
 
         var flatteningDiagnostics = CreateFlatteningDiagnostics(classDeclaration, fromType);
         return new AutoSelectInformation(matchSelection, propertiesInfo, flatteningDiagnostics);
+    }
+
+    private static Diagnostic[] GetAutoDetailsDiagnostics(
+        AutoPropertiesInformation? propertiesInfo,
+        out HashSet<string> failedProperties)
+    {
+        failedProperties = new HashSet<string>(StringComparer.Ordinal);
+        if (propertiesInfo is null)
+            return [];
+
+        List<Diagnostic> diagnostics = [];
+        foreach (var autoDetail in propertiesInfo.AutoDetails)
+        {
+            if (autoDetail.Diagnostics is not { Length: > 0 } autoDetailDiagnostics)
+                continue;
+
+            diagnostics.AddRange(autoDetailDiagnostics);
+            if (autoDetail.PropertyName is not null)
+                failedProperties.Add(autoDetail.PropertyName);
+        }
+
+        return [.. diagnostics];
     }
 
     private static Diagnostic[] CreateFlatteningDiagnostics(

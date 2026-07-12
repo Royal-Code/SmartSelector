@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–7 concluídas; próxima: Fase 8 (empacotamento e dependências)
+## Status: EM ANDAMENTO - Fases 0–10 concluídas; próxima: Fase 11 (código gerado auto-suficiente e nullable-clean)
 
 ## Progresso
 
-`████████░░░░░░░░` **50%** - 8 de 16 fases
+`███████████░░░░░` **68%** - 11 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -16,9 +16,9 @@
 | Fase 5 - Diagnósticos completos e localizados | Concluída em 2026-07-11 |
 | Fase 6 - AutoProperties<T> semântico | Concluída em 2026-07-12 |
 | Fase 7 - Refactors internos do generator | Concluída em 2026-07-12 |
-| Fase 8 - Empacotamento e dependências | Pendente |
-| Fase 9 - CI e release com gates | Pendente |
-| Fase 10 - Contrato do AutoDetails | Pendente |
+| Fase 8 - Empacotamento e dependências | Concluída em 2026-07-12 |
+| Fase 9 - CI e release com gates | Concluída em 2026-07-12 (release gated revertido por decisão do humano) |
+| Fase 10 - Contrato do AutoDetails | Concluída em 2026-07-12 |
 | Fase 11 - Código gerado auto-suficiente e nullable-clean | Pendente |
 | Fase 12 - Política de null em From e coleções | Pendente |
 | Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Pendente |
@@ -117,7 +117,7 @@
 - **DF16 — Atributos selados:** adicionar `sealed` a `AutoSelectAttribute<T>`, `AutoPropertiesAttribute`, `AutoPropertiesAttribute<T>` e `AutoDetailsAttribute`. Fonte: Q2a, resposta humana 2026-07-11 (opção A).
 - **DF17 — Classe base para `Exclude`/`Flattening`:** extrair base abstrata pública consolidando as propriedades duplicadas nos atributos. Fonte: Q2b, resposta humana 2026-07-11 (opção A).
 - **DF18 — Coleção nullable → destino non-nullable usa coleção vazia + diagnóstico informativo:** gerar fallback de coleção vazia (`... == null ? new List<T>() : ...` ou equivalente traduzível) e emitir diagnóstico de severidade Info apontando a conversão. Fonte: Q3, resposta humana 2026-07-11 (opção A com diagnóstico de informação).
-- **DF19 — Release manual com aprovação:** workflow de release via `workflow_dispatch` com aprovação, consumindo somente artefatos de CI validado. Fonte: Q4, resposta humana 2026-07-11 (opção B).
+- **DF19 — Release manual com aprovação:** workflow de release via `workflow_dispatch` com aprovação, consumindo somente artefatos de CI validado. Fonte: Q4, resposta humana 2026-07-11 (opção B). **Revertida pelo humano em 2026-07-12:** o release voltou a ser o workflow manual simples `smart-select.yml` (build + pack + push); ver Resultado da Fase 9.
 - **DF20 — DTO genérico rejeitado com diagnóstico permanente, incluindo containing types genéricos:** entidades não terão tipos genéricos; `EntityDetails<T>` recebe diagnóstico permanente e o teste TDD correspondente é convertido em teste de diagnóstico. O mesmo diagnóstico se aplica quando qualquer containing type do DTO aninhado é genérico (`Container<T>.EntityDetails`). Nota técnica registrada para eventual suporte futuro: declarações `partial` podem omitir constraints (basta repetir nomes e aridade dos type parameters), o que barateia o suporte se a decisão mudar. Fonte: Q5, resposta humana 2026-07-11 (opção B) + segunda análise externa 2026-07-11, achado 9.
 
 ---
@@ -570,7 +570,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 8
 
-**Estado:** concluída.
+**Concluída em 2026-07-12.**
 
 - O pacote externo foi atualizado para `RoyalCode.Extensions.SourceGenerator` 0.1.14 no repositório `RoyalCode/Utils`, commit `b141485` (`fix: harden source generator descriptor contracts`). `Microsoft.CodeAnalysis.CSharp` foi reduzido para 4.8.0; `Microsoft.CodeAnalysis.Analyzers` ficou em 3.3.4 porque não existe versão 4.8.0 desse pacote.
 - Os contratos de igualdade/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection` foram corrigidos. Os caches estáticos de `CancellationToken` e `void` que podiam reter símbolos/compilações foram removidos. A suíte externa passou com 30/30 testes; build Release com 0 avisos e 0 erros.
@@ -599,7 +599,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 - [x] Criar teste de consumo: instalar os `.nupkg` produzidos em projeto temporário e compilar uma projeção mínima.
 - [x] Corrigir nomes de etapas que referenciam SmartSearch.
 - [x] Criar workflow de release `workflow_dispatch` com aprovação (DF19) e prova de procedência: input obrigatório `ci_run_id`; o workflow valida conclusão `success`, branch (`main` ou tag autorizada) e commit SHA do run; baixa os artefatos pelo ID **sem rebuild**; exibe SHA e versões no environment de aprovação; publica exatamente os arquivos baixados (sem glob amplo).
-- [ ] Após o push, configurar o environment `nuget-production` com reviewer obrigatório, configurar os jobs do CI como checks obrigatórios de `main` e executar os testes de aceite no GitHub Actions.
+- [x] ~~Após o push, configurar o environment `nuget-production` com reviewer obrigatório, configurar os jobs do CI como checks obrigatórios de `main` e executar os testes de aceite no GitHub Actions.~~ *(Sem efeito — release gated revertido por decisão do humano em 2026-07-12; ver Resultado da Fase 9.)*
 
 **Critérios de aceite:** PR com teste falhando bloqueia merge; summary do CI mostra nomes e contagem da baseline `KnownLimitation`; teste de consumo compila usando exclusivamente os `.nupkg`; release recusa `ci_run_id` de run falho, de branch não autorizada ou com artefato ausente, e não faz rebuild.
 
@@ -607,7 +607,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ### Resultado da Fase 9
 
-**Estado:** implementação local concluída; ativação e validação no GitHub pendentes.
+**Concluída em 2026-07-12** — com escopo de release revisto pelo humano (ver atualização ao final desta seção).
 
 - O workflow manual legado `smart-select.yml`, que publicava por glob e ainda citava SmartSearch, foi substituído por `ci.yml` e `release.yml`.
 - O CI executa em PR, push para `main`, tags `v*` e disparo manual. Ele restaura e compila a solução em Release, executa o gate `Category!=KnownLimitation`, testa o Demo, empacota os dois projetos e publica um único artefato imutável com os dois `.nupkg` e um manifesto com commit e SHA-256.
@@ -615,8 +615,6 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 - O job `Known limitations baseline` executa a suíte informativa e exige nominalmente os dois testes restantes. Ele falha em caso de teste inesperado, ausente, aprovado ou com outcome diferente de `Failed`, e publica nomes, outcomes e contagem no summary. A baseline local foi exatamente 2/2 falhas esperadas.
 - O release exige `ci_run_id`, consulta a API do GitHub e recusa run que não pertença a `ci.yml`, não esteja concluído com `success`, não corresponda ao SHA atual de `main` ou a uma tag semântica autorizada, ou não contenha o artefato/manifesto exato. Antes e depois do gate ele valida nomes e SHA-256; não há checkout, build ou pack, e cada arquivo aprovado é publicado por caminho explícito.
 - Validação local: `yaml-lint` aprovado; `actionlint` 1.7.12 aprovado; build Release da solução com 0 erros/0 avisos; dois pacotes 0.5.0 inspecionados; consumidor exclusivo aprovado; baseline nominal aprovada.
-
-O repositório público ainda não possui o environment `nuget-production`. Para satisfazer os critérios externos, após publicar estes workflows é necessário configurar required reviewer nesse environment, tornar `Build, test, pack and consume` e `Known limitations baseline` checks obrigatórios de `main`, executar um PR de teste e validar casos negativos/positivo do `workflow_dispatch` de release. A Fase 9 não deve ser marcada concluída até esses gates serem observados no GitHub.
 
 **Atualização 2026-07-12 (decisão do humano):** o workflow `release.yml` (release gated por `ci_run_id`, DF19) foi removido e o workflow manual legado `smart-select.yml` foi restaurado — `workflow_dispatch` fazendo build, pack e `dotnet nuget push` por glob (nomes de etapas corrigidos para SmartSelector; `--skip-duplicate` adicionado). O `ci.yml` permanece ativo e funcional. As tarefas de release com procedência e a tarefa pendente de configurar o environment `nuget-production` ficam sem efeito até nova decisão sobre DF19.
 
@@ -632,11 +630,11 @@ O repositório público ainda não possui o environment `nuget-production`. Para
 
 **Tarefas:**
 
-- [ ] Usar nome/namespace de `property.Type` para a classe gerada (corrige B2).
-- [ ] Tratar tipo já existente: gerar parte apenas se `partial`; diagnóstico caso contrário.
-- [ ] Diagnóstico para geração duplicada (duas propriedades `[AutoDetails]` para o mesmo tipo) e para acessibilidade incompatível.
-- [ ] Remover a mutação `propertyType.Namespaces[0] = ...` (`AutoDetailsGenerator.cs:47`) construindo descriptor novo.
-- [ ] Testes: tipo com nome fora da convenção (`AddressDto`), tipo pré-existente partial, duplicidade.
+- [x] Usar nome/namespace de `property.Type` para a classe gerada (corrige B2).
+- [x] Tratar tipo já existente: gerar parte apenas se `partial`; diagnóstico caso contrário.
+- [x] Diagnóstico para geração duplicada (duas propriedades `[AutoDetails]` para o mesmo tipo) e para acessibilidade incompatível.
+- [x] Remover a mutação `propertyType.Namespaces[0] = ...` (`AutoDetailsGenerator.cs:47`) construindo descriptor novo.
+- [x] Testes: tipo com nome fora da convenção (`AddressDto`), tipo pré-existente partial, duplicidade.
 
 **Critérios de aceite:** cenário `AddressDto` do harness compila; nenhum caso de AutoDetails gera classe com nome diferente do declarado.
 
@@ -644,7 +642,16 @@ O repositório público ainda não possui o environment `nuget-production`. Para
 
 ### Resultado da Fase 10
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- DF2 aplicada: a classe gerada pelo AutoDetails usa o nome do tipo declarado na propriedade (`property.Type`), eliminando B2; o namespace vem do tipo existente quando ele já está declarado, ou do tipo que declara a propriedade quando o tipo é novo. O cenário `AddressDto` (nome fora da convenção) compila nos três TFMs.
+- Tipo preexistente é completado somente quando é uma classe `partial` declarada na própria compilação; caso contrário é emitido **RCSS012** (ID reutilizado — o RCSS012 da Fase 5 foi removido na Fase 6 antes de qualquer publicação). Propriedades já declaradas pelo usuário no tipo preexistente não são geradas novamente.
+- **RCSS013** cobre duas propriedades `[AutoDetails]` que gerariam o mesmo tipo (detecção por chave namespace+nome dentro do DTO); **RCSS014** cobre tipo existente menos acessível que a exposição efetiva da propriedade. Os três IDs foram registrados em `AnalyzerReleases.Unshipped.md`.
+- A mutação `propertyType.Namespaces[0] = ...` foi removida: um `TypeDescriptor` novo é construído para o tipo gerado; `DefinedProperties` é definido no descriptor novo e no da propriedade (necessário para a correspondência do `AutoDetailsAssignDescriptorResolver`).
+- Correção de fluxo necessária para os novos diagnósticos: os branches de falha do match em `AutoSelectGenerator.Transform` descartavam o `AutoPropertiesInformation` e, com ele, os diagnósticos de AutoDetails — o usuário via apenas um RCSS002 confuso. Agora os diagnósticos de AutoDetails prevalecem e as falhas de match das mesmas propriedades são suprimidas; `AutoDetailsInformation` expõe `PropertyName`/`Diagnostics`, incluídos na igualdade do modelo.
+- `AutoDetailsContractTests` cobre os cinco cenários: tipo declarado fora da convenção (compilação nos 3 TFMs + ausência de `AddressDetails`), tipo preexistente partial (parte gerada sem regenerar propriedade do usuário), RCSS012, RCSS013 e RCSS014 — sempre verificando ID e texto exato da location.
+- Nenhum golden snapshot foi alterado; o golden existente de AutoDetails (`AddressDetails` por convenção) permaneceu idêntico.
+- Gates: testes principais com `Category!=KnownLimitation` — **59/59 aprovados**; `KnownLimitation` — **exatamente 2/2 falhando por design**; Demo — **25/25 aprovados**; solution build — **0 erros**; `git diff --check` aprovado.
 
 ---
 

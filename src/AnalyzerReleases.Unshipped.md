@@ -9,3 +9,6 @@ RCSS008  | Usage    | Error    | Generic destination DTOs are temporarily unsupp
 RCSS009  | Usage    | Error    | Nested destination DTOs are temporarily unsupported
 RCSS010  | Usage    | Warning  | A destination property matches multiple flattened source paths
 RCSS011  | Usage    | Error    | Destination DTOs in the global namespace are unsupported
+RCSS012  | Usage    | Error    | AutoDetails target type already exists and is not a partial class
+RCSS013  | Usage    | Error    | Two AutoDetails properties generate the same type
+RCSS014  | Usage    | Error    | AutoDetails target type is less accessible than the property

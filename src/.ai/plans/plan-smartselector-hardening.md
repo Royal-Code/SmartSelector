@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–11 concluídas; próxima: Fase 12 (política de null em From e coleções)
+## Status: EM ANDAMENTO - Fases 0–12 concluídas; próxima: Fase 13 (DTOs aninhados e diagnóstico permanente para genéricos)
 
 ## Progresso
 
-`████████████░░░░` **75%** - 12 de 16 fases
+`█████████████░░░` **81%** - 13 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -20,7 +20,7 @@
 | Fase 9 - CI e release com gates | Concluída em 2026-07-12 (release gated revertido por decisão do humano) |
 | Fase 10 - Contrato do AutoDetails | Concluída em 2026-07-12 |
 | Fase 11 - Código gerado auto-suficiente e nullable-clean | Concluída em 2026-07-12 |
-| Fase 12 - Política de null em From e coleções | Pendente |
+| Fase 12 - Política de null em From e coleções | Concluída em 2026-07-12 |
 | Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Pendente |
 | Fase 14 - Pipeline incremental sem retenção de símbolos | Pendente |
 | Fase 15 - Features incrementais de mapeamento | Pendente |
@@ -707,12 +707,12 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 **Tarefas:**
 
-- [ ] Navegação nullable → destino nullable: gerar `a.X == null ? null : ...` (objetos e flattening).
-- [ ] Escalar nullable → destino non-nullable: manter comportamento atual + diagnóstico warning (DF5).
-- [ ] Coleção nullable → destino non-nullable: gerar fallback de coleção vazia traduzível e emitir diagnóstico de severidade Info na propriedade (DF18); registrar o novo ID em `AnalyzerReleases.Unshipped.md`.
-- [ ] Testes de execução em memória (`From`, `Select` de `IEnumerable`) com grafos nulos — sem `NullReferenceException` nos casos cobertos pela política.
-- [ ] Testes EF Core SQLite no Demo garantindo tradutibilidade das novas condicionais.
-- [ ] Documentar a política em `docs.md` (nova seção).
+- [x] Navegação nullable → destino nullable: gerar `a.X == null ? null : ...` (objetos e flattening).
+- [x] Escalar nullable → destino non-nullable: manter comportamento atual + diagnóstico warning (DF5).
+- [x] Coleção nullable → destino non-nullable: gerar fallback de coleção vazia traduzível e emitir diagnóstico de severidade Info na propriedade (DF18); registrar o novo ID em `AnalyzerReleases.Unshipped.md`.
+- [x] Testes de execução em memória (`From`, `Select` de `IEnumerable`) com grafos nulos — sem `NullReferenceException` nos casos cobertos pela política.
+- [x] Testes EF Core SQLite no Demo garantindo tradutibilidade das novas condicionais.
+- [x] Documentar a política em `docs.md` (nova seção).
 
 **Critérios de aceite:** `From` com navegação nula não lança NRE quando destino é nullable; consultas do Demo continuam traduzindo (25/25 + novos casos verdes); política documentada.
 
@@ -720,7 +720,18 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ### Resultado da Fase 12
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- **Política direcional implementada localmente**, sem mudanças no pacote externo: `NullAssignmentPolicy` (novo, em `Models/`) classifica cada `PropertyMatch` — a mesma classificação alimenta a forma da expressão no `SelectLambdaGenerator` (Generate) e os diagnósticos no `Transform` do AutoSelect. A política atua somente quando há anotação nullable de referência; código oblivious mantém o comportamento anterior (todos os goldens `#nullable disable` inalterados).
+- **DF5 aplicada:** navegação/objeto anulável → destino anulável gera `a.X == null ? null : new T {...}`; flattening por pai anulável → destino anulável gera `a.P == null ? null : a.P.X` (com `||` para múltiplos pais); escalar anulável → destino non-nullable mantém a atribuição direta e emite **RCSS015** (Warning) apontando a propriedade do DTO.
+- **DF18 aplicada:** coleção anulável → destino non-nullable gera `a.Items == null ? new List<TDto>() : a.Items.Select(...).ToList()` e emite **RCSS016** (Info). Coleção anulável → destino anulável propaga null. IDs registrados em `AnalyzerReleases.Unshipped.md`.
+- **Limitação registrada:** caminho de flattening anulável que termina em value type recebe RCSS015 em vez de condicional (o branch `null` não é tipável na expression tree sem cast); documentada em docs.md.
+- **Correções que a política expôs:** (a) `AddressDetails?` em propriedade `[AutoDetails]` com tipo ainda não gerado é vinculado pelo compilador como `Nullable<ErrorType>` — o `TryCreate` agora desembrulha o argumento de tipo e usa `UnderlyingType` no nome/hintName; (b) a emissão de `new T`/argumento genérico em `SelectLambdaGenerator` usava `Name` cru e quebrava com nomes anotados (`new AddressDetails?`) — agora usa o tipo subjacente.
+- **Achado registrado (fora de escopo, preexistente):** coleções com tipo concreto `List<T>` na entidade não são reconhecidas pelo resolver de enumeráveis do pacote externo e caem em `NewInstance` sobre as propriedades de `List` (gera código inválido com `Capacity`/`this[]`); as interfaces (`ICollection<T>`, `IEnumerable<T>`, `IReadOnlyList<T>`) funcionam. Candidato a correção externa futura.
+- **Testes:** `NullPolicyTests` (6) cobre propagação para navegação/coleção, fallback vazio com RCSS016 (ID+location+severidade), warning RCSS015 (escalar e flattening), comportamento oblivious inalterado e **execução em memória real** (emit + reflection): `From` com grafo nulo não lança NRE e produz coleção vazia. `Util.CompileResult` passou a expor `OutputCompilation` para os testes de execução.
+- **EF Core:** novo cenário Store no Demo (`Supplier`/`Warehouse?`/`ICollection<Contact>?` → `SupplierDetails` com `WarehouseDetails?` e `IReadOnlyList<ContactDetails>` non-nullable). `StoreDemoTests` comprova a **tradutibilidade das duas condicionais no SQLite** e a semântica em memória. Golden atualizado: apenas `NullableAndCastSelectorTests10` (fixture nullable-aware; Value3 ganhou fallback vazio e Value4 propagação de null).
+- **Docs:** nova seção "10. Política de Null" em `docs.md` com a tabela direcional completa; `RELEASE_NOTES.md` atualizado.
+- **Gates:** solution build — **0 erros** (12 warnings CS8601/CS8604 permanecem nos espelhos manuais de `Nulls.cs`, inerentes a mapeamentos inseguros mantidos por DF5 — o código gerado real não os expõe por usar contexto de anotações sem warnings); testes principais — **70/70**; `KnownLimitation` — **exatamente 2/2 falhando por design**; Demo — **28/28** (incluindo os 3 novos de Store); Benchmarks Release — **0 erros/0 warnings**.
 
 ---
 

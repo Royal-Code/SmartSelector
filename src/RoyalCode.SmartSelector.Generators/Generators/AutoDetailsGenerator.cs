@@ -42,8 +42,17 @@ internal static class AutoDetailsGenerator
         var declaredType = property.Type;
         var fromPropertyType = fromProperty.Type;
 
+        // Quando o tipo declarado é 'X?' e X ainda não existe, o compilador vincula Nullable<X-error>;
+        // o símbolo efetivo é o argumento de tipo.
+        var effectiveSymbol = declaredType.Symbol;
+        if (effectiveSymbol is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableSymbol &&
+            nullableSymbol.TypeArguments.FirstOrDefault() is INamedTypeSymbol nullableArgument)
+        {
+            effectiveSymbol = nullableArgument;
+        }
+
         // Verifica se o tipo declarado já existe na compilação (símbolo real, não error type).
-        var existingType = declaredType.HasNamedTypeSymbol(out var namedTypeSymbol) && namedTypeSymbol.TypeKind != TypeKind.Error
+        var existingType = effectiveSymbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind != TypeKind.Error
             ? namedTypeSymbol
             : null;
 
@@ -86,10 +95,11 @@ internal static class AutoDetailsGenerator
         }
 
         // Descriptor novo para o tipo gerado; o descriptor da propriedade não é mutado.
+        // O nome usa o tipo subjacente (sem a anotação '?') e o símbolo efetivo (sem o wrapper Nullable).
         var generatedType = new TypeDescriptor(
-            declaredType.Name,
+            declaredType.UnderlyingType,
             targetNamespace is not null ? [targetNamespace] : declaredType.Namespaces,
-            declaredType.Symbol);
+            effectiveSymbol);
 
         // Duas propriedades [AutoDetails] não podem gerar o mesmo tipo.
         var generatedTypeKey = $"{generatedType.Namespaces.FirstOrDefault()}.{generatedType.Name}";

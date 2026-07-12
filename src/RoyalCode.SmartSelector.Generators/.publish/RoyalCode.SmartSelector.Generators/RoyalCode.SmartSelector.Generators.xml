@@ -40,6 +40,42 @@
         <member name="M:RoyalCode.SmartSelector.Generators.IncrementalGenerator.Initialize(Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext)">
             <inheritdoc />
         </member>
+        <member name="T:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind">
+            <summary>
+            Classificação de cada atribuição da projeção. A política só atua quando há anotação nullable
+            de referência (código oblivious mantém o comportamento anterior).
+            </summary>
+        </member>
+        <member name="F:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind.None">
+            <summary>Sem tratamento: comportamento anterior.</summary>
+        </member>
+        <member name="F:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind.PropagateNull">
+            <summary>Origem anulável e destino anulável: condicional que propaga null (DF5).</summary>
+        </member>
+        <member name="F:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind.EmptyCollectionFallback">
+            <summary>Coleção anulável e destino não anulável: fallback de coleção vazia (DF18, Info RCSS016).</summary>
+        </member>
+        <member name="F:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind.WarnUnsafe">
+            <summary>Origem anulável e destino não anulável: comportamento mantido + warning RCSS015 (DF5).</summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.Generators.Models.NullAssignmentClassification.NullCheckPaths">
+            <summary>Caminhos parciais (sem o parâmetro) que exigem verificação de null, da raiz à folha.</summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.Generators.Models.NullAssignmentClassification.SourcePath">
+            <summary>Caminho completo da origem, para mensagens de diagnóstico.</summary>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.Generators.Models.NullAssignmentPolicy.IsNullableReference(RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor)">
+            <summary>
+            Anulável por anotação de referência; <see cref="P:RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor.IsNullable"/> (Nullable&lt;T&gt;)
+            continua tratado pelos assign types existentes.
+            </summary>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.Generators.Models.NullAssignmentPolicy.DestinationAcceptsNull(RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor)">
+            <summary>
+            O destino aceita null quando é referência anulável ou quando foi vinculado como
+            Nullable&lt;T&gt; (caso de 'X?' com X ainda não gerado pelo AutoDetails).
+            </summary>
+        </member>
         <member name="P:RoyalCode.SmartSelector.Generators.Models.SelectLambdaGenerator.AssignProperties.Origin">
             <summary>
             The origin property type descriptor. (DTO property)

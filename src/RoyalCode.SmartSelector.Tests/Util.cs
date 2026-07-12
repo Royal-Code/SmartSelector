@@ -21,7 +21,8 @@ internal sealed record CompileResult(
     ImmutableArray<Diagnostic> GeneratorDiagnostics,
     ImmutableArray<Diagnostic> CompilationDiagnostics,
     ImmutableDictionary<string, string> GeneratedSources,
-    GeneratorDriverRunResult RunResult)
+    GeneratorDriverRunResult RunResult,
+    Compilation OutputCompilation)
 {
     internal IEnumerable<Diagnostic> Errors => GeneratorDiagnostics
         .Concat(CompilationDiagnostics)
@@ -149,7 +150,8 @@ internal static class Util
             generatorDiagnostics,
             outputCompilation.GetDiagnostics(),
             generatedSources,
-            runResult);
+            runResult,
+            outputCompilation);
     }
 
     private static IEnumerable<MetadataReference> GetReferenceAssemblies(

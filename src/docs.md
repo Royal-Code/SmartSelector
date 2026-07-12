@@ -13,7 +13,8 @@ Gerador de código (Roslyn Source Generator) para criação de projeções (DTOs
 7. Exclusão de Propriedades
 8. Flattening (Projeção de Caminhos Aninhados)
 9. MapFrom (Alias explícito de origem)
-10. FAQ Rápido
+10. Política de Null (nullable reference types)
+11. FAQ Rápido
 
 ---
 ## 1. Visão Geral
@@ -297,7 +298,31 @@ Interação com EF Core:
 - O mapeamento gerado por `MapFrom` continua parte da `Expression` e é traduzível pelo provedor.
 
 ---
-## 10. FAQ Rápido
+## 10. Política de Null (nullable reference types)
+
+Quando o código-fonte usa anotações de nulabilidade (`#nullable enable`), o generator aplica uma política direcional
+ao projetar origens anuláveis. Código sem anotações (oblivious) mantém o comportamento tradicional, sem condicionais
+nem diagnósticos.
+
+| Origem | Destino | Comportamento |
+|---|---|---|
+| Navegação/objeto anulável (`Address?`) | Anulável (`AddressDetails?`) | Condicional propaga null: `a.Address == null ? null : new AddressDetails { ... }` |
+| Navegação/objeto anulável | Não anulável | Comportamento mantido + warning **RCSS015** |
+| Caminho de flattening por pai anulável (`a.Address.City`) | Anulável | Condicional propaga null: `a.Address == null ? null : a.Address.City` |
+| Caminho de flattening por pai anulável | Não anulável | Comportamento mantido + warning **RCSS015** |
+| Escalar anulável (`string?`) | Não anulável (`string`) | Atribuição direta mantida + warning **RCSS015** |
+| Escalar anulável | Anulável | Atribuição direta (null flui naturalmente) |
+| Coleção anulável (`ICollection<T>?`) | Anulável | Condicional propaga null |
+| Coleção anulável | Não anulável | Coleção vazia quando null (`a.Items == null ? new List<TDto>() : ...`) + info **RCSS016** |
+
+Notas:
+- As condicionais fazem parte da `Expression` e são traduzíveis pelo EF Core (validadas com SQLite no projeto Demo).
+- Value types anuláveis (`int?`) continuam tratados pelos mecanismos existentes (`HasValue`/cast); caminhos de
+  flattening anuláveis que terminam em value type recebem **RCSS015** em vez de condicional.
+- Os diagnósticos apontam a propriedade do DTO; para remover o aviso, torne o destino anulável ou exclua a propriedade.
+
+---
+## 11. FAQ Rápido
 **Flattening precisa de atributo?** Não, é por convenção do nome.  
 **Qual profundidade máxima?** Não fixada; limitada apenas pela cadeia navegável e heurística de casamento.  
 **Posso misturar flattening e objetos aninhados?** Sim.  

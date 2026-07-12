@@ -42,11 +42,26 @@ internal class SelectLambdaGenerator : ValueNode
         {
             sb.AppendLine();
 
-            //     PropertyName = 
+            //     PropertyName =
             sb.Indent(indent).Append(propMatch.Origin.Name).Append(" = ");
 
             var assignDescriptor = propMatch.AssignDescriptor!;
             var assignGenerator = GetAssignGenerator(assignDescriptor);
+
+            // política de null (DF5/DF18): o prefixo condicional envolve a atribuição;
+            // o ".ToList()" textual apendado depois permanece dentro do branch não nulo do ternário
+            var classification = NullAssignmentPolicy.Classify(propMatch);
+            switch (classification.Kind)
+            {
+                case NullAssignmentKind.PropagateNull:
+                    AppendNullChecks(sb, param, classification.NullCheckPaths);
+                    sb.Append(" ? null : ");
+                    break;
+                case NullAssignmentKind.EmptyCollectionFallback:
+                    AppendNullChecks(sb, param, classification.NullCheckPaths);
+                    sb.Append(" ? new List<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
+                    break;
+            }
 
             var assign = new AssignProperties(propMatch.Origin, propMatch.Target!, assignDescriptor.InnerSelection);
             assignGenerator(sb, indent, param, assign);
@@ -60,6 +75,24 @@ internal class SelectLambdaGenerator : ValueNode
             sb.Append(',');
         }
         sb.Length--;
+    }
+
+    private static string GenericItemName(TypeDescriptor type)
+    {
+        // extrai o argumento genérico ignorando a anotação nullable do tipo externo
+        var name = type.UnderlyingType;
+        var index = name.IndexOf('<');
+        return index == -1 ? name : name.Substring(index + 1, name.Length - index - 2);
+    }
+
+    private static void AppendNullChecks(StringBuilder sb, char param, IReadOnlyList<string> nullCheckPaths)
+    {
+        for (var i = 0; i < nullCheckPaths.Count; i++)
+        {
+            if (i > 0)
+                sb.Append(" || ");
+            sb.Append(param).Append('.').Append(nullCheckPaths[i]).Append(" == null");
+        }
     }
 
     private static AssignGenerator GetAssignGenerator(AssignDescriptor assignDescriptor)
@@ -108,7 +141,8 @@ internal class SelectLambdaGenerator : ValueNode
 
         inner.AddParentProperty(assign.Target);
 
-        sb.Append("new ").AppendLine(assign.Origin.Type.Name)
+        // o nome pode carregar a anotação nullable ('AddressDetails?'); a instância usa o tipo subjacente
+        sb.Append("new ").AppendLine(assign.Origin.Type.UnderlyingType)
             .Indent(indent).Append("{");
         
         GeneratePropertyCode(indent + 1, sb, param, inner.PropertyMatches);
@@ -126,7 +160,7 @@ internal class SelectLambdaGenerator : ValueNode
 
         var nextParam = (char)(param + 1);
 
-        sb.Append(nextParam).Append(" => new ").AppendLine(assign.Origin.Type.GenericType)
+        sb.Append(nextParam).Append(" => new ").AppendLine(GenericItemName(assign.Origin.Type))
             .Indent(indent).Append('{');
 
         GeneratePropertyCode(indent + 1, sb, nextParam, inner.PropertyMatches);

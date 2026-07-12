@@ -82,11 +82,11 @@ public partial class ValueSelectNullsDto
         {
             Value = b.Value
         }).ToList(),
-        Value3 = a.Value3.Select(b => new ValueDto
+        Value3 = a.Value3 == null ? new List<ValueDto>() : a.Value3.Select(b => new ValueDto
         {
             Value = b.Value
         }).ToList(),
-        Value4 = a.Value4.Select(b => new ValueDto
+        Value4 = a.Value4 == null ? null : a.Value4.Select(b => new ValueDto
         {
             Value = b.Value
         }).ToList()

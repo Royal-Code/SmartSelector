@@ -126,4 +126,20 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor NullableSourceForNonNullableDestination = new(
+        id: "RCSS015",
+        title: "Nullable source projected into non-nullable destination",
+        messageFormat: "The property '{0}' is projected from the nullable source '{1}' and cannot represent null; the value may be null or fail at runtime — make the destination nullable or exclude the property",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor NullableCollectionProjectedAsEmpty = new(
+        id: "RCSS016",
+        title: "Nullable source collection projected as empty collection",
+        messageFormat: "The property '{0}' is projected from the nullable collection '{1}'; an empty collection is produced when the source is null",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true);
+
 }

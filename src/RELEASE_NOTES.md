@@ -9,6 +9,7 @@
 - The projection cache field is now nullable (`private static Func<TFrom, TDto>? select{X}Func;`), removing CS8618 from generated code under nullable contexts.
 - Nullable reference annotations of source properties are preserved on generated properties (`string?` stays `string?`). Nullable reference properties are now included in `AutoProperties` generation (they were silently skipped before).
 - The generator now honors `Exclude`/`Flattening` of `AutoProperties` in nested match contexts (previously read from the wrong attribute and ignored).
+- Null policy for nullable reference annotations: nullable sources projected into nullable destinations propagate `null` through translatable conditionals (`a.X == null ? null : ...`); nullable collections projected into non-nullable destination collections produce an empty collection when null (diagnostic RCSS016, Info); nullable sources flowing into non-nullable destinations keep the previous behavior and report the new warning RCSS015. Oblivious (non-annotated) code keeps the previous behavior. See the "Política de Null" section in docs.md.
 - Requires `RoyalCode.Extensions.SourceGenerator` 0.1.15 (bundled inside the generator package).
 
 ## Breaking changes

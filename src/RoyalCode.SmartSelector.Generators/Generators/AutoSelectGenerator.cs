@@ -201,7 +201,41 @@ internal static class AutoSelectGenerator
         }
 
         var flatteningDiagnostics = CreateFlatteningDiagnostics(classDeclaration, fromType);
-        return new AutoSelectInformation(matchSelection, propertiesInfo, flatteningDiagnostics);
+        var nullPolicyDiagnostics = CreateNullPolicyDiagnostics(classDeclaration, matchSelection);
+        return new AutoSelectInformation(
+            matchSelection,
+            propertiesInfo,
+            [.. flatteningDiagnostics, .. nullPolicyDiagnostics]);
+    }
+
+    private static IEnumerable<Diagnostic> CreateNullPolicyDiagnostics(
+        ClassDeclarationSyntax classDeclaration,
+        MatchSelection matchSelection)
+    {
+        // Diagnósticos da política de null (DF5/DF18) para as propriedades do DTO;
+        // seleções internas (AutoDetails/coleções) recebem apenas a forma segura da expressão.
+        foreach (var propertyMatch in matchSelection.PropertyMatches)
+        {
+            var classification = NullAssignmentPolicy.Classify(propertyMatch);
+            var descriptor = classification.Kind switch
+            {
+                NullAssignmentKind.WarnUnsafe => AnalyzerDiagnostics.NullableSourceForNonNullableDestination,
+                NullAssignmentKind.EmptyCollectionFallback => AnalyzerDiagnostics.NullableCollectionProjectedAsEmpty,
+                _ => null,
+            };
+            if (descriptor is null)
+                continue;
+
+            var propertySyntax = classDeclaration.Members
+                .OfType<PropertyDeclarationSyntax>()
+                .FirstOrDefault(p => p.Identifier.Text == propertyMatch.Origin.Name);
+
+            yield return Diagnostic.Create(
+                descriptor,
+                propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
+                propertyMatch.Origin.Name,
+                classification.SourcePath);
+        }
     }
 
     private static Diagnostic[] GetAutoDetailsDiagnostics(

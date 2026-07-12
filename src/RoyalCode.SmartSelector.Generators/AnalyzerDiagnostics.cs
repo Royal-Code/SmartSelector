@@ -102,11 +102,4 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor QualifiedAutoPropertiesNotSupported = new(
-        id: "RCSS012",
-        title: "Qualified AutoProperties syntax is not supported",
-        messageFormat: "Qualified or aliased AutoPropertiesAttribute<TFrom> syntax is not supported yet; use the simple attribute name",
-        category: Category,
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
 }

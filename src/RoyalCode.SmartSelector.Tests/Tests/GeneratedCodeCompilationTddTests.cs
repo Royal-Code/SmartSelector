@@ -50,8 +50,6 @@ public class GeneratedCodeCompilationTddTests
     }
 
     [Fact]
-    [Trait("Category", "KnownLimitation")]
-    // Fase 6: AutoProperties<T> será resolvido semanticamente, inclusive com global::.
     public void Generated_code_should_compile_with_a_fully_qualified_AutoProperties_attribute()
     {
         AssertGeneratedCodeCompiles(

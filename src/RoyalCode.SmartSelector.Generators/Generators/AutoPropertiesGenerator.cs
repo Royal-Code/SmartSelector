@@ -9,8 +9,6 @@ internal static class AutoPropertiesGenerator
     public const string AutoPropertiesAttributeTypedFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute`1";
     public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
 
-    private const string AutoPropertiesAttributeName = "AutoProperties";              // non generic form
-    private const string AutoPropertiesGenericAttributeName = "AutoProperties";       // generic form base identifier
     internal const string MapFromAttributeName = "MapFromAttribute";
 
     internal static MatchOptions MatchOptions { get; } = new()
@@ -78,25 +76,24 @@ internal static class AutoPropertiesGenerator
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        // Recupera TODOS os atributos de AutoProperties na declaração (genérico e não genérico)
-        var allAutoProps = classDeclaration.AttributeLists
-            .SelectMany(l => l.Attributes)
-            .Where(a => a.Name is IdentifierNameSyntax id && id.Identifier.Text == AutoPropertiesAttributeName
-                        || a.Name is GenericNameSyntax g && g.Identifier.Text == AutoPropertiesGenericAttributeName)
-            .ToArray();
-
-        if (allAutoProps.Length == 0)
+        var autoPropertiesAttribute = context.Attributes.FirstOrDefault(attribute =>
+            attribute.AttributeClass?.MetadataName == "AutoPropertiesAttribute`1" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
+        var attributeSyntax = autoPropertiesAttribute?.ApplicationSyntaxReference?.GetSyntax(token)
+            as AttributeSyntax;
+        if (autoPropertiesAttribute is null)
         {
-            var attributeSyntax = context.Attributes.FirstOrDefault()?.ApplicationSyntaxReference?.GetSyntax(token)
-                as AttributeSyntax;
             var diagnostic = Diagnostic.Create(
-                AnalyzerDiagnostics.QualifiedAutoPropertiesNotSupported,
-                attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation());
+                AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+                classDeclaration.Identifier.GetLocation(),
+                "<missing>");
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        // Verifica conflito: uso simultâneo do genérico e não-genérico.
-        bool hasNonGeneric = allAutoProps.Any(a => a.Name is IdentifierNameSyntax);
+        // Verifica semanticamente o conflito entre as formas genérica e não genérica.
+        var hasNonGeneric = classSymbol.GetAttributes().Any(attribute =>
+            attribute.AttributeClass?.MetadataName == "AutoPropertiesAttribute" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
         if (hasNonGeneric)
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.ConflictingAutoPropertiesAttributes,
@@ -105,37 +102,18 @@ internal static class AutoPropertiesGenerator
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        // Cria TypeDescriptor do modelo
         var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
-
-        // Localiza o AttributeSyntax exato para extrair parâmetros nomeados (Exclude)
-        var attrSyntax = allAutoProps.First(a => a.Name is GenericNameSyntax);
-
-        var genericAttr = (GenericNameSyntax)attrSyntax.Name;
-
-        // Pega o argumento de tipo TFrom
-        if (genericAttr.TypeArgumentList.Arguments.Count != 1)
+        var fromSymbol = autoPropertiesAttribute.AttributeClass?.TypeArguments.FirstOrDefault();
+        if (fromSymbol is null ||
+            fromSymbol.TypeKind is not TypeKind.Class and not TypeKind.Struct)
         {
             var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
-                classDeclaration.Identifier.GetLocation(),
-                "<missing>");
+                attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
+                fromSymbol?.ToDisplayString() ?? "<missing>");
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        var fromTypeSyntax = genericAttr.TypeArgumentList.Arguments[0];
-
-        // Tentamos criar TypeDescriptor para o tipo origem
-        var fromType = TypeDescriptor.Create(fromTypeSyntax, context.SemanticModel);
-        if (fromType.Symbol is null)
-        {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
-                fromTypeSyntax.GetLocation(),
-                fromTypeSyntax.ToString());
-            return new AutoPropertiesInformation(diagnostic);
-        }
-
-        // Cria a informação
-        return CreateInformation(modelType, fromType, attrSyntax);
+        return CreateInformation(modelType, TypeDescriptor.Create(fromSymbol), autoPropertiesAttribute);
     }
 
     internal static Diagnostic? ValidateNonGenericUsage(
@@ -209,13 +187,17 @@ internal static class AutoPropertiesGenerator
 
         // obtém Exclude de NamedArguments
         foreach (var namedArg in autoPropertyAttribute.NamedArguments)
-            if (namedArg.Key == "Exclude" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
+            if (namedArg.Key == "Exclude" &&
+                namedArg.Value.Kind == TypedConstantKind.Array &&
+                !namedArg.Value.IsNull)
             {
                 foreach (var v in namedArg.Value.Values)
                     if (v.Value is string s)
                         excluded.Add(s);
             }
-            else if (namedArg.Key == "Flattening" && namedArg.Value.Kind == TypedConstantKind.Array && namedArg.Value.Values != null)
+            else if (namedArg.Key == "Flattening" &&
+                     namedArg.Value.Kind == TypedConstantKind.Array &&
+                     !namedArg.Value.IsNull)
             {
                 foreach (var fv in namedArg.Value.Values)
                     if (fv.Value is string fs)
@@ -555,100 +537,14 @@ internal class MapFromPropertyNameResolver : IPropertyNameResolver
     {
         propertyName = null;
 
-        // check if the symbol has the MapFrom attribute
         var attr = symbol.GetAttributes()
-            .FirstOrDefault(attr => attr.AttributeClass?.Name == AutoPropertiesGenerator.MapFromAttributeName);
+            .FirstOrDefault(attribute =>
+                attribute.AttributeClass?.MetadataName == AutoPropertiesGenerator.MapFromAttributeName &&
+                attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
 
-        if (attr is not null)
-        {
-            // First, try constructor argument (preferred usage)
-            if (attr.ConstructorArguments.Length == 1)
-            {
-                propertyName = attr.ConstructorArguments[0].Value as string;
-                if (!string.IsNullOrEmpty(propertyName))
-                    return true;
-            }
-
-            // Fallback: try named argument on the attribute (PropertyName setter)
-            if (attr.NamedArguments.Length > 0)
-            {
-                var named = attr.NamedArguments.FirstOrDefault(a => a.Key == "PropertyName");
-                if (named.Value.Value is string s && !string.IsNullOrEmpty(s))
-                {
-                    propertyName = s;
-                    return true;
-                }
-            }
-
-            // Last resort: inspect declaration syntax to extract literal or nameof
-            // This handles cases where Roslyn didn't materialize ConstructorArguments in this pipeline
-            foreach (var decl in symbol.DeclaringSyntaxReferences)
-            {
-                var syntax = decl.GetSyntax();
-                if (syntax is not PropertyDeclarationSyntax pds)
-                    continue;
-
-                foreach (var al in pds.AttributeLists)
-                {
-                    foreach (var a in al.Attributes)
-                    {
-                        var nameText = a.Name switch
-                        {
-                            IdentifierNameSyntax id => id.Identifier.Text,
-                            GenericNameSyntax gn => gn.Identifier.Text,
-                            _ => a.Name.ToString()
-                        };
-
-                        if (!string.Equals(nameText, "MapFrom", StringComparison.Ordinal))
-                            continue;
-
-                        if (a.ArgumentList is { Arguments.Count: > 0 })
-                        {
-                            var expr = a.ArgumentList.Arguments[0].Expression;
-                            switch (expr)
-                            {
-                                case LiteralExpressionSyntax les:
-                                    var text = les.Token.ValueText;
-                                    if (!string.IsNullOrEmpty(text))
-                                    {
-                                        propertyName = text;
-                                        return true;
-                                    }
-                                    break;
-                                case InvocationExpressionSyntax ies:
-                                    // Handle nameof(Member) -> get last identifier as property name
-                                    if (ies.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax ident
-                                        && string.Equals(ident.Identifier.Text, "nameof", StringComparison.Ordinal)
-                                        && ies.ArgumentList.Arguments.Count == 1)
-                                    {
-                                        var argExpr = ies.ArgumentList.Arguments[0].Expression;
-                                        if (argExpr is IdentifierNameSyntax idArg)
-                                        {
-                                            propertyName = idArg.Identifier.Text;
-                                            if (!string.IsNullOrEmpty(propertyName))
-                                                return true;
-                                        }
-                                        else if (argExpr is MemberAccessExpressionSyntax mae)
-                                        {
-                                            propertyName = mae.Name.Identifier.Text;
-                                            if (!string.IsNullOrEmpty(propertyName))
-                                                return true;
-                                        }
-                                    }
-                                    break;
-                                case MemberAccessExpressionSyntax maeExpr:
-                                    // If provided directly as something like Product.Name (rare), take the right side
-                                    propertyName = maeExpr.Name.Identifier.Text;
-                                    if (!string.IsNullOrEmpty(propertyName))
-                                        return true;
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return false;
+        propertyName = attr is { ConstructorArguments.Length: 1 }
+            ? attr.ConstructorArguments[0].Value as string
+            : null;
+        return !string.IsNullOrEmpty(propertyName);
     }
 }

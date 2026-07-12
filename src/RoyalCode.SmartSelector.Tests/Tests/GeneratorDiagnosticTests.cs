@@ -128,23 +128,6 @@ public class GeneratorDiagnosticTests
     }
 
     [Fact]
-    public void RCSS012_should_report_qualified_AutoProperties_until_phase_6()
-    {
-        AssertDiagnostic(
-            """
-            namespace Diagnostics
-            {
-                public class Entity { public int Id { get; set; } }
-
-                [global::RoyalCode.SmartSelector.AutoProperties<Entity>]
-                public partial class Details { }
-            }
-            """,
-            "RCSS012",
-            "global::RoyalCode.SmartSelector.AutoProperties<Entity>");
-    }
-
-    [Fact]
     public void RCSS001_from_AutoDetails_should_point_to_the_property()
     {
         AssertDiagnostic(

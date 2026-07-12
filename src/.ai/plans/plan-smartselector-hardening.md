@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–5 concluídas; próxima: Fase 6 (AutoProperties<T> semântico)
+## Status: EM ANDAMENTO - Fases 0–6 concluídas; próxima: Fase 7 (refactors internos do generator)
 
 ## Progresso
 
-`████░░░░░░░░░░░░` **25%** - 4 de 16 fases
+`███████░░░░░░░░░` **44%** - 7 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -14,7 +14,7 @@
 | Fase 3 - Limpeza de Demo e Benchmarks | Concluida |
 | Fase 4 - Bugs de geração de baixo risco | Concluída em 2026-07-11 |
 | Fase 5 - Diagnósticos completos e localizados | Concluída em 2026-07-11 |
-| Fase 6 - AutoProperties<T> semântico | Pendente |
+| Fase 6 - AutoProperties<T> semântico | Concluída em 2026-07-12 |
 | Fase 7 - Refactors internos do generator | Pendente |
 | Fase 8 - Empacotamento e dependências | Pendente |
 | Fase 9 - CI e release com gates | Pendente |
@@ -480,10 +480,10 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Reescrever `Transform` para usar `context.Attributes[0]` (TFrom via `AttributeClass.TypeArguments`, named args via `NamedArguments`).
-- [ ] Remover a busca sintática por `IdentifierNameSyntax`/`GenericNameSyntax` (`AutoPropertiesGenerator.cs:54-57`), mantendo detecção de conflito genérico/não-genérico por símbolo.
-- [ ] Avaliar e, se possível, remover o fallback de inspeção sintática de `MapFromPropertyNameResolver` (código morto se `ConstructorArguments` sempre materializa).
-- [ ] Tornar verde o teste TDD `Generated_code_should_compile_with_a_fully_qualified_AutoProperties_attribute` e remover seu trait `KnownLimitation`.
+- [x] Reescrever `Transform` para usar `context.Attributes[0]` (TFrom via `AttributeClass.TypeArguments`, named args via `NamedArguments`).
+- [x] Remover a busca sintática por `IdentifierNameSyntax`/`GenericNameSyntax` (`AutoPropertiesGenerator.cs:54-57`), mantendo detecção de conflito genérico/não-genérico por símbolo.
+- [x] Avaliar e, se possível, remover o fallback de inspeção sintática de `MapFromPropertyNameResolver` (código morto se `ConstructorArguments` sempre materializa).
+- [x] Tornar verde o teste TDD `Generated_code_should_compile_with_a_fully_qualified_AutoProperties_attribute` e remover seu trait `KnownLimitation`.
 
 **Critérios de aceite:** `[global::RoyalCode.SmartSelector.AutoProperties<X>]` e aliases geram o mesmo código da forma simples; teste TDD correspondente verde e no gate padrão.
 
@@ -491,7 +491,17 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 6
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- `AutoPropertiesGenerator.Transform` agora obtém o atributo tipado por `context.Attributes`, resolve `TFrom` por `AttributeClass.TypeArguments` e lê `Exclude`/`Flattening` exclusivamente de `AttributeData.NamedArguments`; a sintaxe do atributo ficou restrita à location de RCSS005.
+- A detecção de conflito entre `AutoPropertiesAttribute` e `AutoPropertiesAttribute<TFrom>` passou a comparar símbolos/metadados, funcionando também com nomes qualificados e aliases.
+- Foram removidas a busca por `IdentifierNameSyntax`/`GenericNameSyntax` e a criação de `TypeDescriptor` a partir do argumento sintático.
+- O tratamento de arrays nomeados ignora corretamente valores `null` antes de enumerar `TypedConstant.Values`.
+- O fallback sintático de `MapFromPropertyNameResolver` foi removido. Literais, `nameof`, forma qualificada e alias são resolvidos pelo argumento constante do construtor em `AttributeData`; o teste por alias protege essa decisão.
+- `AutoPropertiesSemanticTests` compara os arquivos gerados pelas formas simples, `global::` e alias, incluindo `Exclude` e `Flattening`, e verifica `MapFrom` por alias.
+- O teste TDD de `AutoProperties<T>` qualificado ficou verde e saiu de `KnownLimitation`. RCSS012, criado como diagnóstico estritamente temporário na Fase 5, foi removido de código, testes e `AnalyzerReleases.Unshipped.md` antes de ser publicado.
+- Nenhum golden snapshot precisou ser alterado.
+- Gates: testes principais com `Category!=KnownLimitation` — **53/53 aprovados**; execução informativa `Category=KnownLimitation` — **exatamente 2/2 falhando por design** (RCSS008 e RCSS009); Demo — **25/25 aprovados**; solution build — **0 erros, 0 warnings**; `git diff --check` aprovado.
 
 ---
 

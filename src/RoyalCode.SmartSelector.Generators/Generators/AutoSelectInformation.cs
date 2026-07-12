@@ -57,7 +57,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         if (ReferenceEquals(this, other))
             return true;
 
-        return SequenceEqual(diagnostics, other.diagnostics) &&
+        return InformationEquality.SequenceEqual(diagnostics, other.diagnostics) &&
                Equals(matchSelection, other.matchSelection) &&
                Equals(autoPropertyInformation, other.autoPropertyInformation);
     }
@@ -72,33 +72,11 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         unchecked
         {
             var hashCode = 17;
-            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(diagnostics);
             hashCode = (hashCode * 31) + (matchSelection?.GetHashCode() ?? 0);
             hashCode = (hashCode * 31) + (autoPropertyInformation?.GetHashCode() ?? 0);
             return hashCode;
         }
     }
 
-    private static bool SequenceEqual<T>(T[]? left, T[]? right)
-    {
-        if (ReferenceEquals(left, right))
-            return true;
-
-        return left is not null && right is not null && left.SequenceEqual(right);
-    }
-
-    private static int SequenceHashCode<T>(T[]? values)
-    {
-        if (values is null)
-            return 0;
-
-        unchecked
-        {
-            var hashCode = 17;
-            foreach (var value in values)
-                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
-
-            return hashCode;
-        }
-    }
 }

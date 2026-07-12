@@ -45,10 +45,10 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         {
             return true;
         }
-        return SequenceEqual(diagnostics, other.diagnostics) &&
-               SequenceEqual(properties, other.properties) &&
+        return InformationEquality.SequenceEqual(diagnostics, other.diagnostics) &&
+               InformationEquality.SequenceEqual(properties, other.properties) &&
                Equals(originType, other.originType) &&
-               SequenceEqual(autoDetails, other.autoDetails);
+               InformationEquality.SequenceEqual(autoDetails, other.autoDetails);
     }
 
     public override bool Equals(object? obj)
@@ -61,33 +61,10 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         unchecked
         {
             var hashCode = 17;
-            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
-            hashCode = (hashCode * 31) + SequenceHashCode(properties);
+            hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(properties);
             hashCode = (hashCode * 31) + (originType?.GetHashCode() ?? 0);
-            hashCode = (hashCode * 31) + SequenceHashCode(autoDetails);
-            return hashCode;
-        }
-    }
-
-    private static bool SequenceEqual<T>(T[]? left, T[]? right)
-    {
-        if (ReferenceEquals(left, right))
-            return true;
-
-        return left is not null && right is not null && left.SequenceEqual(right);
-    }
-
-    private static int SequenceHashCode<T>(T[]? values)
-    {
-        if (values is null)
-            return 0;
-
-        unchecked
-        {
-            var hashCode = 17;
-            foreach (var value in values)
-                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
-
+            hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(autoDetails);
             return hashCode;
         }
     }

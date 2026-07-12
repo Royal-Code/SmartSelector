@@ -14,17 +14,17 @@ public class IncrementalGenerator : IIncrementalGenerator
     {
         var pipelineProperties = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: AutoPropertiesGenerator.AutoPropertiesAttributeTypedFullName,
-            predicate: AutoPropertiesGenerator.Predicate,
+            predicate: GeneratorSyntaxPredicates.IsClass,
             transform: AutoPropertiesGenerator.Transform);
 
         var pipelineNonGenericProperties = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: AutoPropertiesGenerator.AutoPropertiesAttributeFullName,
-            predicate: AutoPropertiesGenerator.Predicate,
+            predicate: GeneratorSyntaxPredicates.IsClass,
             transform: AutoPropertiesGenerator.ValidateNonGenericUsage);
 
         var pipelineSelect = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: AutoSelectGenerator.AutoSelectAttributeFullName,
-            predicate: AutoSelectGenerator.Predicate,
+            predicate: GeneratorSyntaxPredicates.IsClass,
             transform: AutoSelectGenerator.Transform);
 
         context.RegisterSourceOutput(pipelineProperties, static (context, model) =>

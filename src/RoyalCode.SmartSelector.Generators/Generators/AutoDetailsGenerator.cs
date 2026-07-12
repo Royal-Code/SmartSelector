@@ -13,7 +13,7 @@ internal static class AutoDetailsGenerator
     {
         autoDetailInfo = null;
 
-        // verify if the property has AutoDetails attribute
+        // Verifica se a propriedade possui o atributo AutoDetails.
         var autoDetailsAttribute = property.Symbol?.GetAttributes().FirstOrDefault(attr =>
         {
             var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
@@ -23,10 +23,10 @@ internal static class AutoDetailsGenerator
         if (autoDetailsAttribute is null)
             return false;
 
-        // get the property of the fromType that matches the property name
+        // Obtém em fromType a propriedade que corresponde ao nome.
         var fromProperty = fromType.CreateProperties(p => p.Name == property.Name && p.GetMethod is not null).FirstOrDefault();
 
-        // if not found, return error diagnostic
+        // Se não for encontrada, retorna um diagnóstico de erro.
         if (fromProperty is null)
         {
             var location = property.Symbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()
@@ -38,22 +38,22 @@ internal static class AutoDetailsGenerator
             return true;
         }
 
-        // get type descriptors
+        // Obtém os descritores dos tipos.
         var propertyType = property.Type;
         var fromPropertyType = fromProperty.Type;
 
-        // create auto properties information
+        // Cria as informações de propriedades automáticas.
         var autoPropertiesInfo = AutoPropertiesGenerator.CreateInformation(propertyType, fromPropertyType, autoDetailsAttribute);
 
-        // try update the namespace for the generated type with same namespaces of the property declaring type.
+        // Atualiza o namespace do tipo gerado com o namespace do tipo que declara a propriedade.
         var propertyNamespace = property.Symbol?.ContainingNamespace?.ToDisplayString();
         if (propertyNamespace is not null)
             propertyType.Namespaces[0] = propertyNamespace;
 
-        // set the defined properties for the auto detail info
+        // Define as propriedades conhecidas para as informações de AutoDetails.
         propertyType.DefinedProperties = autoPropertiesInfo.Properties;
 
-        // create the auto detail info
+        // Cria as informações de AutoDetails.
         autoDetailInfo = new AutoDetailsInformation(
             $"{fromPropertyType.Name}Details",
             autoPropertiesInfo);
@@ -81,26 +81,7 @@ internal static class AutoDetailsGenerator
         GeneratedSourceConventions.ApplyRequiredNamespaces(detailsClass);
 
         // 1.1 - Modificadores (usa a mesma acessibilidade do tipo de origem)
-        if (originType.Symbol?.DeclaredAccessibility == Accessibility.Public)
-        {
-            detailsClass.Modifiers.Public();
-        }
-        else if (originType.Symbol?.DeclaredAccessibility == Accessibility.Internal)
-        {
-            detailsClass.Modifiers.Internal();
-        }
-        else if (originType.Symbol?.DeclaredAccessibility == Accessibility.Protected)
-        {
-            detailsClass.Modifiers.Protected();
-        }
-        else if (originType.Symbol?.DeclaredAccessibility == Accessibility.Private)
-        {
-            detailsClass.Modifiers.Private();
-        }
-        else
-        {
-            detailsClass.Modifiers.Public();
-        }
+        GeneratedSourceConventions.ApplyDeclaredAccessibility(detailsClass, originType.Symbol);
 
         // 1.2 - partial, para o desenvolvedor poder estender
         detailsClass.Modifiers.Partial();

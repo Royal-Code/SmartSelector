@@ -18,14 +18,6 @@ internal static class AutoSelectGenerator
     public const string AutoSelectAttributeFullName = "RoyalCode.SmartSelector.AutoSelectAttribute`1";
     public const string AutoPropertiesAttributeFullName = "RoyalCode.SmartSelector.AutoPropertiesAttribute";
 
-    private const string AutoPropertiesAttributeName = "AutoProperties";
-
-    public static bool Predicate(SyntaxNode node, CancellationToken _)
-    {
-        var accept = node is ClassDeclarationSyntax;
-        return accept;
-    }
-
     public static AutoSelectInformation Transform(
         GeneratorAttributeSyntaxContext context,
         CancellationToken __)
@@ -33,7 +25,7 @@ internal static class AutoSelectGenerator
         // classe que contém o atributo
         var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
 
-        // extrai o symbol do classDeclaration
+        // Extrai o símbolo da declaração da classe.
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
         // se não existe o símbolo, não é um tipo válido
@@ -124,24 +116,30 @@ internal static class AutoSelectGenerator
             fromSymbol);
         var modelType = new TypeDescriptor(classDeclaration.Identifier.Text, [classDeclaration.GetNamespace()], classSymbol);
 
-        // verifica se existe o atributo AutoProperty na classe
+        // Verifica semanticamente os atributos AutoProperties aplicados à classe.
         AutoPropertiesInformation? propertiesInfo = null;
-        if (classDeclaration.TryGetAttribute(AutoPropertiesAttributeName, out AttributeSyntax? autoPropAttr))
+        var attributes = classSymbol.GetAttributes();
+        var typedAutoProperties = attributes.FirstOrDefault(attribute =>
+            attribute.AttributeClass?.MetadataName == "AutoPropertiesAttribute`1" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
+        if (typedAutoProperties is not null)
         {
-            // o atributo AutoProperty não pode ser genérico
-            if (autoPropAttr!.Name is GenericNameSyntax)
-            {
-                var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoProperty,
-                    location: classDeclaration.Identifier.GetLocation(),
-                    classDeclaration.Identifier.Text);
+            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoProperty,
+                location: classDeclaration.Identifier.GetLocation(),
+                classDeclaration.Identifier.Text);
 
-                return new AutoSelectInformation(diagnostic);
-            }
-
-            propertiesInfo = AutoPropertiesGenerator.CreateInformation(modelType, fromType, autoPropAttr!);
+            return new AutoSelectInformation(diagnostic);
         }
 
-        // match das propriedades da classe com o attributo e a classe definida no TFrom.
+        var autoProperties = attributes.FirstOrDefault(attribute =>
+            attribute.AttributeClass?.MetadataName == "AutoPropertiesAttribute" &&
+            attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
+        if (autoProperties is not null)
+        {
+            propertiesInfo = AutoPropertiesGenerator.CreateInformation(modelType, fromType, autoProperties);
+        }
+
+        // Corresponde as propriedades da classe com o atributo e a classe definida em TFrom.
         var matchSelection = MatchSelection.Create(
             modelType,
             fromType,
@@ -154,7 +152,7 @@ internal static class AutoSelectGenerator
             List<Diagnostic> diagnostics = [];
             foreach (var property in missingProperties)
             {
-                // obtém o syntax token da propriedade a partir do classDeclaration
+                // Obtém o token sintático da propriedade na declaração da classe.
                 var propertySyntax = classDeclaration.Members
                     .OfType<PropertyDeclarationSyntax>()
                     .FirstOrDefault(p => p.Identifier.Text == property.Name);
@@ -175,7 +173,7 @@ internal static class AutoSelectGenerator
             List<Diagnostic> diagnostics = [];
             foreach (var property in notAssignableProperties)
             {
-                // obtém o syntax token da propriedade a partir do classDeclaration
+                // Obtém o token sintático da propriedade na declaração da classe.
                 var propertySyntax = classDeclaration.Members
                     .OfType<PropertyDeclarationSyntax>()
                     .FirstOrDefault(p => p.Identifier.Text == property.Origin.Name);
@@ -264,32 +262,19 @@ internal static class AutoSelectGenerator
             "AutoSelect");
 
         // 1.1 modificadores
-        if (match.OriginType.Symbol?.DeclaredAccessibility == Accessibility.Public)
-        {
-            partialClass.Modifiers.Public();
-        }
-        if (match.OriginType.Symbol?.DeclaredAccessibility == Accessibility.Internal)
-        {
-            partialClass.Modifiers.Internal();
-        }
-        if (match.OriginType.Symbol?.DeclaredAccessibility == Accessibility.Protected)
-        {
-            partialClass.Modifiers.Protected();
-        }
-        if (match.OriginType.Symbol?.DeclaredAccessibility == Accessibility.Private)
-        {
-            partialClass.Modifiers.Private();
-        }
+        GeneratedSourceConventions.ApplyDeclaredAccessibility(
+            partialClass,
+            match.OriginType.Symbol);
 
         partialClass.Modifiers.Partial();
 
         // 1.2 campo privado para a func
 
-        // 1.2.1 cria type para Func<Target, Origin>
+        // 1.2.1 cria o tipo Func<Target, Origin>
         var funcType = new TypeDescriptor($"Func<{match.TargetType.Name}, {match.OriginType.Name}>",
             [match.TargetType.Namespaces[0], match.OriginType.Namespaces[0], "System"], null);
 
-        // 1.2.2 cria o campo privado para a func "select{Target}Func"
+        // 1.2.2 cria o campo privado para a função "select{Target}Func"
         var funcField = new FieldGenerator(funcType, $"select{targetTypeIdentifier}Func", false);
         funcField.Modifiers.Private();
         funcField.Modifiers.Static();
@@ -299,7 +284,7 @@ internal static class AutoSelectGenerator
 
         // 1.3 propriedade expression: Expression<Func<Target, Origin>> Select{Target}Expression
 
-        // 1.3.1 cria type para Expression<Func<Target, Origin>>
+        // 1.3.1 cria o tipo Expression<Func<Target, Origin>>
         var expressionType = new TypeDescriptor($"Expression<{funcType.Name}>",
             [.. funcType.Namespaces, "System.Linq.Expressions"], null);
 
@@ -387,7 +372,7 @@ internal static class AutoSelectGenerator
 
         queryMethod.Parameters.Add(queryParamGenerator);
 
-        // 2.1.4 create the method command
+        // 2.1.4 cria o comando do método
         var invokeSelect = new MethodInvokeGenerator(
             queryParam.Name, 
             "Select",
@@ -425,7 +410,7 @@ internal static class AutoSelectGenerator
 
         enumerableMethod.Parameters.Add(enumerableParamGenerator);
 
-        // 2.2.4 create the method command
+        // 2.2.4 cria o comando do método
         var invokeSelectEnumerable = new MethodInvokeGenerator(
             enumerableParam.Name,
             "Select",

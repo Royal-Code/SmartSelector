@@ -1,0 +1,25 @@
+#nullable enable
+RoyalCode.SmartSelector.AutoDetailsAttribute
+RoyalCode.SmartSelector.AutoDetailsAttribute.AutoDetailsAttribute() -> void
+RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude.get -> string![]?
+RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude.set -> void
+RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening.get -> string![]?
+RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute
+RoyalCode.SmartSelector.AutoPropertiesAttribute.AutoPropertiesAttribute() -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.AutoPropertiesAttribute() -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Exclude.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Exclude.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Flattening.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Flattening.set -> void
+RoyalCode.SmartSelector.AutoSelectAttribute<TFrom>
+RoyalCode.SmartSelector.AutoSelectAttribute<TFrom>.AutoSelectAttribute() -> void
+RoyalCode.SmartSelector.MapFromAttribute
+RoyalCode.SmartSelector.MapFromAttribute.MapFromAttribute(string! propertyName) -> void
+RoyalCode.SmartSelector.MapFromAttribute.PropertyName.get -> string!
+RoyalCode.SmartSelector.MapFromAttribute.PropertyName.set -> void

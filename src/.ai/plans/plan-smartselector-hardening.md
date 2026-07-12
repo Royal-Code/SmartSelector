@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–6 concluídas; próxima: Fase 7 (refactors internos do generator)
+## Status: EM ANDAMENTO - Fases 0–7 concluídas; próxima: Fase 8 (empacotamento e dependências)
 
 ## Progresso
 
-`███████░░░░░░░░░` **44%** - 7 de 16 fases
+`████████░░░░░░░░` **50%** - 8 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -15,7 +15,7 @@
 | Fase 4 - Bugs de geração de baixo risco | Concluída em 2026-07-11 |
 | Fase 5 - Diagnósticos completos e localizados | Concluída em 2026-07-11 |
 | Fase 6 - AutoProperties<T> semântico | Concluída em 2026-07-12 |
-| Fase 7 - Refactors internos do generator | Pendente |
+| Fase 7 - Refactors internos do generator | Concluída em 2026-07-12 |
 | Fase 8 - Empacotamento e dependências | Pendente |
 | Fase 9 - CI e release com gates | Pendente |
 | Fase 10 - Contrato do AutoDetails | Pendente |
@@ -515,16 +515,16 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Extrair helper único para mapear `DeclaredAccessibility` → modificadores (hoje triplicado em `AutoSelectGenerator`, `AutoPropertiesGenerator`, `AutoDetailsGenerator`), com fallback definido e tratamento de `ProtectedOrInternal`/`ProtectedAndInternal`.
-- [ ] Extrair `SequenceEqual`/`SequenceHashCode` duplicados das 3 classes `*Information` para utilitário interno.
-- [ ] Consolidar os overloads restantes de `CreateInformation` em `AutoPropertiesGenerator` (pós-Fase 6).
-- [ ] Unificar os `Predicate` idênticos de `AutoSelectGenerator` e `AutoPropertiesGenerator`.
-- [ ] Padronizar idioma dos comentários conforme DF8.
-- [ ] Selar os atributos públicos (DF16).
-- [ ] Extrair classe base pública com `Exclude`/`Flattening` para os atributos (DF17).
-- [ ] Adicionar `Microsoft.CodeAnalysis.PublicApiAnalyzers` ao projeto runtime com snapshot da API pública (`PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`), registrando as mudanças de DF16/DF17.
-- [ ] Criar teste de compilação de consumidor que deriva dos atributos, documentando que agora falha (efeito esperado de DF16).
-- [ ] Registrar a versão NuGet alvo do breaking (0.5.0), nota de release/migração e a decisão de `AssemblyVersion` em `Directory.Build.props`.
+- [x] Extrair helper único para mapear `DeclaredAccessibility` → modificadores (hoje triplicado em `AutoSelectGenerator`, `AutoPropertiesGenerator`, `AutoDetailsGenerator`), com fallback definido e tratamento de `ProtectedOrInternal`/`ProtectedAndInternal`.
+- [x] Extrair `SequenceEqual`/`SequenceHashCode` duplicados das 3 classes `*Information` para utilitário interno.
+- [x] Consolidar os overloads restantes de `CreateInformation` em `AutoPropertiesGenerator` (pós-Fase 6).
+- [x] Unificar os `Predicate` idênticos de `AutoSelectGenerator` e `AutoPropertiesGenerator`.
+- [x] Padronizar idioma dos comentários conforme DF8.
+- [x] Selar os atributos públicos (DF16).
+- [x] Extrair classe base pública com `Exclude`/`Flattening` para os atributos (DF17).
+- [x] Adicionar `Microsoft.CodeAnalysis.PublicApiAnalyzers` ao projeto runtime com snapshot da API pública (`PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`), registrando as mudanças de DF16/DF17.
+- [x] Criar teste de compilação de consumidor que deriva dos atributos, documentando que agora falha (efeito esperado de DF16).
+- [x] Registrar a versão NuGet alvo do breaking (0.5.0), nota de release/migração e a decisão de `AssemblyVersion` em `Directory.Build.props`.
 
 **Critérios de aceite:** todos os golden tests passam sem nenhuma alteração de string esperada; nenhuma duplicação das três estruturas citadas (verificável por grep); atributos selados e herdando da base compartilhada; snapshot de API pública commitado e refletindo DF16/DF17.
 
@@ -532,7 +532,18 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 7
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- `GeneratedSourceConventions.ApplyDeclaredAccessibility` centraliza o mapeamento de acessibilidade com fallback público e cobre `protected internal`/`private protected`; os três emissores passaram a usá-lo.
+- `InformationEquality` concentra `SequenceEqual`/`SequenceHashCode` das três classes `*Information`, e `GeneratorSyntaxPredicates.IsClass` substitui os predicates duplicados dos pipelines.
+- `AutoPropertiesGenerator` expõe apenas um overload de `CreateInformation`; a implementação com coleções foi renomeada para core privado. O caminho não genérico de `AutoSelect` também passou a resolver `AutoProperties` semanticamente.
+- Comentários internos alterados foram padronizados em português conforme DF8; identificadores, diagnósticos e XML docs públicos permanecem em inglês.
+- `AutoSelectAttribute<TFrom>`, `AutoPropertiesAttribute`, `AutoPropertiesAttribute<TFrom>` e `AutoDetailsAttribute` agora são selados. A nova base pública abstrata `AutoPropertiesAttributeBase` declara `Exclude` e `Flattening` para as duas formas de `AutoProperties` e para `AutoDetails`.
+- `PublicAttributeContractTests` foi criado primeiro em vermelho e agora comprova quatro erros CS0509 para consumidores que tentem herdar dos atributos selados.
+- `Microsoft.CodeAnalysis.PublicApiAnalyzers` 5.6.0 protege o runtime. `PublicAPI.Shipped.txt` registra a API 0.4.x e `PublicAPI.Unshipped.txt` registra a nova base e as remoções binárias dos membros cujo declaring type mudou; build isolado do runtime: **0 warnings RS**.
+- A versão alvo passou a **0.5.0**. Durante a série 0.x, `AssemblyVersion` acompanha `Ver`, resultando em **0.5.0.0**. `RELEASE_NOTES.md` documenta breaking changes, recompilação, reflexão com `DeclaredOnly` e migração; o arquivo está incluído no `.nupkg`.
+- Nenhum golden snapshot foi alterado. As buscas de verificação não encontram predicates duplicados, helpers de sequência duplicados nem comparações locais de `DeclaredAccessibility`; há um único overload público interno chamado `CreateInformation`.
+- Gates: testes principais com `Category!=KnownLimitation` — **54/54 aprovados**; `KnownLimitation` — **exatamente 2/2 falhando por design**; Demo — **25/25 aprovados**; solution build — **0 erros, 16 warnings já mapeados para fases posteriores**; runtime/API build — **0 erros, 0 warnings**; `git diff --check` aprovado.
 
 ---
 

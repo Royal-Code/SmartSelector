@@ -1,0 +1,19 @@
+#nullable enable
+*REMOVED*RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude.set -> void
+*REMOVED*RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening.set -> void
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude.set -> void
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening.set -> void
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Exclude.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Exclude.set -> void
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Flattening.get -> string![]?
+*REMOVED*RoyalCode.SmartSelector.AutoPropertiesAttribute<TFrom>.Flattening.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase.AutoPropertiesAttributeBase() -> void
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Exclude.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Exclude.set -> void
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Flattening.get -> string![]?
+RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Flattening.set -> void

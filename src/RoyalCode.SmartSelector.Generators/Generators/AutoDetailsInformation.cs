@@ -32,7 +32,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         {
             return true;
         }
-        return SequenceEqual(diagnostics, other.diagnostics) &&
+        return InformationEquality.SequenceEqual(diagnostics, other.diagnostics) &&
                detailsClassName == other.detailsClassName &&
                Equals(autoPropertiesInformation, other.autoPropertiesInformation);
     }
@@ -47,32 +47,9 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         unchecked
         {
             var hashCode = 17;
-            hashCode = (hashCode * 31) + SequenceHashCode(diagnostics);
+            hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(diagnostics);
             hashCode = (hashCode * 31) + (detailsClassName?.GetHashCode() ?? 0);
             hashCode = (hashCode * 31) + (autoPropertiesInformation?.GetHashCode() ?? 0);
-            return hashCode;
-        }
-    }
-
-    private static bool SequenceEqual<T>(T[]? left, T[]? right)
-    {
-        if (ReferenceEquals(left, right))
-            return true;
-
-        return left is not null && right is not null && left.SequenceEqual(right);
-    }
-
-    private static int SequenceHashCode<T>(T[]? values)
-    {
-        if (values is null)
-            return 0;
-
-        unchecked
-        {
-            var hashCode = 17;
-            foreach (var value in values)
-                hashCode = (hashCode * 31) + (value?.GetHashCode() ?? 0);
-
             return hashCode;
         }
     }

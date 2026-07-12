@@ -18,12 +18,6 @@ internal static class AutoPropertiesGenerator
         PropertyNameResolvers = [new MapFromPropertyNameResolver()],
     };
 
-    internal static bool Predicate(SyntaxNode node, CancellationToken token)
-    {
-        var accept = node is ClassDeclarationSyntax;
-        return accept;
-    }
-
     internal static AutoPropertiesInformation Transform(
         GeneratorAttributeSyntaxContext context, CancellationToken token)
     {
@@ -146,40 +140,6 @@ internal static class AutoPropertiesGenerator
     internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
-        AttributeSyntax autoPropertyAttribute)
-    {
-        // collect excluded property names using extension helpers
-        var excluded = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var name in autoPropertyAttribute.GetNamedArgumentStrings("Exclude"))
-            excluded.Add(name);
-
-        // collect flattening property names using extension helpers
-        HashSet<string>? flattening = null;
-        var flatteningNames = autoPropertyAttribute.GetNamedArgumentStrings("Flattening");
-        foreach (var name in flatteningNames)
-        {
-            flattening ??= new HashSet<string>(StringComparer.Ordinal);
-            flattening.Add(name);
-        }
-
-        return CreateInformation(modelType, fromType, excluded, flattening);
-    }
-
-    internal static AutoPropertiesInformation CreateInformation(
-        TypeDescriptor modelType,
-        ITypeSymbol fromType,
-        AttributeData autoPropertyAttribute)
-    {
-        // gera o TypeDescriptor do fromType
-        var fromTypeDescriptor = TypeDescriptor.Create(fromType);
-
-        return CreateInformation(modelType, fromTypeDescriptor, autoPropertyAttribute);
-    }
-
-    internal static AutoPropertiesInformation CreateInformation(
-        TypeDescriptor modelType,
-        TypeDescriptor fromType,
         AttributeData autoPropertyAttribute)
     {
         var excluded = new HashSet<string>(StringComparer.Ordinal);
@@ -204,10 +164,10 @@ internal static class AutoPropertiesGenerator
                         flattening.Add(fs);
             }
 
-        return CreateInformation(modelType, fromType, excluded, flattening);
+        return CreateInformationCore(modelType, fromType, excluded, flattening);
     }
 
-    internal static AutoPropertiesInformation CreateInformation(
+    private static AutoPropertiesInformation CreateInformationCore(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
         HashSet<string> excluded,
@@ -215,7 +175,7 @@ internal static class AutoPropertiesGenerator
     {
         var autoDetails = new List<AutoDetailsInformation>();
 
-        // declared properties in model type are always excluded
+        // Propriedades já declaradas no modelo são sempre excluídas.
         foreach (var p in modelType.CreateProperties(_ => true))
         {
             excluded.Add(p.Name);
@@ -228,7 +188,7 @@ internal static class AutoPropertiesGenerator
         }
         var sourceProps = fromType.CreateProperties(p => p.GetMethod is not null);
 
-        // filtra propriedades do source,
+        // filtra propriedades da origem,
         // remove propriedades que estão na lista de excluídas,
         // remove propriedades de flattening (serão recriadas depois)
         // removendo o que não for tipo primitivo, string, decimal, DateTime,
@@ -361,22 +321,7 @@ internal static class AutoPropertiesGenerator
         GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
 
         // 1.1 modificadores
-        if (origin.Symbol?.DeclaredAccessibility == Accessibility.Public)
-        {
-            partialClass.Modifiers.Public();
-        }
-        if (origin.Symbol?.DeclaredAccessibility == Accessibility.Internal)
-        {
-            partialClass.Modifiers.Internal();
-        }
-        if (origin.Symbol?.DeclaredAccessibility == Accessibility.Protected)
-        {
-            partialClass.Modifiers.Protected();
-        }
-        if (origin.Symbol?.DeclaredAccessibility == Accessibility.Private)
-        {
-            partialClass.Modifiers.Private();
-        }
+        GeneratedSourceConventions.ApplyDeclaredAccessibility(partialClass, origin.Symbol);
 
         partialClass.Modifiers.Partial();
 
@@ -451,7 +396,10 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
                 return originProperties;
 
             // cria a informação
-            var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoSelectAttribute);
+            var info = AutoPropertiesGenerator.CreateInformation(
+                origin,
+                TypeDescriptor.Create(fromType),
+                autoSelectAttribute);
 
             // pega as propriedades da origem mais as da informação
             return [.. originProperties, .. info.Properties];
@@ -472,7 +420,10 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
                 return originProperties;
 
             // cria a informação
-            var info = AutoPropertiesGenerator.CreateInformation(origin, fromType, autoPropertiesAttribute);
+            var info = AutoPropertiesGenerator.CreateInformation(
+                origin,
+                TypeDescriptor.Create(fromType),
+                autoPropertiesAttribute);
 
             // pega as propriedades da origem mais as da informação
             return [.. originProperties, .. info.Properties];
@@ -493,7 +444,7 @@ internal class AutoDetailsAssignDescriptorResolver : IAssignDescriptorResolver
     {
         descriptor = null;
 
-        // check if the left type has defined properties
+        // Verifica se o tipo à esquerda possui propriedades definidas.
         if (!leftType.HasDefinedProperties())
             return false;
 
@@ -511,11 +462,11 @@ internal class AutoDetailsAssignDescriptorResolver : IAssignDescriptorResolver
         if (rightProperties.Count == 0)
             return false;
 
-        // faz o match entre as propriedades
-        // match das propriedades da classe com o attributo e a classe definida no TFrom.
+        // faz a correspondência entre as propriedades
+        // corresponde as propriedades da classe com o atributo e a classe definida em TFrom.
         var matchSelection = MatchSelection.Create(leftType, leftProperties, rightType, rightProperties, model, options);
 
-        // se tem problemas, não é possível fazer o match.
+        // se houver problemas, não é possível concluir a correspondência.
         if (matchSelection.HasMissingProperties(out _) || matchSelection.HasNotAssignableProperties(out _))
         {
             return false;

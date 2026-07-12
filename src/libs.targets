@@ -14,6 +14,7 @@
 		<PackageIcon>icon2.png</PackageIcon>
 		<PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>See RELEASE_NOTES.md in the package root.</PackageReleaseNotes>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Version>$(Ver)$(Prev)</Version>
@@ -23,5 +24,6 @@
 	<ItemGroup>
 		<None Include="../icon2.png" Pack="true" PackagePath="/"/>
 		<None Include="../../README.md" Pack="true" PackagePath="/"/>
+		<None Include="../RELEASE_NOTES.md" Pack="true" PackagePath="/"/>
 	</ItemGroup>
 </Project>

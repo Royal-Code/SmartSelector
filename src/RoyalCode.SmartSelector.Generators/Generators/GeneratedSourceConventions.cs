@@ -4,6 +4,38 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal static class GeneratedSourceConventions
 {
+    internal static void ApplyDeclaredAccessibility(
+        ClassGenerator generator,
+        ISymbol? symbol)
+    {
+        switch (symbol?.DeclaredAccessibility ?? Accessibility.Public)
+        {
+            case Accessibility.Public:
+                generator.Modifiers.Public();
+                break;
+            case Accessibility.Internal:
+                generator.Modifiers.Internal();
+                break;
+            case Accessibility.Protected:
+                generator.Modifiers.Protected();
+                break;
+            case Accessibility.Private:
+                generator.Modifiers.Private();
+                break;
+            case Accessibility.ProtectedOrInternal:
+                generator.Modifiers.Protected();
+                generator.Modifiers.Internal();
+                break;
+            case Accessibility.ProtectedAndInternal:
+                generator.Modifiers.Private();
+                generator.Modifiers.Protected();
+                break;
+            default:
+                generator.Modifiers.Public();
+                break;
+        }
+    }
+
     internal static void ApplyRequiredNamespaces(ClassGenerator generator)
     {
         generator.Generating += static (_, builder) =>

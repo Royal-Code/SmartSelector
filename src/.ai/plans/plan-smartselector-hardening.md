@@ -1,14 +1,14 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: RASCUNHO - todas as decisões respondidas (DF15–DF20); pronto para iniciar a Fase 0
+## Status: EM ANDAMENTO - Fase 0 concluída (DF15 viável; multi-target confirmado); próxima: Fase 1 (harness)
 
 ## Progresso
 
-`░░░░░░░░░░░░░░░░` **0%** - 0 de 16 fases
+`█░░░░░░░░░░░░░░░` **6%** - 1 de 16 fases
 
 | Fase | Estado |
 |---|---|
-| Fase 0 - Spike de viabilidade externa e matriz de compatibilidade | Pendente |
+| Fase 0 - Spike de viabilidade externa e matriz de compatibilidade | Concluida |
 | Fase 1 - Harness de testes com validação de compilação | Pendente |
 | Fase 2 - Typos e documentação | Pendente |
 | Fase 3 - Limpeza de Demo e Benchmarks | Pendente |
@@ -256,14 +256,14 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Verificar no código-fonte local se `ClassGenerator` suporta containing types; registrar o que falta para a Fase 13 (aninhados; genéricos dispensados por DF20).
-- [ ] Verificar se a emissão suporta cabeçalho de arquivo, XML docs e anotações nullable (`NullableAnnotation` em `TypeDescriptor`); registrar o que falta para a Fase 11.
-- [ ] Mapear onde `TypeDescriptor`/`MatchSelection` retêm `ISymbol` e o que a Fase 14 exige do pacote externo.
-- [ ] Classificar cada mudança necessária como "local (SmartSelector)" ou "externa (release NuGet do RoyalCode.Extensions.SourceGenerator)"; listar as externas no relatório com a versão mínima alvo (>= 0.1.14).
-- [ ] Verificar contra qual versão de `Microsoft.CodeAnalysis` o `RoyalCode.Extensions.SourceGenerator` é compilado (código-fonte local) e se a mesma DLL carrega sob Roslyn 4.8 e 5.6, ou se serão necessárias duas variantes do pacote externo.
-- [ ] Validar DF15: pack local do generator multi-target (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`), com **todas as dependências da variante na mesma pasta** (incluindo `RoyalCode.Extensions.SourceGenerator.dll`), e verificar se cada SDK (8.0.x, 9.0.x, 10.0.x) carrega a build correta — confirmar qual DLL foi efetivamente carregada via binlog (`dotnet build -bl`); registrar a matriz de resultados.
-- [ ] Se o multi-target for inviável, registrar a evidência e confirmar o fallback de DF15 (downgrade para 4.8.0).
-- [ ] Publicar o relatório do spike em `.ai/reviews/spike-viabilidade-externa-<data>.md`.
+- [x] Verificar no código-fonte local se `ClassGenerator` suporta containing types; registrar o que falta para a Fase 13 (aninhados; genéricos dispensados por DF20).
+- [x] Verificar se a emissão suporta cabeçalho de arquivo, XML docs e anotações nullable (`NullableAnnotation` em `TypeDescriptor`); registrar o que falta para a Fase 11.
+- [x] Mapear onde `TypeDescriptor`/`MatchSelection` retêm `ISymbol` e o que a Fase 14 exige do pacote externo.
+- [x] Classificar cada mudança necessária como "local (SmartSelector)" ou "externa (release NuGet do RoyalCode.Extensions.SourceGenerator)"; listar as externas no relatório com a versão mínima alvo (>= 0.1.14).
+- [x] Verificar contra qual versão de `Microsoft.CodeAnalysis` o `RoyalCode.Extensions.SourceGenerator` é compilado (código-fonte local) e se a mesma DLL carrega sob Roslyn 4.8 e 5.6, ou se serão necessárias duas variantes do pacote externo.
+- [x] Validar DF15: pack local do generator multi-target (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`), com **todas as dependências da variante na mesma pasta** (incluindo `RoyalCode.Extensions.SourceGenerator.dll`), e verificar se cada SDK (8.0.x, 9.0.x, 10.0.x) carrega a build correta — confirmar qual DLL foi efetivamente carregada via binlog (`dotnet build -bl`); registrar a matriz de resultados.
+- [x] Se o multi-target for inviável, registrar a evidência e confirmar o fallback de DF15 (downgrade para 4.8.0). *(N/A — multi-target viável.)*
+- [x] Publicar o relatório do spike em `.ai/reviews/spike-viabilidade-externa-<data>.md`.
 
 **Critérios de aceite:** relatório existe e responde às quatro incógnitas (containing types, emissão, símbolos, matriz SDK/multi-target); DF15 tem evidência empírica de viabilidade ou fallback confirmado; mudanças externas listadas com versão alvo.
 
@@ -271,7 +271,16 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 0
 
-*a preencher*
+**Concluída em 2026-07-11.** Relatório: `.ai/reviews/spike-viabilidade-externa-2026-07-11.md`.
+
+- **Entregáveis:** relatório do spike; experimento reproduzível em `scratchpad/spike/` (variantes 4.8/5.6, pacote `SpikeGen`, consumidor, logs diagnósticos com `/analyzer:`).
+- **DF15 VIÁVEL, sem fallback:** generator e pacote externo compilam contra Roslyn 4.8.0 **sem nenhum erro** (nenhuma API nova usada). Matriz: SDK 9.0.100 (Roslyn 4.12) selecionou `roslyn4.8` — build e execução OK; SDK 10.0.301 (Roslyn 5.6) selecionou `roslyn5.6` — build e execução OK. SDK 8 não instalado na máquina (mecanismo é o mesmo; validar na matriz do CI, Fase 9).
+- **Condição para a Fase 8:** o 0.1.13 publicado do externo compila contra MC **4.14** e não carrega sob compiladores < 4.14; release **0.1.14 com pin 4.8.0** é pré-requisito da pasta `roslyn4.8` (a mesma DLL serve às duas pastas).
+- **Fase 11 é majoritariamente local:** header via evento `Generating`; `[GeneratedCode]` via `ClassGenerator.Attributes`/`MethodGenerator.Attributes`; membros sem suporte a atributos/docs (`PropertyGenerator`/`FieldGenerator`) resolvíveis por subclasse local. `NullableAnnotation` não modelado — externa preferencial.
+- **Fase 13 bloqueada em release externo:** `ClassGenerator` não suporta containing types (mudança externa, 0.1.14).
+- **Fase 14 exige release externo dedicado (0.1.15):** retenção de símbolos em `TypeDescriptor`/`PropertyDescriptor`/`MatchSelection`, **caches estáticos com `ITypeSymbol`** (root de Compilations no IDE), hashes por referência (`Namespaces.GetHashCode()`), `TypeDescriptor.Equals` com NRE potencial, `PropertyDescriptor.Equals(object)` testando `ParameterDescriptor` (bug).
+- **Desvios/achados extras:** DTO em namespace global gera código inválido — registrar diagnóstico nas Fases 4/5.
+- **Pendências:** validar SDK 8 no CI; solicitar release externo 0.1.14 antes das Fases 8 e 13.
 
 ---
 
@@ -399,6 +408,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 - [ ] Criar diagnósticos temporários para DTO genérico e DTO aninhado (removidos/reduzidos na Fase 13).
 - [ ] Adicionar `Location` real ao diagnóstico de `AutoDetailsGenerator.cs:33` (apontar a propriedade).
 - [ ] Criar diagnóstico warning para ambiguidade de flattening (múltiplos caminhos com mesmo prefixo).
+- [ ] Criar diagnóstico (ou suporte) para DTO em namespace global — hoje gera `.g.cs` inválido (achado do spike da Fase 0).
 - [ ] Registrar todos os novos IDs em `AnalyzerReleases.Unshipped.md`.
 - [ ] Criar um teste de diagnóstico por ID novo (asserção de ID + location).
 - [ ] Para cada limitação `KnownLimitation`, criar teste verde que verifica o diagnóstico temporário correspondente; o teste de compilação vermelho permanece com trait até a fase que o resolve (DF9).
@@ -724,8 +734,8 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 | Risco | Gatilho | Impacto | Mitigação | Estado |
 |---|---|---|---|---|
 | Piso Roslyn 5.6 exclui consumidores net8/net9 | publicação do pacote antes da Fase 8 | pacote inutilizável para parte do público | DF15 (multi-target ou 4.8.0) validado pela matriz da Fase 0 antes de qualquer release | Aberto |
-| Multi-target Roslyn (DF15) inviável ou mal suportado | matriz da Fase 0 falha em algum SDK | volta ao single-target | fallback já decidido: downgrade para 4.8.0 | Aberto |
-| Mudanças no pacote externo bloqueiam Fases 10–14 | `TypeDescriptor`/`ClassGenerator` sem API necessária | fases aguardando release NuGet do pacote (fonte local disponível) | Fase 0 lista as mudanças externas cedo; releases planejados (>= 0.1.14) | Aberto |
+| Multi-target Roslyn (DF15) inviável ou mal suportado | matriz da Fase 0 falha em algum SDK | volta ao single-target | validado na Fase 0 (SDK 9→roslyn4.8, SDK 10→roslyn5.6, build+run OK); resta validar SDK 8 no CI | Mitigado |
+| Mudanças no pacote externo bloqueiam Fases 8, 13 e 14 | `TypeDescriptor`/`ClassGenerator` sem API necessária | fases aguardando release NuGet do pacote (fonte local disponível) | Fase 0 listou as mudanças: 0.1.14 (pin Roslyn 4.8 + containing types + nullable) e 0.1.15 (símbolos/equality) — solicitar releases cedo | Aberto |
 | Harness aprova código incompatível com TFMs antigos | testes compilando apenas contra TPA (net10) | incompatibilidade net8/net9 despercebida | reference assemblies por TFM na Fase 1 + matriz de SDKs da Fase 0 | Aberto |
 | Atualização em massa de snapshots mascara regressão | Fases 4, 11, 12 alteram todos os golden tests | código gerado incorreto aprovado | commit separado para snapshots + validação de compilação da Fase 1 | Aberto |
 | Condicionais de null quebram tradução EF em provedores específicos | Fase 12 | queries falham em runtime do consumidor | validar via Demo SQLite; documentar provedores testados | Aberto |
@@ -747,6 +757,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 ## Referências
 
 - `C:\git\RoyalCode\Utils\RoyalCode.Utils\RoyalCode.Extensions.SourceGenerator` — código-fonte local do pacote externo (testes em `...\RoyalCode.Extensions.SourceGenerator.Tests`; solution `C:\git\RoyalCode\Utils\RoyalCode.Utils\Util.sln`). Modificações exigem release NuGet.
+- `.ai/reviews/spike-viabilidade-externa-2026-07-11.md` — relatório da Fase 0 (matriz DF15, capacidades do pacote externo, mudanças 0.1.14/0.1.15).
 - `.ai/reviews/smart-selector-review-2026-07-10.md` — revisão técnica anterior (itens 1–8).
 - `.ai/templates/template-ai-implementation-plan.md` — template deste plano.
 - Análise externa do plano (2026-07-11) — 10 achados; avaliação registrada no Histórico de decisões.

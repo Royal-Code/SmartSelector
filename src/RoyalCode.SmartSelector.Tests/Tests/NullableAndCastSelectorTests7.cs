@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,11 +8,9 @@ public partial class NullableAndCastSelectorTests
     [Fact]
     public void Select_Nulls_Enums_Cast()
     {
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.CompileAndAssert(Code.Types);
 
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedInterface = result.GeneratedSource("EnumNullsTypeDto.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,10 +8,8 @@ public class AutoPropertiesTests
     [Fact]
     public void Should_Generate_All_Public_Properties()
     {
-        Util.Compile(Code.AllProperties, out var compilation, out var diagnostics);
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Code.AllProperties);
+        var generated = result.AllGeneratedSources();
 
         generated.Should().Contain("public int Id { get; set; }");
         generated.Should().Contain("public string Name { get; set; }");
@@ -40,10 +38,8 @@ public class AutoPropertiesTests
     [Fact]
     public void Should_Exclude_Named_Argument_Array()
     {
-        Util.Compile(Code.ExcludeViaNamed, out var compilation, out var diagnostics);
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Code.ExcludeViaNamed);
+        var generated = result.AllGeneratedSources();
 
         generated.Should().Contain("Id { get; set; }");
         generated.Should().Contain("CreatedAt { get; set; }");
@@ -54,11 +50,8 @@ public class AutoPropertiesTests
     [Fact]
     public void Should_Not_Duplicate_Existing_Properties()
     {
-        Util.Compile(Code.ExistingProperties, out var compilation, out var diagnostics);
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generatedPieces = compilation.SyntaxTrees.Skip(1).Select(t => t.ToString());
-        var combined = string.Join("\n", generatedPieces);
+        var result = Util.CompileAndAssert(Code.ExistingProperties);
+        var combined = result.AllGeneratedSources();
 
         combined.Should().NotContain("Id { get; set; }"); // excluded, property Id declared manually
     }
@@ -66,10 +59,8 @@ public class AutoPropertiesTests
     [Fact]
     public void Should_Support_Nameof_In_Constructor_And_Named_Exclude()
     {
-        Util.Compile(Code.NameofVariants, out var compilation, out var diagnostics);
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Code.NameofVariants);
+        var generated = result.AllGeneratedSources();
 
         generated.Should().Contain("Id { get; set; }");        // not excluded
         generated.Should().NotContain("Name { get; set; }");   // excluded by nameof in ctor
@@ -79,10 +70,8 @@ public class AutoPropertiesTests
     [Fact]
     public void Should_Generate_With_Generic_AutoProperties()
     {
-        Util.Compile(Code.GenericAttribute, out var compilation, out var diagnostics);
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Code.GenericAttribute);
+        var generated = result.AllGeneratedSources();
 
         generated.Should().Contain("Id { get; set; }");
         generated.Should().Contain("Name { get; set; }");
@@ -117,12 +106,13 @@ public class Origin
 }
 
 public struct Nested
-{ 
+{
+    public Nested() { }
     public string Value { get; set; } = string.Empty;
 }
 
-public class NestedUserType
-{ 
+public class NestedNested
+{
     public string Value { get; set; } = string.Empty;
 }
 
@@ -135,8 +125,7 @@ using RoyalCode.SmartSelector;
 
 namespace Tests.SmartSelector.Models;
 
-[AutoSelect<Origin>]
-[AutoProperties(Exclude = new [] { nameof(Origin.Name), "Active" })]
+[AutoProperties<Origin>(Exclude = new [] { nameof(Origin.Name), "Active" })]
 public partial class Dto { }
 
 public class Origin {
@@ -171,8 +160,7 @@ using RoyalCode.SmartSelector;
 
 namespace Tests.SmartSelector.Models;
 
-[AutoSelect<Origin>]
-[AutoProperties(Exclude = new [] { nameof(Origin.Name), nameof(Origin.Active) })]
+[AutoProperties<Origin>(Exclude = new [] { nameof(Origin.Name), nameof(Origin.Active) })]
 public partial class Dto { }
 
 public class Origin {

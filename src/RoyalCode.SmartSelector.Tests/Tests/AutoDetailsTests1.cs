@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,24 +8,15 @@ public class AutoDetailsTests1
     [Fact]
     public void Generate_Details_Class_For_Nested_Property_With_AutoDetails()
     {
-        // arrange + act
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.CompileAndAssert(Code.Types);
 
-        // assert - sem erros de compilação
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        // árvores geradas
-        // 0 -> código original
-        // 1 -> classe de detalhes do Address (gerada pelo AutoDetails)
-        // 2 -> classe parcial principal (AutoSelect + expressão + From)
-        // 3 -> extensions
-        var generatedDetails = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedDetails = result.GeneratedSource("AddressDetails.AutoDetails.g.cs");
         generatedDetails.Should().Be(Code.ExpectedDetailsClass);
 
-        var generatedPartial = output.SyntaxTrees.Skip(2).FirstOrDefault()?.ToString();
+        var generatedPartial = result.GeneratedSource("CustomerDetails.g.cs");
         generatedPartial.Should().Be(Code.ExpectedPartial);
 
-        var generatedExtensions = output.SyntaxTrees.Skip(3).FirstOrDefault()?.ToString();
+        var generatedExtensions = result.GeneratedSource("CustomerDetails_Extensions.g.cs");
         generatedExtensions.Should().Be(Code.ExpectedExtension);
     }
 }

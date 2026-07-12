@@ -1,45 +1,165 @@
-﻿using System.Collections;
+extern alias net80;
+extern alias net90;
+extern alias net100;
+
 using System.Collections.Immutable;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using RoyalCode.SmartSelector.Generators;
 
 namespace RoyalCode.SmartSelector.Tests;
 
+internal enum TestTargetFramework
+{
+    Net80,
+    Net90,
+    Net100,
+}
+
+internal sealed record CompileResult(
+    ImmutableArray<Diagnostic> GeneratorDiagnostics,
+    ImmutableArray<Diagnostic> CompilationDiagnostics,
+    ImmutableDictionary<string, string> GeneratedSources,
+    GeneratorDriverRunResult RunResult)
+{
+    internal IEnumerable<Diagnostic> Errors => GeneratorDiagnostics
+        .Concat(CompilationDiagnostics)
+        .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+
+    internal IEnumerable<Diagnostic> Warnings => GeneratorDiagnostics
+        .Concat(CompilationDiagnostics)
+        .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Warning);
+
+    internal string GeneratedSource(string hintName) => GeneratedSources[hintName];
+
+    internal string AllGeneratedSources() => string.Join(
+        "\n-----\n",
+        GeneratedSources.OrderBy(static pair => pair.Key).Select(static pair => pair.Value));
+}
+
 internal static class Util
 {
-    internal static void Compile(
-        string sourceCode,
-        out Compilation outputCompilation,
-        out ImmutableArray<Diagnostic> diagnostics)
-    {
-        // the source code to be compiled
-        var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+    private static readonly string[] RuntimeSourceResourceNames =
+    [
+        "RuntimeSources.AutoSelectAttribute.cs",
+        "RuntimeSources.AutoPropertiesAttribute.cs",
+        "RuntimeSources.AutoDetailsAttribute.cs",
+        "RuntimeSources.MapFromAttribute.cs",
+    ];
 
-        // assemblies references required to compile the source code
-        var references = new List<MetadataReference>
+    private const string ImplicitUsings =
+        "global using System; global using System.Collections.Generic; global using System.Linq; global using System.Threading; global using System.Threading.Tasks;";
+
+    internal static CompileResult CompileAndAssert(
+        string sourceCode,
+        bool assertNoWarnings = false)
+    {
+        CompileResult? snapshotResult = null;
+
+        foreach (var targetFramework in Enum.GetValues<TestTargetFramework>())
         {
-            MetadataReference.CreateFromFile(typeof(Util).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Guid).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(IEnumerable).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(IEnumerable<>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(ICollection<>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(IReadOnlyList<>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Task).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(CancellationToken).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(AutoSelectAttribute<>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(MapFromAttribute).Assembly.Location),
+            var result = Compile(sourceCode, targetFramework);
+            result.Errors.Should().BeEmpty(
+                "generated code must compile for {0}; diagnostics:\n{1}",
+                targetFramework,
+                FormatDiagnostics(result));
+
+            if (assertNoWarnings)
+            {
+                result.Warnings.Should().BeEmpty(
+                    "generated code must not warn for {0}; diagnostics:\n{1}",
+                    targetFramework,
+                    FormatDiagnostics(result));
+            }
+
+            snapshotResult = result;
+        }
+
+        return snapshotResult!;
+    }
+
+    internal static CompileResult Compile(
+        string sourceCode,
+        TestTargetFramework targetFramework = TestTargetFramework.Net100) =>
+        CompileCore(sourceCode, GetReferenceAssemblies(targetFramework));
+
+    /// <summary>
+    /// Fast path for tests that intentionally need the test host runtime rather than a supported TFM contract.
+    /// Generation tests should use <see cref="CompileAndAssert"/>.
+    /// </summary>
+    internal static CompileResult CompileFast(string sourceCode)
+    {
+        var trustedPlatformAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")
+            ?? throw new InvalidOperationException("The test host did not provide trusted platform assemblies.");
+
+        var references = trustedPlatformAssemblies
+            .Split(Path.PathSeparator)
+            .Select(static path => MetadataReference.CreateFromFile(path));
+
+        return CompileCore(sourceCode, references);
+    }
+
+    private static CompileResult CompileCore(
+        string sourceCode,
+        IEnumerable<MetadataReference> frameworkReferences)
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        var implicitUsingsTree = CSharpSyntaxTree.ParseText(ImplicitUsings, parseOptions);
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode, parseOptions);
+        var runtimeSyntaxTrees = RuntimeSourceResourceNames.Select(resourceName =>
+            CSharpSyntaxTree.ParseText(ReadEmbeddedSource(resourceName), parseOptions, resourceName));
+
+        var compilation = CSharpCompilation.Create(
+            "SourceGeneratorTests",
+            [implicitUsingsTree, .. runtimeSyntaxTrees, syntaxTree],
+            frameworkReferences,
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var driver = CSharpGeneratorDriver.Create(
+            generators: [new IncrementalGenerator().AsSourceGenerator()],
+            parseOptions: parseOptions);
+
+        driver = (CSharpGeneratorDriver)driver.RunGeneratorsAndUpdateCompilation(
+            compilation,
+            out var outputCompilation,
+            out var generatorDiagnostics);
+
+        var runResult = driver.GetRunResult();
+        var generatedSources = runResult.Results
+            .SelectMany(static result => result.GeneratedSources)
+            .ToImmutableDictionary(
+                static source => source.HintName,
+                static source => source.SourceText.ToString(),
+                StringComparer.Ordinal);
+
+        return new CompileResult(
+            generatorDiagnostics,
+            outputCompilation.GetDiagnostics(),
+            generatedSources,
+            runResult);
+    }
+
+    private static IEnumerable<MetadataReference> GetReferenceAssemblies(
+        TestTargetFramework targetFramework) => targetFramework switch
+        {
+            TestTargetFramework.Net80 => net80::Basic.Reference.Assemblies.Net80.References.All,
+            TestTargetFramework.Net90 => net90::Basic.Reference.Assemblies.Net90.References.All,
+            TestTargetFramework.Net100 => net100::Basic.Reference.Assemblies.Net100.References.All,
+            _ => throw new ArgumentOutOfRangeException(nameof(targetFramework), targetFramework, null),
         };
 
-        // create a compilation for the source code.
-        var compilation = CSharpCompilation.Create("SourceGeneratorTests", [syntaxTree], references, 
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    private static string FormatDiagnostics(CompileResult result) => string.Join(
+        Environment.NewLine,
+        result.GeneratorDiagnostics.Concat(result.CompilationDiagnostics));
 
-        // apply the source generator and collect the output
-        var driver = CSharpGeneratorDriver.Create(new IncrementalGenerator());
-
-        driver.RunGeneratorsAndUpdateCompilation(compilation, out outputCompilation, out diagnostics);
+    private static string ReadEmbeddedSource(string resourceName)
+    {
+        using var stream = typeof(Util).Assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Embedded runtime source '{resourceName}' was not found.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,11 +8,11 @@ public partial class NullableAndCastSelectorTests
     [Fact]
     public void NullableTernaryCast_SimpleCast_Select_UserDetails()
     {
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.Compile(Code.Types);
 
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().ContainSingle();
+        result.GeneratorDiagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().ContainSingle();
 
-        var error = diagnostics.First(d => d.Severity == DiagnosticSeverity.Error);
+        var error = result.GeneratorDiagnostics.First(d => d.Severity == DiagnosticSeverity.Error);
         error.Id.Should().Be("RCSS002");
     }
 }

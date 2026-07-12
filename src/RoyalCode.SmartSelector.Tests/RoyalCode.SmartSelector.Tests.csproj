@@ -11,4 +11,11 @@
 		<ProjectReference Include="..\RoyalCode.SmartSelector\RoyalCode.SmartSelector.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="..\RoyalCode.SmartSelector\AutoSelectAttribute.cs" LogicalName="RuntimeSources.AutoSelectAttribute.cs" />
+		<EmbeddedResource Include="..\RoyalCode.SmartSelector\AutoPropertiesAttribute.cs" LogicalName="RuntimeSources.AutoPropertiesAttribute.cs" />
+		<EmbeddedResource Include="..\RoyalCode.SmartSelector\AutoDetailsAttribute.cs" LogicalName="RuntimeSources.AutoDetailsAttribute.cs" />
+		<EmbeddedResource Include="..\RoyalCode.SmartSelector\MapFromAttribute.cs" LogicalName="RuntimeSources.MapFromAttribute.cs" />
+	</ItemGroup>
+
 </Project>

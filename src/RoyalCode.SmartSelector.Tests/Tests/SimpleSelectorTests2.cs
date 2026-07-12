@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,11 +8,9 @@ public partial class SimpleSelectorTests
     [Fact]
     public void Direct_Select_VariationDetails()
     {
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.CompileAndAssert(Code.Types);
 
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedInterface = result.GeneratedSource("VariationDetails.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }
@@ -55,6 +53,10 @@ public class Size : Entity<long>
     public string Name { get; set; }
 
     public string Code { get; set; }
+}
+
+public class Product : Entity<long>
+{
 }
 
 public class Variation : Entity<long>

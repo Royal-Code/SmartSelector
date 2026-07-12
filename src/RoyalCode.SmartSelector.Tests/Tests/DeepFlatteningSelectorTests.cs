@@ -8,18 +8,12 @@ public class DeepFlatteningSelectorTests
     [Fact]
     public void Select_With_Deep_Flattened_Nested_Properties()
     {
-        // arrange + act
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.CompileAndAssert(Code.Types);
 
-        // assert - nenhum erro de geração
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        // classe parcial gerada (expression + From)
-        var generatedPartial = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedPartial = result.GeneratedSource("OrderDetails.g.cs");
         generatedPartial.Should().Be(Code.ExpectedPartial);
 
-        // classe de extensions
-        var generatedExtensions = output.SyntaxTrees.Skip(2).FirstOrDefault()?.ToString();
+        var generatedExtensions = result.GeneratedSource("OrderDetails_Extensions.g.cs");
         generatedExtensions.Should().Be(Code.ExpectedExtension);
     }
 }

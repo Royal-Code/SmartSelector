@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,11 +8,9 @@ public class NewInstanceTests
     [Fact]
     public void Select_PostDetails()
     {
-        Util.Compile(Code.Types, out var output, out var diagnostics);
-
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
+        var result = Util.CompileAndAssert(Code.Types);
         
-        var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedInterface = result.GeneratedSource("PostDetails.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
     }
 }
@@ -32,7 +30,11 @@ public abstract class Entity<TId>
     public TId Id { get; protected set; }
 }
 
-internal class Blog : Entity<string>
+public class User : Entity<Guid>
+{
+}
+
+public class Blog : Entity<string>
 {
     public string Title { get; set; }
     public string Content { get; set; }
@@ -40,14 +42,14 @@ internal class Blog : Entity<string>
     public ICollection<Post> Posts { get; set; } = [];
 }
 
-internal class Author : Entity<Guid>
+public class Author : Entity<Guid>
 {
     public string Name { get; set; }
     public string Bio { get; set; }
     public User User { get; set; }
 }
 
-internal class Post : Entity<Guid>
+public class Post : Entity<Guid>
 {
     public string Title { get; set; }
     public string Content { get; set; }
@@ -56,7 +58,7 @@ internal class Post : Entity<Guid>
     public ICollection<Comment> Comments { get; set; } = [];
 }
 
-internal class Comment : Entity<Guid>
+public class Comment : Entity<Guid>
 {
     public string Content { get; set; }
     public Post Post { get; set; }
@@ -64,14 +66,14 @@ internal class Comment : Entity<Guid>
 }
 
 [AutoSelect<Post>]
-internal partial class PostDetails
+public partial class PostDetails
 {
     public string Title { get; set; }
     public string Content { get; set; }
     public AuthorDetails Author { get; set; }
 }
 
-internal partial class AuthorDetails
+public partial class AuthorDetails
 {
     public string Name { get; set; }
 }
@@ -83,7 +85,7 @@ using System.Linq.Expressions;
 
 namespace Tests.SmartSelector.Models;
 
-internal partial class PostDetails
+public partial class PostDetails
 {
     private static Func<Post, PostDetails> selectPostFunc;
 

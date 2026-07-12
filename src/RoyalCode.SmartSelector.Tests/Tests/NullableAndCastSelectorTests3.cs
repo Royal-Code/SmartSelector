@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Tests.Tests;
@@ -8,14 +8,12 @@ public partial class NullableAndCastSelectorTests
     [Fact]
     public void Select_UserDetails_CastAndNullable()
     {
-        Util.Compile(Code.Types, out var output, out var diagnostics);
+        var result = Util.CompileAndAssert(Code.Types);
 
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generatedInterface = output.SyntaxTrees.Skip(1).FirstOrDefault()?.ToString();
+        var generatedInterface = result.GeneratedSource("UserDetails.g.cs");
         generatedInterface.Should().Be(Code.ExpectedPartial);
 
-        var generatedHandler = output.SyntaxTrees.Skip(2).FirstOrDefault()?.ToString();
+        var generatedHandler = result.GeneratedSource("UserDetails_Extensions.g.cs");
         generatedHandler.Should().Be(Code.ExpectedExtension);
     }
 }

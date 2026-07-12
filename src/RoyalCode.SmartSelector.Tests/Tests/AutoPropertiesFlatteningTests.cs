@@ -8,17 +8,12 @@ public class AutoPropertiesFlatteningTests
     [Fact]
     public void Should_Generate_Flattened_Properties_With_NonGeneric_AutoProperties()
     {
-        // arrange + act
-        Util.Compile(Source.NonGeneric, out var compilation, out var diagnostics);
-
-        // assert - nenhum erro de geração
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Source.NonGeneric);
+        var generated = result.AllGeneratedSources();
 
         // propriedades simples continuam
         generated.Should().Contain("public int Id { get; set; }");
-        // propriedade complexa original NÃO deve ser criada automaticamente (foi flattening)
+        // propriedade complexa original NÃƒO deve ser criada automaticamente (foi flattening)
         generated.Should().NotContain("public Nested Nested { get; set; }");
         // propriedades flatten criadas
         generated.Should().Contain("public string NestedValue { get; set; }");
@@ -28,13 +23,8 @@ public class AutoPropertiesFlatteningTests
     [Fact]
     public void Should_Generate_Flattened_Properties_With_Generic_AutoProperties()
     {
-        // arrange + act
-        Util.Compile(Source.Generic, out var compilation, out var diagnostics);
-
-        // assert - nenhum erro de geração
-        diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
-
-        var generated = string.Join("\n-----\n", compilation.SyntaxTrees.Skip(1).Select(t => t.ToString()));
+        var result = Util.CompileAndAssert(Source.Generic);
+        var generated = result.AllGeneratedSources();
 
         generated.Should().Contain("public int Id { get; set; }");
         generated.Should().NotContain("public Nested Nested { get; set; }");

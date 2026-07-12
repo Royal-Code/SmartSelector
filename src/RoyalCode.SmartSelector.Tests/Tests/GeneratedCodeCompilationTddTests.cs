@@ -1,7 +1,3 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using RoyalCode.SmartSelector.Generators;
-
 namespace RoyalCode.SmartSelector.Tests.Tests;
 
 /// <summary>
@@ -11,6 +7,8 @@ namespace RoyalCode.SmartSelector.Tests.Tests;
 public class GeneratedCodeCompilationTddTests
 {
     [Fact]
+    [Trait("Category", "KnownLimitation")]
+    // Fase 13: DTOs genéricos serão rejeitados por diagnóstico permanente.
     public void Generated_code_should_compile_for_a_generic_destination_dto()
     {
         AssertGeneratedCodeCompiles(
@@ -28,6 +26,8 @@ public class GeneratedCodeCompilationTddTests
     }
 
     [Fact]
+    [Trait("Category", "KnownLimitation")]
+    // Fase 13: suporte a DTOs aninhados por cadeia de containing types.
     public void Generated_code_should_compile_for_a_nested_destination_dto()
     {
         AssertGeneratedCodeCompiles(
@@ -50,6 +50,8 @@ public class GeneratedCodeCompilationTddTests
     }
 
     [Fact]
+    [Trait("Category", "KnownLimitation")]
+    // Fase 6: AutoProperties<T> será resolvido semanticamente, inclusive com global::.
     public void Generated_code_should_compile_with_a_fully_qualified_AutoProperties_attribute()
     {
         AssertGeneratedCodeCompiles(
@@ -74,48 +76,12 @@ public class GeneratedCodeCompilationTddTests
 
     private static void AssertGeneratedCodeCompiles(string source)
     {
-        CompileWithPlatformReferences(source, out var output, out var generatorDiagnostics);
-
-        var errors = generatorDiagnostics
-            .Concat(output.GetDiagnostics())
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .ToArray();
-
-        Assert.Empty(errors);
-    }
-
-    private static void CompileWithPlatformReferences(
-        string source,
-        out Compilation output,
-        out IReadOnlyList<Diagnostic> generatorDiagnostics)
-    {
-        var trustedPlatformAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")
-            ?? throw new InvalidOperationException("The test host did not provide trusted platform assemblies.");
-
-        var references = trustedPlatformAssemblies
-            .Split(Path.PathSeparator)
-            .Select(path => MetadataReference.CreateFromFile(path))
-            .Append(MetadataReference.CreateFromFile(typeof(AutoSelectAttribute<>).Assembly.Location));
-
-        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
-        var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
-
-        var compilation = CSharpCompilation.Create(
-            "GeneratedCodeCompilationTddTests",
-            [syntaxTree],
-            references,
-            new CSharpCompilationOptions(
-                OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable));
-
-        var driver = CSharpGeneratorDriver.Create(
-            generators: [new IncrementalGenerator().AsSourceGenerator()],
-            parseOptions: parseOptions);
-        driver.RunGeneratorsAndUpdateCompilation(
-            compilation,
-            out output,
-            out var diagnostics);
-
-        generatorDiagnostics = diagnostics;
+        foreach (var targetFramework in Enum.GetValues<TestTargetFramework>())
+        {
+            var result = Util.Compile(source, targetFramework);
+            Assert.True(
+                !result.Errors.Any(),
+                $"Generated code failed for {targetFramework}:{Environment.NewLine}{string.Join(Environment.NewLine, result.Errors)}");
+        }
     }
 }

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>SpikeGen</PackageId>
+    <Version>0.0.1</Version>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\generator\bin\roslyn4.8\Release\netstandard2.0\RoyalCode.SmartSelector.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn4.8/cs" />
+    <None Include="..\external\bin\roslyn4.8\Release\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn4.8/cs" />
+    <None Include="..\generator\bin\roslyn5.6\Release\netstandard2.0\RoyalCode.SmartSelector.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn5.6/cs" />
+    <None Include="..\external\bin\roslyn5.6\Release\netstandard2.0\RoyalCode.Extensions.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/roslyn5.6/cs" />
+  </ItemGroup>
+</Project>
+

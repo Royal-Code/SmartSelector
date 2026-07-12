@@ -20,11 +20,11 @@ Consumidor `net8.0` com `[AutoSelect<Product>]`, compilado com cada SDK instalad
 
 | SDK | Roslyn do compilador | Pasta selecionada | Build | Execução (`From`) |
 |---|---|---|---|---|
+| 8.0.422 | 4.8 | `roslyn4.8` | OK | OK (`OK: 7 Spike`) |
 | 9.0.100 | 4.12 | `roslyn4.8` | OK | OK (`OK: 7 Spike`) |
 | 10.0.301 | 5.6 | `roslyn5.6` | OK | OK (`OK: 7 Spike`) |
-| 8.0.x | 4.8 (esperado) | `roslyn4.8` (esperado) | **não testado — SDK não instalado** | — |
 
-Lacuna: SDK 8 não está instalado nesta máquina. O mecanismo de seleção (`CompilerApiVersion`) existe desde SDK 6 e a variante 4.8 casa exatamente com o Roslyn do SDK 8.0.1xx; validar na matriz de SDKs do CI (Fase 9) antes do primeiro release multi-target.
+A matriz foi executada com os três SDKs instalados e confirmou empiricamente a seleção pela propriedade `CompilerApiVersion`. Os três consumidores também foram executados, evitando concluir apenas pelo sucesso da compilação.
 
 **Condição obrigatória descoberta:** o pacote externo 0.1.13 publicado é compilado contra **Microsoft.CodeAnalysis 4.14.0** — a DLL publicada NÃO carrega sob compiladores < 4.14 (ex.: SDK 8). Para a pasta `roslyn4.8`, é preciso uma build do externo contra 4.8. Como o código compila contra 4.8 sem alterações, a solução simples é o **release 0.1.14 baixando o pin para 4.8.0** — a mesma DLL serve às duas pastas (assembly compilado contra 4.8 carrega sob 5.6; o inverso não).
 
@@ -34,7 +34,7 @@ Lacuna: SDK 8 não está instalado nesta máquina. O mecanismo de seleção (`Co
 
 `ClassGenerator.Write` emite `namespace X;` + uma única declaração de tipo. **Não há suporte a containing types** — necessário para DTOs aninhados. `GenericsGenerator`/`WhereGenerator` existem (generics do próprio tipo gerado), mas não há cadeia de tipos contenedores.
 
-- Classificação: **EXTERNA** (0.1.14): adicionar suporte a cadeia de containing types (lista de `(typeType, modifiers, nome, type parameters)` envolvendo o tipo principal).
+- Classificação: **EXTERNA** (0.1.15): adicionar suporte a cadeia de containing types (lista de `(typeType, modifiers, nome, type parameters)` envolvendo o tipo principal).
 - Alternativa local descartada: pós-processar o `StringBuilder` no evento `Generated` (frágil — manipulação textual de indentação e chaves).
 
 ## 3. Emissão: cabeçalho, `[GeneratedCode]`, XML docs, nullable (Fase 11)
@@ -55,13 +55,13 @@ Pontos de retenção confirmados no código-fonte externo:
 - `TypeDescriptor.Symbol` (`ITypeSymbol?`, campo retido; fora do `Equals`, mas raiz de Compilation).
 - `PropertyDescriptor.Symbol` (`IPropertySymbol?`).
 - `MatchSelection` → `PropertyMatch` → descritores acima; mutador `AddParentProperty` altera estado durante a geração.
-- **Grave para IDE:** caches **estáticos** `TypeDescriptor.voidTypeDescriptor` e `TypeDescriptor.cancellationToken` guardam `ITypeSymbol` de uma Compilation e sobrevivem entre compilações — root permanente de Compilations antigas no processo do IDE.
+- **Grave para IDE:** três caches **estáticos** guardam símbolos de uma Compilation e sobrevivem entre compilações — roots permanentes de Compilations antigas no processo do IDE: `TypeDescriptor.voidTypeDescriptor`, `TypeDescriptor.cancellationToken` (TypeDescriptor.cs, fábricas `CancellationToken(...)`) e `ParameterDescriptor.cancellationToken` (que encadeia o `TypeDescriptor` anterior).
 
 Bugs de equality/hash encontrados (quebram o cache incremental):
 
 - `TypeDescriptor.GetHashCode` usa `Namespaces.GetHashCode()` e `DefinedProperties.GetHashCode()` (hash de referência de array/lista) — dois descritores iguais têm hashes diferentes.
 - `TypeDescriptor.Equals` lança NRE quando `this.DefinedProperties` é null e `other.DefinedProperties` não é.
-- `PropertyDescriptor.Equals(object)` testa `obj is ParameterDescriptor` (copy/paste) — deveria ser `PropertyDescriptor`.
+- `PropertyDescriptor.Equals(object)` testa `obj is ParameterDescriptor` (copy/paste). Para um `PropertyDescriptor` real, retorna sempre `false`; para um `ParameterDescriptor`, chama novamente `Equals(object)` com o mesmo objeto e entra em recursão até `StackOverflowException`.
 - `MatchSelection.GetHashCode` usa comparador default de `IReadOnlyList<>` (referência); `Equals` ignora `targetType`.
 
 Classificação: **EXTERNA** (release dedicado; ver §6).
@@ -75,17 +75,20 @@ Classificação: **EXTERNA** (release dedicado; ver §6).
 | Mudança | Necessária para | Versão alvo |
 |---|---|---|
 | Baixar `Microsoft.CodeAnalysis.*` de 4.14.0 para 4.8.0 | Fase 8 (DF15, pasta roslyn4.8) | **0.1.14** |
-| Containing types no `ClassGenerator` | Fase 13 | **0.1.14** |
-| `Attributes`/XML docs em `PropertyGenerator`/`FieldGenerator` (opcional; subclasse local é alternativa) | Fase 11 | 0.1.14 (opcional) |
-| `NullableAnnotation` em `TypeDescriptor` | Fase 11 | 0.1.14 |
-| Corrigir equality/hash (§4) + remover caches estáticos de símbolos + modelo sem retenção de `ISymbol` | Fase 14 | **0.1.15** (pode ser 0.2.0 se breaking) |
+| Corrigir equality/hash (§4) e eliminar caches estáticos que retêm símbolos | Higiene do pipeline incremental e estabilidade do IDE, sem aguardar a Fase 14 | **0.1.14** |
+| Containing types no `ClassGenerator` | Fase 13 | **0.1.15** |
+| `Attributes`/XML docs em `PropertyGenerator`/`FieldGenerator` (opcional; subclasse local é alternativa) | Fase 11 | 0.1.15 (opcional) |
+| `NullableAnnotation` em `TypeDescriptor` | Fase 11 | **0.1.15** |
+| Modelo imutável sem retenção direta ou transitiva de `ISymbol` | Fase 14 | **0.2.0** (mudança potencialmente incompatível) |
+
+Recomendação: não concentrar todas as mudanças em um único release. O **0.1.14** deve ser pequeno, compatível e antecipado, contendo o pin de Roslyn e as correções críticas de cache/equality. O **0.1.15** acrescenta capacidades de emissão exigidas pelas Fases 11 e 13. O **0.2.0** fica reservado ao redesenho potencialmente breaking do modelo incremental. Essa divisão reduz o raio de regressão e impede que problemas atuais de IDE aguardem o refactor mais profundo da Fase 14.
 
 ## 7. Conclusões para o plano
 
 1. **DF15 confirmada viável** — adotar multi-target `roslyn4.8` + `roslyn5.6` na Fase 8, condicionado ao release 0.1.14 do pacote externo (pin 4.8). Sem fallback necessário.
-2. Fase 11 é majoritariamente **local** (header via evento, atributos via APIs existentes, subclasses para membros); nullable requer decisão externa.
-3. Fase 13 **bloqueada em release externo** (containing types) — antecipar o pedido.
-4. Fase 14 exige release externo dedicado; os bugs de equality/hash já hoje impedem o cache incremental de funcionar (hash de referência) — reforça a prioridade.
-5. Validar SDK 8 na matriz do CI (Fase 9) antes do primeiro release multi-target.
+2. Fase 11 é majoritariamente **local** (header via evento, atributos via APIs existentes, subclasses para membros); para nullable, adotar a solução externa em `TypeDescriptor` no 0.1.15 em vez de manter um paliativo local paralelo.
+3. Fase 13 **bloqueada em release externo** (containing types no 0.1.15) — antecipar o pedido.
+4. Antecipar as correções de caches estáticos e equality/hash para o 0.1.14; a Fase 14 permanece responsável pelo modelo completamente imutável e livre de símbolos no 0.2.0.
+5. Reexecutar a matriz 8/9/10 no CI como teste de regressão, não mais como validação pendente da viabilidade.
 
-Artefatos do experimento: `scratchpad/spike/` (variantes, pacote `SpikeGen.0.0.1.nupkg`, consumidor, logs `build-sdk9.log`/`build-sdk10.log` com os argumentos `/analyzer:` comprovando a seleção de pasta).
+Reprodução do experimento: `scratchpad/spike/run-spike.ps1`. O diretório preserva projetos, consumidor, configuração e `last-run.md`; pacotes, caches, logs diagnósticos e binlogs são regeneráveis e ficam ignorados em `scratchpad/spike/artifacts/`. A última execução registra a matriz e o SHA-256 do pacote.

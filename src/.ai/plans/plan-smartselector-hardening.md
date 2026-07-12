@@ -1,15 +1,15 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fase 0 concluída (DF15 viável; multi-target confirmado); próxima: Fase 1 (harness)
+## Status: EM ANDAMENTO - Fases 0 e 1 concluídas; próxima: Fase 2 (typos e documentação)
 
 ## Progresso
 
-`█░░░░░░░░░░░░░░░` **6%** - 1 de 16 fases
+`██░░░░░░░░░░░░░░` **13%** - 2 de 16 fases
 
 | Fase | Estado |
 |---|---|
 | Fase 0 - Spike de viabilidade externa e matriz de compatibilidade | Concluida |
-| Fase 1 - Harness de testes com validação de compilação | Pendente |
+| Fase 1 - Harness de testes com validação de compilação | Concluida |
 | Fase 2 - Typos e documentação | Pendente |
 | Fase 3 - Limpeza de Demo e Benchmarks | Pendente |
 | Fase 4 - Bugs de geração de baixo risco | Pendente |
@@ -113,7 +113,7 @@
 - **DF12 — Sem mapeamento reverso:** o pacote é de projeção (`Select`); geração de entidades a partir de DTOs (`ToEntity`/`Update(entity)`) não será implementada. Fonte: decisão humana em 2026-07-11.
 - **DF13 — `new` somente em membros públicos conflitantes, detectado semanticamente:** o modificador `new` é emitido em `Select{TFrom}Expression` e `From` apenas quando a classe base do DTO declara membro homônimo acessível; o campo privado nunca recebe `new` (CS0109). Fonte: análise externa 2026-07-11, achado 3, verificado contra o build.
 - **DF14 — Correções nullable do Demo por modelagem:** eliminar CS8618 do Demo com `required`, construtores ou `= default!` (POCOs materializados pelo EF); não usar `#nullable disable`. Fonte: análise externa 2026-07-11, achado 10.
-- **DF15 — Empacotamento do generator multi-target por versão de Roslyn:** avaliar na Fase 0 empacotar builds do generator por versão de Roslyn em `analyzers/dotnet/roslyn{X.Y}/cs` (ex.: roslyn4.8 + roslyn5.6), permitindo uma versão por versão do .NET SDK; se inviável, reduzir para `Microsoft.CodeAnalysis.CSharp` 4.8.0 (opção A da Q1). Fonte: Q1, resposta humana 2026-07-11.
+- **DF15 — Empacotamento do generator multi-target por versão de Roslyn:** empacotar builds do generator em `analyzers/dotnet/roslyn4.8/cs` e `analyzers/dotnet/roslyn5.6/cs`. A Fase 0 confirmou build, seleção da variante e execução com SDKs 8.0.422, 9.0.100 e 10.0.301. Fonte: Q1, resposta humana 2026-07-11 + spike reproduzível de 2026-07-11.
 - **DF16 — Atributos selados:** adicionar `sealed` a `AutoSelectAttribute<T>`, `AutoPropertiesAttribute`, `AutoPropertiesAttribute<T>` e `AutoDetailsAttribute`. Fonte: Q2a, resposta humana 2026-07-11 (opção A).
 - **DF17 — Classe base para `Exclude`/`Flattening`:** extrair base abstrata pública consolidando as propriedades duplicadas nos atributos. Fonte: Q2b, resposta humana 2026-07-11 (opção A).
 - **DF18 — Coleção nullable → destino non-nullable usa coleção vazia + diagnóstico informativo:** gerar fallback de coleção vazia (`... == null ? new List<T>() : ...` ou equivalente traduzível) e emitir diagnóstico de severidade Info apontando a conversão. Fonte: Q3, resposta humana 2026-07-11 (opção A com diagnóstico de informação).
@@ -163,6 +163,13 @@
 - **Achado 9 (containing types genéricos):** aceito — DF20 estendida: diagnóstico permanente também para containing type genérico; nuance registrada (partial pode omitir constraints, barateando suporte futuro).
 - **Achado 10 (retenção indireta):** aceito — critério da Fase 14 passou a ser transitivo, com teste de reflexão sobre o grafo cacheado.
 
+### Revisão pós-Fase 0 (SDK 8 instalado, 2026-07-11)
+
+- **Matriz DF15 fechada:** SDK 8.0.422/Roslyn 4.8 selecionou `roslyn4.8`; SDK 9.0.100/Roslyn 4.12 selecionou `roslyn4.8`; SDK 10.0.301/Roslyn 5.6 selecionou `roslyn5.6`. Build e execução passaram nos três casos.
+- **Releases externos separados por risco:** 0.1.14 para compatibilidade Roslyn e higiene crítica (equality/hash e caches estáticos); 0.1.15 para capacidades de emissão (nullable e containing types); 0.2.0 para o modelo potencialmente breaking sem símbolos.
+- **Nullable decidido como dependência externa:** a Fase 11 consumirá `NullableAnnotation` modelada no `TypeDescriptor` 0.1.15; não será criado um segundo modelo local paliativo.
+- **Spike preservado de forma reproduzível:** fontes e script ficam em `scratchpad/spike/`; artefatos pesados são regeneráveis e ignorados; `last-run.md` registra matriz e hash do pacote.
+
 ---
 
 ## Design alvo
@@ -211,7 +218,7 @@ RoyalCode.SmartSelector.Tests/
 
 ### Compatibilidade, migração e rollout
 
-- Compatibilidade de Roslyn resolvida por DF15 (multi-target `roslyn{X.Y}` se viável; senão 4.8.0), validada pela matriz de SDKs da Fase 0; documentar SDK mínimo no README.
+- Compatibilidade de Roslyn resolvida por DF15 (`roslyn4.8` + `roslyn5.6`), validada pela matriz de SDKs 8/9/10 da Fase 0; documentar SDK mínimo no README.
 - Mudanças na forma do código gerado (Fases 11–12) são observáveis por consumidores: registrar no changelog/release notes.
 - Breaking de API pública aprovado por DF16/DF17 (selar atributos, classe base); versão 0.x permite, mas exige nota de release.
 
@@ -274,13 +281,14 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 **Concluída em 2026-07-11.** Relatório: `.ai/reviews/spike-viabilidade-externa-2026-07-11.md`.
 
 - **Entregáveis:** relatório do spike; experimento reproduzível em `scratchpad/spike/` (variantes 4.8/5.6, pacote `SpikeGen`, consumidor, logs diagnósticos com `/analyzer:`).
-- **DF15 VIÁVEL, sem fallback:** generator e pacote externo compilam contra Roslyn 4.8.0 **sem nenhum erro** (nenhuma API nova usada). Matriz: SDK 9.0.100 (Roslyn 4.12) selecionou `roslyn4.8` — build e execução OK; SDK 10.0.301 (Roslyn 5.6) selecionou `roslyn5.6` — build e execução OK. SDK 8 não instalado na máquina (mecanismo é o mesmo; validar na matriz do CI, Fase 9).
+- **DF15 VIÁVEL, sem fallback:** generator e pacote externo compilam contra Roslyn 4.8.0 **sem nenhum erro** (nenhuma API nova usada). Matriz completa: SDK 8.0.422 (Roslyn 4.8) selecionou `roslyn4.8`; SDK 9.0.100 (Roslyn 4.12) selecionou `roslyn4.8`; SDK 10.0.301 (Roslyn 5.6) selecionou `roslyn5.6`. Build e execução OK nos três casos.
 - **Condição para a Fase 8:** o 0.1.13 publicado do externo compila contra MC **4.14** e não carrega sob compiladores < 4.14; release **0.1.14 com pin 4.8.0** é pré-requisito da pasta `roslyn4.8` (a mesma DLL serve às duas pastas).
-- **Fase 11 é majoritariamente local:** header via evento `Generating`; `[GeneratedCode]` via `ClassGenerator.Attributes`/`MethodGenerator.Attributes`; membros sem suporte a atributos/docs (`PropertyGenerator`/`FieldGenerator`) resolvíveis por subclasse local. `NullableAnnotation` não modelado — externa preferencial.
-- **Fase 13 bloqueada em release externo:** `ClassGenerator` não suporta containing types (mudança externa, 0.1.14).
-- **Fase 14 exige release externo dedicado (0.1.15):** retenção de símbolos em `TypeDescriptor`/`PropertyDescriptor`/`MatchSelection`, **caches estáticos com `ITypeSymbol`** (root de Compilations no IDE), hashes por referência (`Namespaces.GetHashCode()`), `TypeDescriptor.Equals` com NRE potencial, `PropertyDescriptor.Equals(object)` testando `ParameterDescriptor` (bug).
+- **Fase 11 é majoritariamente local:** header via evento `Generating`; `[GeneratedCode]` via `ClassGenerator.Attributes`/`MethodGenerator.Attributes`; membros sem suporte a atributos/docs (`PropertyGenerator`/`FieldGenerator`) resolvíveis por subclasse local. A nulabilidade será resolvida externamente por `NullableAnnotation` no `TypeDescriptor` 0.1.15.
+- **Fase 13 bloqueada em release externo:** `ClassGenerator` não suporta containing types (mudança externa, 0.1.15).
+- **Higiene crítica antecipada para o externo 0.1.14:** corrigir equality/hash e remover os três caches estáticos que retêm Compilations (`TypeDescriptor.voidTypeDescriptor`, `TypeDescriptor.cancellationToken` e `ParameterDescriptor.cancellationToken`). `PropertyDescriptor.Equals(object)` também pode recursar até `StackOverflowException` quando recebe `ParameterDescriptor`.
+- **Fase 14 exige release externo dedicado (0.2.0):** remover retenção direta e transitiva de símbolos em `TypeDescriptor`/`PropertyDescriptor`/`MatchSelection` com um modelo imutável; a versão major/minor separada admite alterações incompatíveis.
 - **Desvios/achados extras:** DTO em namespace global gera código inválido — registrar diagnóstico nas Fases 4/5.
-- **Pendências:** validar SDK 8 no CI; solicitar release externo 0.1.14 antes das Fases 8 e 13.
+- **Pendências:** automatizar a matriz 8/9/10 no CI como regressão; solicitar o externo 0.1.14 antes da Fase 8 e o 0.1.15 antes das Fases 11 e 13.
 
 ---
 
@@ -294,12 +302,12 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Criar `CompileResult` com `GeneratorDiagnostics`, `CompilationDiagnostics`, `GeneratedSources` (por hintName) e `RunResult`.
-- [ ] Adotar reference assemblies por TFM para os testes de compilação (ex.: pacote `Basic.Reference.Assemblies` para net8/net9/net10); manter TPA apenas como caminho rápido explícito para testes internos.
-- [ ] Migrar todos os testes para o novo helper, mantendo as asserções de snapshot por hintName em vez de índice de árvore (`SyntaxTrees.Skip(n)`).
-- [ ] Tornar padrão a asserção "zero erros de compilação final"; asserção opcional de "zero warnings".
-- [ ] Marcar os 3 testes TDD com trait `Category=KnownLimitation` (sem `Skip`), cada um com comentário apontando a fase deste plano que o tornará verde (Fase 6: fully-qualified; Fase 13: aninhado e genérico).
-- [ ] Registrar a regra de governança: nova limitação só entra com decisão registrada neste plano (DF9).
+- [x] Criar `CompileResult` com `GeneratorDiagnostics`, `CompilationDiagnostics`, `GeneratedSources` (por hintName) e `RunResult`.
+- [x] Adotar reference assemblies por TFM para os testes de compilação (ex.: pacote `Basic.Reference.Assemblies` para net8/net9/net10); manter TPA apenas como caminho rápido explícito para testes internos.
+- [x] Migrar todos os testes para o novo helper, mantendo as asserções de snapshot por hintName em vez de índice de árvore (`SyntaxTrees.Skip(n)`).
+- [x] Tornar padrão a asserção "zero erros de compilação final"; asserção opcional de "zero warnings".
+- [x] Marcar os 3 testes TDD com trait `Category=KnownLimitation` (sem `Skip`), cada um com comentário apontando a fase deste plano que o tornará verde (Fase 6: fully-qualified; Fase 13: aninhado e genérico).
+- [x] Registrar a regra de governança: nova limitação só entra com decisão registrada neste plano (DF9).
 
 **Critérios de aceite:** nenhum teste acessa `SyntaxTrees.Skip(n)`; todo teste de geração falha se o código gerado tiver erro CS em pelo menos um TFM suportado; `dotnet test --filter "Category!=KnownLimitation"` fica 100% verde; cada teste `KnownLimitation` referencia a fase que o resolve.
 
@@ -307,7 +315,15 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 1
 
-*a preencher*
+**Concluída em 2026-07-11.**
+
+- `CompileResult` passou a separar diagnósticos do generator e da compilação final, expor fontes por hint name e preservar `GeneratorDriverRunResult`.
+- `CompileAndAssert` valida por padrão `net8.0`, `net9.0` e `net10.0`; warnings podem ser exigidos explicitamente. `CompileFast` mantém TPA como caminho deliberado e documentado.
+- Reference assemblies vêm de `Basic.Reference.Assemblies.Net80` 1.8.9, `Net90` 1.8.9 e `Net100` 1.8.8, isolados por aliases. As fontes atuais dos quatro atributos runtime são recursos embutidos e compiladas em cada TFM, evitando referenciar a DLL do test host `net10.0` durante validações de TFMs anteriores.
+- Todos os snapshots exatos usam hint names; não resta acesso a `SyntaxTrees.Skip(n)`.
+- Fixtures antes incompletas foram tornadas autocontidas (tipos ausentes e acessibilidade inconsistente), sem alteração no código de produção.
+- Os três testes TDD têm `Category=KnownLimitation`, continuam falhando e apontam para as Fases 6/13. A governança permanece definida em DF9: nova limitação exige decisão registrada neste plano.
+- Gate: `dotnet test RoyalCode.SmartSelector.Tests/RoyalCode.SmartSelector.Tests.csproj --filter "Category!=KnownLimitation"` — **33/33 aprovados**. Baseline informativa `Category=KnownLimitation` — **3/3 falhando como esperado**, nenhum `Skip`.
 
 ---
 
@@ -481,21 +497,22 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ## Fase 8 - Empacotamento e dependências
 
-**Depende de:** Fase 0 (validação de DF15).
+**Depende de:** Fase 0 (validação de DF15) e `RoyalCode.Extensions.SourceGenerator` 0.1.14.
 
 **Escopo:** `RoyalCode.SmartSelector.Generators.csproj`, `RoyalCode.SmartSelector.Demo.csproj`, `RoyalCode.SmartSelector.Benchmarks.csproj`, `tests.targets`, `README.md`.
 
-**O que/como:** remover caminhos hardcoded de empacotamento e aplicar DF15 (multi-target Roslyn validado na Fase 0, ou fallback 4.8.0).
+**O que/como:** remover caminhos hardcoded de empacotamento e aplicar o multi-target Roslyn de DF15 validado na Fase 0.
 
 **Tarefas:**
 
 - [ ] Trocar `$(NuGetPackageRoot)royalcode.extensions.sourcegenerator\...` por `GeneratePathProperty="true"` + `$(PKGRoyalCode_Extensions_SourceGenerator)` nos 3 csproj que usam o caminho.
 - [ ] Reavaliar `NoWarn` de `NU1900` no generator; remover se o restore não o exigir mais.
-- [ ] Aplicar DF15: multi-target do generator por versão de Roslyn (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`) conforme validado na Fase 0; se o fallback foi confirmado, reduzir `Microsoft.CodeAnalysis.*` para 4.8.0 (testes podem permanecer em versão mais nova).
+- [ ] No pacote externo 0.1.14, baixar `Microsoft.CodeAnalysis.*` para 4.8.0, corrigir os contratos de equality/hash de `TypeDescriptor`, `PropertyDescriptor` e `MatchSelection`, e eliminar os caches estáticos de descritores que retêm símbolos; cobrir as correções com testes antes do release.
+- [ ] Aplicar DF15: multi-target do generator por versão de Roslyn (`analyzers/dotnet/roslyn4.8/cs` + `analyzers/dotnet/roslyn5.6/cs`) conforme validado na Fase 0; testes podem permanecer em versão mais nova.
 - [ ] Inspecionar o `.nupkg` gerado (conteúdo das pastas `analyzers/dotnet/...`, incluindo o `RoyalCode.Extensions.SourceGenerator.dll` em cada pasta roslyn quando multi-target).
 - [ ] Documentar no README o SDK mínimo exigido por variante, citando a matriz da Fase 0.
 
-**Critérios de aceite:** `dotnet pack` do generator produz `.nupkg` com layout correto (multi-target ou single conforme DF15); projeto de consumo em SDK 8.0.x compila com o generator ativo (verificado com o `.nupkg`); build limpo após remoção do caminho hardcoded.
+**Critérios de aceite:** externo 0.1.14 publicado com testes de equality/hash e sem caches estáticos que retenham símbolos; `dotnet pack` do generator produz `.nupkg` com layout multi-target correto; projeto de consumo em SDK 8.0.x compila com o generator ativo (verificado com o `.nupkg`); build limpo após remoção do caminho hardcoded.
 
 **Testes:** `dotnet pack RoyalCode.SmartSelector.Generators\RoyalCode.SmartSelector.Generators.csproj -c Release`; inspecionar o `.nupkg`; `dotnet test` das duas suítes com `--filter "Category!=KnownLimitation"` no projeto Tests.
 
@@ -559,9 +576,9 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ## Fase 11 - Código gerado auto-suficiente e nullable-clean
 
-**Depende de:** DF6, DF11, Fases 0, 1 e 4.
+**Depende de:** DF6, DF11, Fases 0, 1 e 4; `RoyalCode.Extensions.SourceGenerator` 0.1.15 para nulabilidade.
 
-**Escopo:** emissores (`ClassGenerator` uso, `AutoSelectGenerator`, `AutoPropertiesGenerator`, `AutoDetailsGenerator`); todos os snapshots; possivelmente `RoyalCode.Extensions.SourceGenerator` (conforme spike da Fase 0).
+**Escopo:** emissores (`ClassGenerator` uso, `AutoSelectGenerator`, `AutoPropertiesGenerator`, `AutoDetailsGenerator`); todos os snapshots; `RoyalCode.Extensions.SourceGenerator` 0.1.15 para `NullableAnnotation`.
 
 **O que/como:** cabeçalho, metadados e nulabilidade correta no código emitido, com gradação de `[GeneratedCode]` (DF11).
 
@@ -573,7 +590,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 - [ ] Validar o efeito com analyzers e cobertura (arquivo `.g.cs` do Demo) antes de fechar a gradação.
 - [ ] Emitir XML docs (`/// <summary>`) nos membros públicos gerados (elimina CS1591 em consumidores com docs obrigatórias).
 - [ ] Declarar o cache como `private static Func<TFrom, TDto>? select{X}Func;`.
-- [ ] Preservar anotações nullable nos tipos das propriedades geradas (exige `NullableAnnotation` no `TypeDescriptor` — conforme resultado da Fase 0).
+- [ ] Adicionar e consumir `NullableAnnotation` em `TypeDescriptor` no pacote externo 0.1.15; preservar as anotações nullable nos tipos das propriedades geradas sem um modelo local paralelo.
 - [ ] Atualizar todos os golden tests em commit separado das mudanças de emissor (diff revisável).
 
 **Critérios de aceite:** snapshots compilados como fonte comum com `nullable enable` não emitem CS8618 pelo campo de cache; arquivos gerados começam com `// <auto-generated/>`; declaração partial de DTO **não** carrega `[GeneratedCode]` no tipo; consumidor com `GenerateDocumentationFile=true` não recebe CS1591 de membros gerados.
@@ -615,7 +632,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ## Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos
 
-**Depende de:** DF7, DF20, Fases 0 e 5.
+**Depende de:** DF7, DF20, Fases 0 e 5; `RoyalCode.Extensions.SourceGenerator` 0.1.15 com containing types.
 
 **Escopo:** emissão de declarações parciais (`ClassGenerator` — mudança no pacote externo conforme spike, com release NuGet), `AutoSelectGenerator`, `AutoPropertiesGenerator`.
 
@@ -642,7 +659,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ## Fase 14 - Pipeline incremental sem retenção de símbolos
 
-**Depende de:** Fase 0 (mapeamento de retenção) e Fases 4–13 (evitar refazer trabalho sobre modelos que ainda vão mudar).
+**Depende de:** Fase 0 (mapeamento de retenção), Fases 4–13 (evitar refazer trabalho sobre modelos que ainda vão mudar) e release externo 0.2.0 coordenado.
 
 **Escopo:** `AutoSelectInformation`, `AutoPropertiesInformation`, `AutoDetailsInformation`, `Transform`s, `SelectLambdaGenerator`; `RoyalCode.Extensions.SourceGenerator` (release coordenado conforme spike).
 
@@ -655,7 +672,7 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 - [ ] Eliminar mutações durante a geração (`AddParentProperty` em `SelectLambdaGenerator.cs:109` → cálculo de caminho imutável).
 - [ ] Adicionar teste de cacheabilidade usando `GeneratorDriver` com `trackIncrementalGeneratorSteps: true` verificando `IncrementalStepRunReason.Cached`/`Unchanged` após edição irrelevante.
 - [ ] Adicionar teste de retenção transitiva: percorrer por reflexão o grafo de objetos alcançável a partir dos modelos cacheados e falhar se qualquer nó for `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` ou `Location`.
-- [ ] Aplicar o release do `RoyalCode.Extensions.SourceGenerator` definido na Fase 0, se necessário.
+- [ ] Aplicar o `RoyalCode.Extensions.SourceGenerator` 0.2.0 com modelo imutável e sem retenção direta ou transitiva de `ISymbol`; manter as correções críticas já entregues no 0.1.14 cobertas por regressão.
 
 **Critérios de aceite:** teste de cacheabilidade passa (edição em arquivo não relacionado não reexecuta o output); golden tests inalterados; **nenhum objeto alcançável** a partir dos valores cacheados retém `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` ou `Location` (retenção direta ou indireta, ex.: `TypeDescriptor.Symbol` aninhado).
 
@@ -733,9 +750,9 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 | Risco | Gatilho | Impacto | Mitigação | Estado |
 |---|---|---|---|---|
-| Piso Roslyn 5.6 exclui consumidores net8/net9 | publicação do pacote antes da Fase 8 | pacote inutilizável para parte do público | DF15 (multi-target ou 4.8.0) validado pela matriz da Fase 0 antes de qualquer release | Aberto |
-| Multi-target Roslyn (DF15) inviável ou mal suportado | matriz da Fase 0 falha em algum SDK | volta ao single-target | validado na Fase 0 (SDK 9→roslyn4.8, SDK 10→roslyn5.6, build+run OK); resta validar SDK 8 no CI | Mitigado |
-| Mudanças no pacote externo bloqueiam Fases 8, 13 e 14 | `TypeDescriptor`/`ClassGenerator` sem API necessária | fases aguardando release NuGet do pacote (fonte local disponível) | Fase 0 listou as mudanças: 0.1.14 (pin Roslyn 4.8 + containing types + nullable) e 0.1.15 (símbolos/equality) — solicitar releases cedo | Aberto |
+| Piso Roslyn 5.6 exclui consumidores net8/net9 | publicação do pacote antes da Fase 8 | pacote inutilizável para parte do público | DF15 multi-target validado pela matriz 8/9/10 da Fase 0 antes de qualquer release | Aberto |
+| Seleção multi-target Roslyn (DF15) regride no empacotamento real | alteração futura no `.nupkg` ou SDK | variante incompatível carregada pelo consumidor | spike fechou SDK 8→4.8, SDK 9→4.8 e SDK 10→5.6 com build+run; repetir a matriz no CI | Mitigado |
+| Mudanças no pacote externo bloqueiam Fases 8, 11, 13 e 14 | `TypeDescriptor`/`ClassGenerator` sem API necessária | fases aguardando release NuGet do pacote (fonte local disponível) | releases pequenos e antecipados: 0.1.14 (pin 4.8 + caches/equality), 0.1.15 (nullable + containing types), 0.2.0 (modelo sem símbolos) | Aberto |
 | Harness aprova código incompatível com TFMs antigos | testes compilando apenas contra TPA (net10) | incompatibilidade net8/net9 despercebida | reference assemblies por TFM na Fase 1 + matriz de SDKs da Fase 0 | Aberto |
 | Atualização em massa de snapshots mascara regressão | Fases 4, 11, 12 alteram todos os golden tests | código gerado incorreto aprovado | commit separado para snapshots + validação de compilação da Fase 1 | Aberto |
 | Condicionais de null quebram tradução EF em provedores específicos | Fase 12 | queries falham em runtime do consumidor | validar via Demo SQLite; documentar provedores testados | Aberto |
@@ -757,7 +774,8 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 ## Referências
 
 - `C:\git\RoyalCode\Utils\RoyalCode.Utils\RoyalCode.Extensions.SourceGenerator` — código-fonte local do pacote externo (testes em `...\RoyalCode.Extensions.SourceGenerator.Tests`; solution `C:\git\RoyalCode\Utils\RoyalCode.Utils\Util.sln`). Modificações exigem release NuGet.
-- `.ai/reviews/spike-viabilidade-externa-2026-07-11.md` — relatório da Fase 0 (matriz DF15, capacidades do pacote externo, mudanças 0.1.14/0.1.15).
+- `.ai/reviews/spike-viabilidade-externa-2026-07-11.md` — relatório da Fase 0 (matriz DF15, capacidades do pacote externo, divisão recomendada entre 0.1.14/0.1.15/0.2.0).
+- `scratchpad/spike/run-spike.ps1` — reprodução da matriz SDK 8/9/10; `last-run.md` registra o último resultado e o hash do pacote.
 - `.ai/reviews/smart-selector-review-2026-07-10.md` — revisão técnica anterior (itens 1–8).
 - `.ai/templates/template-ai-implementation-plan.md` — template deste plano.
 - Análise externa do plano (2026-07-11) — 10 achados; avaliação registrada no Histórico de decisões.

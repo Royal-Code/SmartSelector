@@ -179,6 +179,17 @@ internal static class AutoDetailsGenerator
         var detailsClass = new ClassGenerator(className, originType.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(detailsClass);
 
+        // Quando completa um tipo partial preexistente, o atributo vai nos membros;
+        // quando a classe é gerada do zero, docs e [GeneratedCode] vão no tipo (DF11).
+        var completesExistingType = originType.HasNamedTypeSymbol(out var originSymbol) &&
+            originSymbol.TypeKind != TypeKind.Error;
+        if (!completesExistingType)
+        {
+            detailsClass.Attributes.Add(new RawLinesGeneratorNode(
+                "/// <summary>Generated details class, projected from the source type.</summary>",
+                GeneratedSourceConventions.GeneratedCodeAttributeLine));
+        }
+
         // 1.1 - Modificadores (usa a mesma acessibilidade do tipo de origem)
         GeneratedSourceConventions.ApplyDeclaredAccessibility(detailsClass, originType.Symbol);
 
@@ -191,8 +202,17 @@ internal static class AutoDetailsGenerator
             var propertyType = p.Type.HasNamedTypeSymbol(out var typeSymbol)
                 ? TypeDescriptor.Create(typeSymbol)
                 : p.Type;
+            propertyType = GeneratedSourceConventions.PreserveNullableAnnotation(propertyType);
 
-            var prop = new PropertyGenerator(propertyType, p.Name);
+            string[] prefixLines = completesExistingType
+                ?
+                [
+                    "/// <summary>Generated property, projected from the source type.</summary>",
+                    GeneratedSourceConventions.GeneratedCodeAttributeLine,
+                ]
+                : ["/// <summary>Generated property, projected from the source type.</summary>"];
+
+            var prop = new AnnotatedPropertyGenerator(propertyType, p.Name, prefixLines);
             prop.Modifiers.Public();
 
             detailsClass.Properties.Add(prop);

@@ -95,7 +95,7 @@ internal partial class PostAndCommentsDetails
 {
     private static Func<Post, PostAndCommentsDetails> selectPostFunc;
 
-    public static Expression<Func<Post, PostAndCommentsDetails>> SelectPostExpression { get; } = a => new PostAndCommentsDetails
+    public static new Expression<Func<Post, PostAndCommentsDetails>> SelectPostExpression { get; } = a => new PostAndCommentsDetails
     {
         Title = a.Title,
         Content = a.Content,
@@ -110,5 +110,5 @@ internal partial class PostAndCommentsDetails
         }).ToList()
     };
 
-    public static PostAndCommentsDetails From(Post post) => (selectPostFunc ??= SelectPostExpression.Compile())(post);
+    public static new PostAndCommentsDetails From(Post post) => (selectPostFunc ??= SelectPostExpression.Compile())(post);
 }

@@ -4,6 +4,34 @@
         <name>RoyalCode.SmartSelector.Generators</name>
     </assembly>
     <members>
+        <member name="P:RoyalCode.SmartSelector.Generators.Generators.AutoDetailsInformation.PropertyName">
+            <summary>
+            Nome da propriedade com AutoDetails que originou os diagnósticos, quando houver.
+            </summary>
+        </member>
+        <member name="T:RoyalCode.SmartSelector.Generators.Generators.RawLinesGeneratorNode">
+            <summary>
+            Nó que escreve linhas pré-formatadas (XML docs e atributos) com a indentação do ponto de inserção.
+            </summary>
+        </member>
+        <member name="T:RoyalCode.SmartSelector.Generators.Generators.AnnotatedPropertyGenerator">
+            <summary>
+            <see cref="T:RoyalCode.Extensions.SourceGenerator.Generators.PropertyGenerator"/> com linhas de prefixo (XML docs e atributos) antes da declaração.
+            O pacote externo não suporta atributos em propriedades; a escrita é replicada aqui.
+            </summary>
+        </member>
+        <member name="T:RoyalCode.SmartSelector.Generators.Generators.AnnotatedFieldGenerator">
+            <summary>
+            <see cref="T:RoyalCode.Extensions.SourceGenerator.Generators.FieldGenerator"/> com linhas de prefixo (atributos) antes da declaração.
+            O pacote externo não suporta atributos em campos.
+            </summary>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.Generators.Generators.GeneratedSourceConventions.PreserveNullableAnnotation(RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor)">
+            <summary>
+            Aplica ao nome do tipo a anotação nullable modelada pelo <see cref="T:RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor"/> externo,
+            quando o nome ainda não a carrega (tipos não especiais perdem o '?' na criação por símbolo).
+            </summary>
+        </member>
         <member name="T:RoyalCode.SmartSelector.Generators.IncrementalGenerator">
             <summary>
             Incremental source generator that generates code for the AutoSelectAttribute{TFrom} attribute.

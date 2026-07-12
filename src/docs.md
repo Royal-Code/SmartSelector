@@ -43,7 +43,7 @@ Código gerado (essencial):
 ```csharp
 public partial class UserDetails
 {
-    private static Func<User, UserDetails> selectUserFunc;
+    private static Func<User, UserDetails>? selectUserFunc;
 
     public static Expression<Func<User, UserDetails>> SelectUserExpression { get; } = u => new UserDetails
     {
@@ -88,7 +88,7 @@ Código gerado (resumo real):
 ```csharp
 public partial class BookDetails
 {
-    private static Func<Book, BookDetails> selectBookFunc;
+    private static Func<Book, BookDetails>? selectBookFunc;
 
     public static Expression<Func<Book, BookDetails>> SelectBookExpression { get; } = a => new BookDetails
     {

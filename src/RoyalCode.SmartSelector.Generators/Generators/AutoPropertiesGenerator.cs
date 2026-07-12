@@ -268,7 +268,9 @@ internal static class AutoPropertiesGenerator
     private static bool IsSupportedType(PropertyDescriptor descriptor)
     {
         var type = descriptor.Type;
-        var typeName = type.Name;
+
+        // O nome pode carregar a anotação nullable ('string?'); o tipo subjacente decide o suporte.
+        var typeName = type.UnderlyingType;
 
         if (SupportedPrimitiveTypes.Contains(typeName))
             return true;
@@ -332,8 +334,16 @@ internal static class AutoPropertiesGenerator
             var propertyType = p.Type.HasNamedTypeSymbol(out var typeSymbol)
                 ? TypeDescriptor.Create(typeSymbol)
                 : p.Type;
+            propertyType = GeneratedSourceConventions.PreserveNullableAnnotation(propertyType);
 
-            var prop = new PropertyGenerator(propertyType, p.Name);
+            // membros gerados em tipo declarado pelo usuário: docs e [GeneratedCode] por membro (DF11)
+            var prop = new AnnotatedPropertyGenerator(
+                propertyType,
+                p.Name,
+                [
+                    "/// <summary>Generated property, projected from the source type.</summary>",
+                    GeneratedSourceConventions.GeneratedCodeAttributeLine,
+                ]);
 
             // 2.1 modificadores
             prop.Modifiers.Public();
@@ -396,11 +406,12 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
             if (fromType == null)
                 return originProperties;
 
-            // cria a informação
+            // cria a informação; Exclude/Flattening vêm do AutoPropertiesAttribute,
+            // não do AutoSelectAttribute (que não declara esses argumentos)
             var info = AutoPropertiesGenerator.CreateInformation(
                 origin,
                 TypeDescriptor.Create(fromType),
-                autoSelectAttribute);
+                autoPropertiesAttribute);
 
             // pega as propriedades da origem mais as da informação
             return [.. originProperties, .. info.Properties];

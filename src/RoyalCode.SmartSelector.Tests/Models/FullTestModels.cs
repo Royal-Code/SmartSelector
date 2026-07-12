@@ -118,7 +118,7 @@ public class DtoItem
 
 public partial class DtoWithSubSelectsAndCollections
 {
-    private static Func<EntityWithSubSelectsAndCollections, DtoWithSubSelectsAndCollections> selectEntityWithSubSelectsAndCollectionsFunc;
+    private static Func<EntityWithSubSelectsAndCollections, DtoWithSubSelectsAndCollections>? selectEntityWithSubSelectsAndCollectionsFunc;
 
     public static Expression<Func<EntityWithSubSelectsAndCollections, DtoWithSubSelectsAndCollections>> SelectEntityWithSubSelectsAndCollectionsExpression { get; } = a => new DtoWithSubSelectsAndCollections
     {

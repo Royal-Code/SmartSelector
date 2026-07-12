@@ -18,36 +18,29 @@
             </para>
             </summary>
         </member>
-        <member name="P:RoyalCode.SmartSelector.AutoDetailsAttribute.Exclude">
+        <member name="T:RoyalCode.SmartSelector.AutoPropertiesAttributeBase">
+            <summary>
+            Provides the common configuration for attributes that automatically select properties.
+            </summary>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Exclude">
             <summary>
             An array of property names to exclude from automatic property handling. Property names are case-sensitive.
             Can be empty to include all properties.
             </summary>
         </member>
-        <member name="P:RoyalCode.SmartSelector.AutoDetailsAttribute.Flattening">
+        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttributeBase.Flattening">
             <summary>
-            An array of property names to generate flattening for complex/nested properties.
+            An array of property names to generate flattening for complex or nested properties.
             Property names are case-sensitive.
             </summary>
         </member>
         <member name="T:RoyalCode.SmartSelector.AutoPropertiesAttribute">
             <summary>
             <para>
-                This attribute is used with the <see cref="T:RoyalCode.SmartSelector.AutoSelectAttribute`1"/> 
+                This attribute is used with the <see cref="T:RoyalCode.SmartSelector.AutoSelectAttribute`1"/>
                 to indicate that all public properties of the <c>TFrom</c> class should be included in the selection.
             </para>
-            </summary>
-        </member>
-        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute.Exclude">
-            <summary>
-            An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-            Can be empty to include all properties.
-            </summary>
-        </member>
-        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute.Flattening">
-            <summary>
-            An array of property names to generate flattening for complex/nested properties.
-            Property names are case-sensitive.
             </summary>
         </member>
         <member name="T:RoyalCode.SmartSelector.AutoPropertiesAttribute`1">
@@ -57,18 +50,6 @@
             <typeparam name="TFrom">
                 The type whose members are used to generate properties for the attributed class.
             </typeparam>
-        </member>
-        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute`1.Exclude">
-            <summary>
-            An array of property names to exclude from automatic property handling. Property names are case-sensitive.
-            Can be empty to include all properties.
-            </summary>
-        </member>
-        <member name="P:RoyalCode.SmartSelector.AutoPropertiesAttribute`1.Flattening">
-            <summary>
-            An array of property names to generate flattening for complex/nested properties.
-            Property names are case-sensitive.
-            </summary>
         </member>
         <member name="T:RoyalCode.SmartSelector.AutoSelectAttribute`1">
             <summary>
@@ -87,13 +68,17 @@
             <summary>
             Indicates that the decorated property should map its value from another property with the specified name.
             </summary>
-            <param name="PropertyName">The name of the property to map from.</param>
         </member>
         <member name="M:RoyalCode.SmartSelector.MapFromAttribute.#ctor(System.String)">
             <summary>
-            Indicates that the decorated property should map its value from another property with the specified name.
+            Initializes a new instance of the MapFromAttribute class, specifying the source property name to map from.
             </summary>
-            <param name="PropertyName">The name of the property to map from.</param>
+            <param name="propertyName">The name of the source property to be mapped. Cannot be null or empty.</param>
+        </member>
+        <member name="P:RoyalCode.SmartSelector.MapFromAttribute.PropertyName">
+            <summary>
+            Gets or sets the name of the source property to map from.
+            </summary>
         </member>
     </members>
 </doc>

@@ -22,7 +22,7 @@ public partial class StringNullsDto
 // expected
 public partial class StringNullsDto
 {
-    private static Func<StringNulls, StringNullsDto> selectStringNullsFunc;
+    private static Func<StringNulls, StringNullsDto>? selectStringNullsFunc;
 
     public static Expression<Func<StringNulls, StringNullsDto>> SelectStringNullsExpression { get; } = a => new StringNullsDto
     {
@@ -59,7 +59,7 @@ public partial class IntNullsDto
 // expected
 public partial class IntNullsDto
 {
-    private static Func<IntNulls, IntNullsDto> selectIntNullsFunc;
+    private static Func<IntNulls, IntNullsDto>? selectIntNullsFunc;
 
     public static Expression<Func<IntNulls, IntNullsDto>> SelectIntNullsExpression { get; } = a => new IntNullsDto
     {
@@ -103,7 +103,7 @@ public partial class EnumNullsDto
 // expected
 public partial class EnumNullsDto
 {
-    private static Func<EnumNulls, EnumNullsDto> selectEnumNullsFunc;
+    private static Func<EnumNulls, EnumNullsDto>? selectEnumNullsFunc;
 
     public static Expression<Func<EnumNulls, EnumNullsDto>> SelectEnumNullsExpression { get; } = a => new EnumNullsDto
     {
@@ -139,7 +139,7 @@ public partial class EnumNullsTypeDto
 // expected
 public partial class EnumNullsTypeDto
 {
-    private static Func<EnumNulls, EnumNullsTypeDto> selectEnumNullsTypeFunc;
+    private static Func<EnumNulls, EnumNullsTypeDto>? selectEnumNullsTypeFunc;
 
     public static Expression<Func<EnumNulls, EnumNullsTypeDto>> SelectEnumNullsTypeExpression { get; } = a => new EnumNullsTypeDto
     {
@@ -176,7 +176,7 @@ public partial class EnumerableNullsDto
 // expected
 public partial class EnumerableNullsDto
 {
-    private static Func<EnumerableNulls, EnumerableNullsDto> selectEnumerableNullsFunc;
+    private static Func<EnumerableNulls, EnumerableNullsDto>? selectEnumerableNullsFunc;
 
     public static Expression<Func<EnumerableNulls, EnumerableNullsDto>> SelectEnumerableNullsExpression { get; } = a => new EnumerableNullsDto
     {
@@ -205,7 +205,7 @@ public partial class CollectionsNullsDto
 // expected
 public partial class CollectionsNullsDto
 {
-    private static Func<EnumerableNulls, CollectionsNullsDto> selectEnumerableNullsFunc;
+    private static Func<EnumerableNulls, CollectionsNullsDto>? selectEnumerableNullsFunc;
 
     public static Expression<Func<EnumerableNulls, CollectionsNullsDto>> SelectEnumerableNullsExpression { get; } = a => new CollectionsNullsDto
     {
@@ -252,7 +252,7 @@ public partial class ValueSelectNullsDto
 // expected
 public partial class ValueSelectNullsDto
 {
-    private static Func<ValueSelectNulls, ValueSelectNullsDto> selectValueSelectNullsFunc;
+    private static Func<ValueSelectNulls, ValueSelectNullsDto>? selectValueSelectNullsFunc;
 
     public static Expression<Func<ValueSelectNulls, ValueSelectNullsDto>> SelectValueSelectNullsExpression { get; } = a => new ValueSelectNullsDto
     {

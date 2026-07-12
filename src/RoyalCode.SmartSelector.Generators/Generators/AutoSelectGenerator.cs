@@ -305,8 +305,12 @@ internal static class AutoSelectGenerator
         var funcType = new TypeDescriptor($"Func<{match.TargetType.Name}, {match.OriginType.Name}>",
             [match.TargetType.Namespaces[0], match.OriginType.Namespaces[0], "System"], null);
 
-        // 1.2.2 cria o campo privado para a função "select{Target}Func"
-        var funcField = new FieldGenerator(funcType, $"select{targetTypeIdentifier}Func", false);
+        // 1.2.2 cria o campo privado nullable para a função "select{Target}Func" (DF6)
+        var funcFieldType = new TypeDescriptor($"{funcType.Name}?", funcType.Namespaces, null);
+        var funcField = new AnnotatedFieldGenerator(
+            funcFieldType,
+            $"select{targetTypeIdentifier}Func",
+            [GeneratedSourceConventions.GeneratedCodeAttributeLine]);
         funcField.Modifiers.Private();
         funcField.Modifiers.Static();
 
@@ -320,8 +324,14 @@ internal static class AutoSelectGenerator
             [.. funcType.Namespaces, "System.Linq.Expressions"], null);
 
         // 1.3.2 cria a propriedade expression: Expression<Func<Target, Origin>> Select{Target}Expression
-        var expressionProperty = new PropertyGenerator(
-            expressionType, $"Select{targetTypeIdentifier}Expression", true, false);
+        var expressionProperty = new AnnotatedPropertyGenerator(
+            expressionType,
+            $"Select{targetTypeIdentifier}Expression",
+            [
+                $"/// <summary>Projection expression that creates a new <see cref=\"{match.OriginType.Name}\"/> from a <see cref=\"{match.TargetType.Name}\"/>.</summary>",
+                GeneratedSourceConventions.GeneratedCodeAttributeLine,
+            ],
+            true, false);
 
         expressionProperty.Modifiers.Public();
         expressionProperty.Modifiers.Static();
@@ -341,6 +351,12 @@ internal static class AutoSelectGenerator
 
         // 1.4.1 cria o método
         var method = new MethodGenerator("From", match.OriginType);
+        var paramName = targetTypeIdentifier.ToLowerCamelCase();
+        method.Attributes.Add(new RawLinesGeneratorNode(
+            $"/// <summary>Creates a new <see cref=\"{match.OriginType.Name}\"/> projected from a <see cref=\"{match.TargetType.Name}\"/> instance.</summary>",
+            $"/// <param name=\"{paramName}\">The source instance to project.</param>",
+            $"/// <returns>A new <see cref=\"{match.OriginType.Name}\"/> instance.</returns>",
+            GeneratedSourceConventions.GeneratedCodeAttributeLine));
         method.Modifiers.Public();
         method.Modifiers.Static();
         if (HasAccessibleBaseMember(match.OriginType.Symbol, method.Name))
@@ -350,7 +366,6 @@ internal static class AutoSelectGenerator
         method.UseArrow = true;
 
         // 1.4.2 cria o parâmetro do método: Target target
-        var paramName = targetTypeIdentifier.ToLowerCamelCase();
         method.Parameters.Add(
             new ParameterGenerator(
                 new ParameterDescriptor(
@@ -373,6 +388,12 @@ internal static class AutoSelectGenerator
             match.OriginType,
             match.OriginType.Name,
             "Extensions");
+
+        // classe sem nenhuma declaração do usuário: docs e [GeneratedCode] no tipo (DF11)
+        extensionClass.Attributes.Add(new RawLinesGeneratorNode(
+            $"/// <summary>Generated extension methods to project <see cref=\"{match.TargetType.Name}\"/> instances into <see cref=\"{match.OriginType.Name}\"/> instances.</summary>",
+            GeneratedSourceConventions.GeneratedCodeAttributeLine));
+
         extensionClass.Modifiers.Public();
         extensionClass.Modifiers.Static();
 
@@ -386,6 +407,10 @@ internal static class AutoSelectGenerator
 
         // 2.1.2 cria o gerador para o método
         var queryMethod = new MethodGenerator($"Select{match.OriginType.Name}", queryType);
+        queryMethod.Attributes.Add(new RawLinesGeneratorNode(
+            $"/// <summary>Projects the <see cref=\"{match.TargetType.Name}\"/> query into <see cref=\"{match.OriginType.Name}\"/>.</summary>",
+            "/// <param name=\"query\">The source query.</param>",
+            $"/// <returns>An <see cref=\"IQueryable{{T}}\"/> of <see cref=\"{match.OriginType.Name}\"/>.</returns>"));
         queryMethod.Modifiers.Public();
         queryMethod.Modifiers.Static();
 
@@ -424,6 +449,10 @@ internal static class AutoSelectGenerator
 
         // 2.2.2 cria o gerador para o método
         var enumerableMethod = new MethodGenerator($"Select{match.OriginType.Name}", enumerableType);
+        enumerableMethod.Attributes.Add(new RawLinesGeneratorNode(
+            $"/// <summary>Projects the <see cref=\"{match.TargetType.Name}\"/> items into <see cref=\"{match.OriginType.Name}\"/>.</summary>",
+            "/// <param name=\"enumerable\">The source items.</param>",
+            $"/// <returns>An <see cref=\"IEnumerable{{T}}\"/> of <see cref=\"{match.OriginType.Name}\"/>.</returns>"));
         enumerableMethod.Modifiers.Public();
         enumerableMethod.Modifiers.Static();
 
@@ -456,12 +485,16 @@ internal static class AutoSelectGenerator
 
         // 2.3.1 cria o método
         var toMethod = new MethodGenerator($"To{match.OriginType.Name}", match.OriginType);
+        var toParamName = targetTypeIdentifier.ToLowerCamelCase();
+        toMethod.Attributes.Add(new RawLinesGeneratorNode(
+            $"/// <summary>Projects a <see cref=\"{match.TargetType.Name}\"/> instance into a new <see cref=\"{match.OriginType.Name}\"/>.</summary>",
+            $"/// <param name=\"{toParamName}\">The source instance to project.</param>",
+            $"/// <returns>A new <see cref=\"{match.OriginType.Name}\"/> instance.</returns>"));
         toMethod.Modifiers.Public();
         toMethod.Modifiers.Static();
         toMethod.UseArrow = true;
 
         // 2.3.2 cria o parâmetro do método: Target target
-        var toParamName = targetTypeIdentifier.ToLowerCamelCase();
         toMethod.Parameters.Add(
             new ParameterGenerator(new ParameterDescriptor(match.TargetType, toParamName))
             { 

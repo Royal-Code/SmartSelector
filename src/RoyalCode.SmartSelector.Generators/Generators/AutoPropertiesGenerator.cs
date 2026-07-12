@@ -183,7 +183,7 @@ internal static class AutoPropertiesGenerator
         {
             excluded.Add(p.Name);
 
-            // processa se propriedade se tem atributo AutoDetails
+            // processa a propriedade se ela tem o atributo AutoDetails
             if(AutoDetailsGenerator.TryCreate(p, fromType, out var autoDetailInfo))
             {
                 autoDetails.Add(autoDetailInfo!);

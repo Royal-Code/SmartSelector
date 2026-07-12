@@ -1,7 +1,5 @@
 ﻿namespace RoyalCode.SmartSelector;
 
-#pragma warning disable CS9113 // PropertyName not used
-
 /// <summary>
 /// Indicates that the decorated property should map its value from another property with the specified name.
 /// </summary>

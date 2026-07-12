@@ -259,7 +259,7 @@ internal static class AutoSelectGenerator
         // 1.5 Gera o código da classe
         partialClass.Generate(context);
 
-        // 2 - Criação da classe de extenção
+        // 2 - Criação da classe de extensão
         var extensionClass = new ClassGenerator($"{match.OriginType.Name}_Extensions", match.OriginType.Namespaces[0]);
         extensionClass.Modifiers.Public();
         extensionClass.Modifiers.Static();

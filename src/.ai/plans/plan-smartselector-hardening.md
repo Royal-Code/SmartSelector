@@ -1,16 +1,16 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0 e 1 concluídas; próxima: Fase 2 (typos e documentação)
+## Status: EM ANDAMENTO - Fases 0–2 concluídas; próxima: Fase 3 (Demo e Benchmarks)
 
 ## Progresso
 
-`██░░░░░░░░░░░░░░` **13%** - 2 de 16 fases
+`███░░░░░░░░░░░░░` **19%** - 3 de 16 fases
 
 | Fase | Estado |
 |---|---|
 | Fase 0 - Spike de viabilidade externa e matriz de compatibilidade | Concluida |
 | Fase 1 - Harness de testes com validação de compilação | Concluida |
-| Fase 2 - Typos e documentação | Pendente |
+| Fase 2 - Typos e documentação | Concluida |
 | Fase 3 - Limpeza de Demo e Benchmarks | Pendente |
 | Fase 4 - Bugs de geração de baixo risco | Pendente |
 | Fase 5 - Diagnósticos completos e localizados | Pendente |
@@ -51,7 +51,7 @@
 - **B3 — propriedade get-only duplicada:** filtro de exclusão em `AutoPropertiesGenerator.cs:182` usa `p.SetMethod is not null`; `public string Name => "x";` no DTO não é excluída → CS0102 no código gerado.
 - **B4 — dependência de ImplicitUsings:** arquivos gerados não emitem `using System;`/`System.Linq`/`System.Collections.Generic`; compilação sem implicit usings falha com CS0246 para `Func<,>`, `IQueryable<>`, `IEnumerable<>`.
 - **B5 — herança de DTOs:** `PostAndCommentsDetails : PostDetails` (ambos `AutoSelect<Post>`) gera membros públicos (`SelectPostExpression`, `From`) que ocultam os herdados → CS0108 no consumidor. O campo privado gerado **não** participa do conflito (verificado no build: CS0108 apenas nos 2 membros públicos); `new` no campo produziria CS0109.
-- **Diagnósticos incorretos/silêncio:** classe não-partial com `AutoProperties<T>` reporta RCSS005 com mensagem de type argument; `[AutoProperties]` sem `AutoSelect` não gera nada nem diagnostica; `AutoDetailsGenerator.cs:33` cria diagnóstico com `location: null`; mensagem RCSS003 cita `AutoPropertyAttribute` (nome inexistente).
+- **Diagnósticos incorretos/silêncio:** classe não-partial com `AutoProperties<T>` reporta RCSS005 com mensagem de type argument; `[AutoProperties]` sem `AutoSelect` não gera nada nem diagnostica; `AutoDetailsGenerator.cs:33` cria diagnóstico com `location: null`; o nome incorreto citado anteriormente pela mensagem RCSS003 foi corrigido na Fase 2.
 - **AutoProperties<T> sintático:** `AutoPropertiesGenerator.cs:54-57` filtra por `IdentifierNameSyntax`/`GenericNameSyntax`; forma qualificada (`[global::...AutoProperties<X>]`) é ignorada silenciosamente (teste TDD vermelho).
 - **DTO genérico/aninhado:** geração produz declaração de nível de namespace com nome simples; 2 testes TDD vermelhos.
 - **Retenção de símbolos no pipeline:** `TypeDescriptor` (pacote externo `RoyalCode.Extensions.SourceGenerator` 0.1.13) carrega `ISymbol`; os `*Information` carregam `Diagnostic[]` (com `Location`→`SyntaxTree`); mutações durante geração em `SelectLambdaGenerator.cs:109` (`AddParentProperty`) e `AutoDetailsGenerator.cs:47` (`Namespaces[0] = ...`).
@@ -337,24 +337,31 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Corrigir "extenção" → "extensão" em `AutoSelectGenerator.cs:262`.
-- [ ] Corrigir mensagem RCSS003 em `AnalyzerDiagnostics.cs:36`: `AutoPropertyAttribute` → `AutoPropertiesAttribute` (duas ocorrências).
-- [ ] Corrigir "processa se propriedade se tem atributo" em `AutoPropertiesGenerator.cs:186`.
-- [ ] Corrigir seta corrompida (`?`) em `README.md:8`.
-- [ ] Corrigir exemplo contraditório `[AutoSelect<Order>, AutoProperties<Order>(...)]` em `README.md:147` para a forma não genérica.
-- [ ] Atualizar README/docs.md para mostrar `{ get; } =` no lugar de `=>` em `SelectXxxExpression` (README:62-68; docs.md:48, docs.md:93).
-- [ ] Corrigir recuo do item `10.` no sumário de `docs.md:16`.
-- [ ] Remover `#pragma warning disable CS9113` obsoleto de `MapFromAttribute.cs:3`.
-- [ ] Remover linha em branco inicial de `InternalVisible.cs`.
-- [ ] Criar testes de compilação para os snippets principais do README/docs usando o harness da Fase 1 (DF10): quickstart (`AutoSelect` + `AutoProperties`), `AutoProperties<TFrom>` isolado, DTO aninhado com `AutoDetails` e flattening — cada um sem RCSS e sem erro C# inesperado.
+- [x] Corrigir a grafia de “extensão” em `AutoSelectGenerator.cs`.
+- [x] Corrigir a mensagem RCSS003 para citar `AutoPropertiesAttribute` nas duas ocorrências e cobri-la com teste de regressão.
+- [x] Corrigir a frase do comentário que processa propriedades com `AutoDetails` em `AutoPropertiesGenerator.cs`.
+- [x] Corrigir a seta corrompida do exemplo de flattening em `README.md`.
+- [x] Corrigir o exemplo contraditório que combinava `AutoSelect<Order>` com a forma genérica de `AutoProperties` para a forma não genérica.
+- [x] Atualizar README/docs.md para mostrar `{ get; } =` no lugar de `=>` em `SelectXxxExpression`.
+- [x] Corrigir recuo do item `10.` no sumário de `docs.md`.
+- [x] Remover a supressão obsoleta do parâmetro de construtor em `MapFromAttribute.cs`.
+- [x] Remover linha em branco inicial de `InternalVisible.cs`.
+- [x] Criar testes de compilação para os snippets principais do README/docs usando o harness da Fase 1 (DF10): quickstart (`AutoSelect` + `AutoProperties`), `AutoProperties<TFrom>` isolado, DTO aninhado com `AutoDetails` e flattening — cada um sem RCSS e sem erro C# inesperado.
 
-**Critérios de aceite:** `grep` não encontra "extenção", "AutoPropertyAttribute" nem `CS9113` no repositório; README não contém `AutoProperties<Order>` junto de `AutoSelect<Order>`; snippets principais compilam via harness; build e testes inalterados.
+**Critérios de aceite:** busca textual não encontra as grafias e o nome de atributo incorretos anteriores nem a supressão obsoleta; README não combina `AutoProperties<Order>` com `AutoSelect<Order>`; snippets principais compilam via harness; build e testes permanecem verdes.
 
 **Testes:** `dotnet build SmartSelector.sln`; `dotnet test RoyalCode.SmartSelector.Tests\RoyalCode.SmartSelector.Tests.csproj --filter "Category!=KnownLimitation"`.
 
 ### Resultado da Fase 2
 
-*a preencher*
+**Concluída em 2026-07-11.**
+
+- Corrigidos comentários, mensagem RCSS003, seta de flattening, sumário e exemplos de expressão gerada em README/docs.
+- O exemplo de exclusão agora combina `AutoSelect<Order>` com `AutoProperties(...)`, respeitando o contrato dos atributos.
+- Removidas a supressão obsoleta em `MapFromAttribute.cs` e a linha inicial vazia em `InternalVisible.cs`.
+- `DocumentationSnippetCompilationTests` cobre quatro cenários nos TFMs `net8.0`, `net9.0` e `net10.0`: quickstart, `AutoProperties<TFrom>` isolado, objeto aninhado com `AutoDetails` e flattening por convenção. Todos exigem ausência de RCSS e de erros C#.
+- `AnalyzerDiagnosticMessageTests` protege o nome correto de `AutoPropertiesAttribute` na mensagem RCSS003.
+- Gate: `dotnet build SmartSelector.sln` — **0 erros, 22 warnings já mapeados para fases posteriores**; `dotnet test ... --filter "Category!=KnownLimitation"` — **38/38 aprovados**.
 
 ---
 

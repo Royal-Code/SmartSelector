@@ -5,7 +5,7 @@ Gerador/Source Generator para criar automaticamente projeções (`Expression<Fun
 ## Principais Recursos
 - `[AutoSelect<TFrom>]`: gera expressão de seleção, método `From`, extensões `Select{Dto}` / `To{Dto}`.
 - `[AutoProperties]` ou `[AutoProperties<TFrom>]`: gera propriedades simples automaticamente (primitivos, string, bool, DateTime, enum, struct, coleções simples `IEnumerable<T>` desses tipos).
-- Flattening por convenção: nomes concatenados em PascalCase resolvem cadeias aninhadas (ex.: `CustomerAddressCountryRegionName` ? `a.Customer.Address.Country.Region.Name`).
+- Flattening por convenção: nomes concatenados em PascalCase resolvem cadeias aninhadas (ex.: `CustomerAddressCountryRegionName` → `a.Customer.Address.Country.Region.Name`).
 - Exclusão de propriedades: `Exclude = [ nameof(Entity.Prop) ]`.
 - `[MapFrom("SourceProp")]`: mapeia explicitamente uma propriedade do DTO a partir de um nome de propriedade de origem (suporta `string` literal e `nameof(...)`).
 - Diagnósticos de compilação para uso incorreto, tipos incompatíveis e conflitos.
@@ -59,7 +59,7 @@ var expr = UserDetails.SelectUserExpression; // reutilizável / componível
 ```
 Código gerado (essencial):
 ```csharp
-public static Expression<Func<User, UserDetails>> SelectUserExpression => u => new UserDetails
+public static Expression<Func<User, UserDetails>> SelectUserExpression { get; } = u => new UserDetails
 { 
     Id = u.Id, 
     Name = u.Name
@@ -144,7 +144,7 @@ public partial class UserSnapshot { }
 - DTO aninhado + `Exclude`:
 
 ```csharp
-[AutoSelect<Order>, AutoProperties<Order>(Exclude = [ nameof(Order.InternalCode) ])]
+[AutoSelect<Order>, AutoProperties(Exclude = [ nameof(Order.InternalCode) ])]
 public partial class OrderDetails 
 {
     public CustomerDetails Customer { get; set; }

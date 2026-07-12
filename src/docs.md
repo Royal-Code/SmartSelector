@@ -13,7 +13,7 @@ Gerador de código (Roslyn Source Generator) para criação de projeções (DTOs
 7. Exclusão de Propriedades
 8. Flattening (Projeção de Caminhos Aninhados)
 9. MapFrom (Alias explícito de origem)
- 10. FAQ Rápido
+10. FAQ Rápido
 
 ---
 ## 1. Visão Geral
@@ -45,7 +45,7 @@ public partial class UserDetails
 {
     private static Func<User, UserDetails> selectUserFunc;
 
-    public static Expression<Func<User, UserDetails>> SelectUserExpression => u => new UserDetails
+    public static Expression<Func<User, UserDetails>> SelectUserExpression { get; } = u => new UserDetails
     {
         Id = u.Id,
         Name = u.Name,
@@ -90,7 +90,7 @@ public partial class BookDetails
 {
     private static Func<Book, BookDetails> selectBookFunc;
 
-    public static Expression<Func<Book, BookDetails>> SelectBookExpression => a => new BookDetails
+    public static Expression<Func<Book, BookDetails>> SelectBookExpression { get; } = a => new BookDetails
     {
         Shelf = new ShelfDetails
         {

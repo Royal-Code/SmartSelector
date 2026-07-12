@@ -1,17 +1,17 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–2 concluídas; próxima: Fase 3 (Demo e Benchmarks)
+## Status: EM ANDAMENTO - Fases 0–3 concluídas; próxima: Fase 4 (bugs de geração de baixo risco)
 
 ## Progresso
 
-`███░░░░░░░░░░░░░` **19%** - 3 de 16 fases
+`████░░░░░░░░░░░░` **25%** - 4 de 16 fases
 
 | Fase | Estado |
 |---|---|
 | Fase 0 - Spike de viabilidade externa e matriz de compatibilidade | Concluida |
 | Fase 1 - Harness de testes com validação de compilação | Concluida |
 | Fase 2 - Typos e documentação | Concluida |
-| Fase 3 - Limpeza de Demo e Benchmarks | Pendente |
+| Fase 3 - Limpeza de Demo e Benchmarks | Concluida |
 | Fase 4 - Bugs de geração de baixo risco | Pendente |
 | Fase 5 - Diagnósticos completos e localizados | Pendente |
 | Fase 6 - AutoProperties<T> semântico | Pendente |
@@ -375,11 +375,11 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 **Tarefas:**
 
-- [ ] Zerar os 6 CS8618 do Demo em `Book.cs`, `Shelf.cs` e `BookDetails.cs` usando `required`, construtor ou `= default!` (POCO materializado pelo EF); não usar `#nullable disable`.
-- [ ] Remover `Console.WriteLine("Hello, World!")` de `Benchmarks/Program.cs:4`.
-- [ ] Remover variável `now` sem uso em `ProductMappingBenchmark.cs:22`.
-- [ ] Remover ou diferenciar o benchmark duplicado `Generated_CachedDelegate` (idêntico a `Generated_From`).
-- [ ] Corrigir descrição "AutoMapper ProjectTo List" para refletir `Map` por item (ou trocar a implementação para `ProjectTo`).
+- [x] Zerar os 6 CS8618 do Demo em `Book.cs`, `Shelf.cs` e `BookDetails.cs` usando `required`, construtor ou `= default!` (POCO materializado pelo EF); não usar `#nullable disable`.
+- [x] Remover `Console.WriteLine("Hello, World!")` de `Benchmarks/Program.cs:4`.
+- [x] Remover variável `now` sem uso em `ProductMappingBenchmark.cs:22`.
+- [x] Remover ou diferenciar o benchmark duplicado `Generated_CachedDelegate` (idêntico a `Generated_From`).
+- [x] Corrigir descrição "AutoMapper ProjectTo List" para refletir `Map` por item (ou trocar a implementação para `ProjectTo`).
 
 **Critérios de aceite:** `dotnet build` do Demo sem nenhum CS8618 e sem novos `#nullable disable`; benchmarks compilam; nenhuma dupla de benchmarks com corpo idêntico.
 
@@ -387,7 +387,14 @@ dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj
 
 ### Resultado da Fase 3
 
-*a preencher*
+**Concluída em 2026-07-11.**
+
+- Os seis membros non-nullable do cenário Library (`Book`, `Shelf` e `BookDetails`) agora usam `required`; nenhum `#nullable disable` foi introduzido.
+- Removidos o `Hello, World!`, a variável local sem uso e o benchmark `Generated_CachedDelegate`, que repetia exatamente `Generated_From`.
+- A descrição do benchmark do AutoMapper agora declara `Map() per item`, refletindo a implementação real.
+- `dotnet build SmartSelector.sln` — **0 erros, 16 warnings restantes**, todos fora do Demo e já mapeados para fases posteriores.
+- `dotnet test RoyalCode.SmartSelector.Demo/RoyalCode.SmartSelector.Demo.csproj` — **25/25 aprovados**, incluindo consultas EF Core SQLite.
+- `dotnet build RoyalCode.SmartSelector.Benchmarks/RoyalCode.SmartSelector.Benchmarks.csproj -c Release` — **0 erros, 0 warnings**.
 
 ---
 

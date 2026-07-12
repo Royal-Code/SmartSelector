@@ -19,7 +19,6 @@ public class ProductMappingBenchmark
     [GlobalSetup]
     public void Setup()
     {
-        var now = DateTime.UtcNow;
         _source = Enumerable.Range(1, Count)
             .Select(i => new Product("Product " + i))
             .ToList();
@@ -56,15 +55,7 @@ public class ProductMappingBenchmark
     public List<ProductDetails> Generated_From()
         => _source.SelectProductDetails().ToList();
 
-    [Benchmark(Description = "Generated compiled delegate (cache hit)")]
-    public List<ProductDetails> Generated_CachedDelegate()
-    {
-        // Simulate direct usage of cached compiled lambda if exposed.
-        // From() already uses the cached delegate; included for clarity.
-        return _source.SelectProductDetails().ToList();
-    }
-
-    [Benchmark(Description = "AutoMapper ProjectTo List")]
+    [Benchmark(Description = "AutoMapper Map() per item")]
     public List<ProductDetails> AutoMapper_Map()
         => _source.Select(p => _autoMapper.Map<ProductDetails>(p)).ToList();
 

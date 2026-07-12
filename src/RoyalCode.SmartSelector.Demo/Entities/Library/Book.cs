@@ -2,13 +2,13 @@
 
 public class Book : Entity<Guid>
 {
-    public string Title { get; set; }
+    public required string Title { get; set; }
     
-    public string Author { get; set; }
+    public required string Author { get; set; }
     
     public DateTime PublishedDate { get; set; }
     
-    public string ISBN { get; set; }
+    public required string ISBN { get; set; }
     
     public decimal Price { get; set; }
     
@@ -16,5 +16,5 @@ public class Book : Entity<Guid>
 
     public string? Sku { get; set; }
 
-    public Shelf Shelf { get; set; }
+    public required Shelf Shelf { get; set; }
 }

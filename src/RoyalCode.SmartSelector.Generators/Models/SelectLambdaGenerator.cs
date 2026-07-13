@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
@@ -55,7 +56,10 @@ internal class SelectLambdaGenerator : ValueNode
             {
                 case NullAssignmentKind.PropagateNull:
                     AppendNullChecks(sb, param, classification.NullCheckPaths);
-                    sb.Append(" ? null : ");
+                    if (IsNullableValueType(propMatch.Origin.Type))
+                        sb.Append(" ? default(").Append(propMatch.Origin.Type.Name).Append(") : ");
+                    else
+                        sb.Append(" ? null : ");
                     break;
                 case NullAssignmentKind.EmptyCollectionFallback:
                     AppendNullChecks(sb, param, classification.NullCheckPaths);
@@ -83,6 +87,14 @@ internal class SelectLambdaGenerator : ValueNode
         var name = type.UnderlyingType;
         var index = name.IndexOf('<');
         return index == -1 ? name : name.Substring(index + 1, name.Length - index - 2);
+    }
+
+    private static bool IsNullableValueType(TypeDescriptor type)
+    {
+        if (!type.IsNullable || type.Symbol is not INamedTypeSymbol namedType || namedType.TypeArguments.Length != 1)
+            return false;
+
+        return namedType.TypeArguments[0].IsValueType;
     }
 
     private static void AppendNullChecks(StringBuilder sb, char param, IReadOnlyList<string> nullCheckPaths)

@@ -3,8 +3,8 @@ using Microsoft.CodeAnalysis;
 namespace RoyalCode.SmartSelector.Generators.Models;
 
 /// <summary>
-/// Classificação de cada atribuição da projeção. A política só atua quando há anotação nullable
-/// de referência (código oblivious mantém o comportamento anterior).
+/// Classificação de cada atribuição da projeção. A política considera anotações nullable
+/// de referência e <see cref="Nullable{T}"/>; código oblivious mantém o comportamento anterior.
 /// </summary>
 internal enum NullAssignmentKind
 {
@@ -58,8 +58,14 @@ internal static class NullAssignmentPolicy
     private static bool IsNonNullableReference(TypeDescriptor type) =>
         !type.IsNullable && type.NullableAnnotation == NullableAnnotation.NotAnnotated;
 
-    private static bool IsReferenceType(TypeDescriptor type) =>
-        type.Symbol is { IsValueType: false };
+    private static bool IsNonNullableValueType(TypeDescriptor type) =>
+        !type.IsNullable && type.Symbol is { IsValueType: true };
+
+    private static bool IsNonNullableDestination(TypeDescriptor type) =>
+        IsNonNullableReference(type) || IsNonNullableValueType(type);
+
+    private static bool IsNullableSource(TypeDescriptor type) =>
+        type.IsNullable || IsNullableReference(type);
 
     internal static NullAssignmentClassification Classify(PropertyMatch propertyMatch)
     {
@@ -113,24 +119,31 @@ internal static class NullAssignmentPolicy
             case AssignType.Direct:
                 if (nullChecks.Count > 0)
                 {
-                    // navegação por caminho anulável (flattening); o condicional exige
-                    // destino e folha de referência (null não é tipável para value types na expression tree)
-                    if (DestinationAcceptsNull(destination) && IsReferenceType(leaf.PropertyType.Type))
+                    // navegação por caminho anulável (flattening): destinos nullable propagam null;
+                    // para Nullable<T>, o emissor usa default(T?) no branch nulo.
+                    if (DestinationAcceptsNull(destination))
                         return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
-                    if (IsNonNullableReference(destination) || !IsReferenceType(leaf.PropertyType.Type))
+                    if (IsNonNullableDestination(destination))
                         return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
                     return new(NullAssignmentKind.None, [], sourcePath);
                 }
 
                 // folha anulável em destino não anulável: comportamento mantido + warning (DF5)
-                if (IsNullableReference(leaf.PropertyType.Type) && IsNonNullableReference(destination))
+                if (IsNullableSource(leaf.PropertyType.Type) && IsNonNullableDestination(destination))
                     return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
                 return new(NullAssignmentKind.None, [], sourcePath);
 
             default:
-                // SimpleCast/NullableTernary(Cast): mecânica existente de value types;
-                // caminho anulável não coberto pelo condicional recebe warning
+                // SimpleCast/NullableTernary(Cast): preserva a mecânica de conversão existente,
+                // mas aplica a mesma política direcional ao caminho e à folha nullable.
                 if (nullChecks.Count > 0)
+                {
+                    if (DestinationAcceptsNull(destination))
+                        return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
+                    if (IsNonNullableDestination(destination))
+                        return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
+                }
+                if (IsNullableSource(leaf.PropertyType.Type) && IsNonNullableDestination(destination))
                     return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
                 return new(NullAssignmentKind.None, [], sourcePath);
         }

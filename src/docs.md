@@ -298,7 +298,7 @@ Interação com EF Core:
 - O mapeamento gerado por `MapFrom` continua parte da `Expression` e é traduzível pelo provedor.
 
 ---
-## 10. Política de Null (nullable reference types)
+## 10. Política de Null (tipos nullable)
 
 Quando o código-fonte usa anotações de nulabilidade (`#nullable enable`), o generator aplica uma política direcional
 ao projetar origens anuláveis. Código sem anotações (oblivious) mantém o comportamento tradicional, sem condicionais
@@ -310,16 +310,19 @@ nem diagnósticos.
 | Navegação/objeto anulável | Não anulável | Comportamento mantido + warning **RCSS015** |
 | Caminho de flattening por pai anulável (`a.Address.City`) | Anulável | Condicional propaga null: `a.Address == null ? null : a.Address.City` |
 | Caminho de flattening por pai anulável | Não anulável | Comportamento mantido + warning **RCSS015** |
-| Escalar anulável (`string?`) | Não anulável (`string`) | Atribuição direta mantida + warning **RCSS015** |
+| Escalar anulável (`string?`, `int?`) | Não anulável (`string`, `int`) | Conversão anterior mantida + warning **RCSS015** |
 | Escalar anulável | Anulável | Atribuição direta (null flui naturalmente) |
 | Coleção anulável (`ICollection<T>?`) | Anulável | Condicional propaga null |
 | Coleção anulável | Não anulável | Coleção vazia quando null (`a.Items == null ? new List<TDto>() : ...`) + info **RCSS016** |
 
 Notas:
 - As condicionais fazem parte da `Expression` e são traduzíveis pelo EF Core (validadas com SQLite no projeto Demo).
-- Value types anuláveis (`int?`) continuam tratados pelos mecanismos existentes (`HasValue`/cast); caminhos de
-  flattening anuláveis que terminam em value type recebem **RCSS015** em vez de condicional.
-- Os diagnósticos apontam a propriedade do DTO; para remover o aviso, torne o destino anulável ou exclua a propriedade.
+- Value types anuláveis (`int?`) continuam usando os mecanismos existentes (`HasValue`/cast). Quando um caminho de
+  flattening atravessa um pai anulável e o destino também é nullable, o branch nulo usa `default(T?)`, por exemplo
+  `a.Address == null ? default(int?) : a.Address.Zip`.
+- Os diagnósticos apontam a propriedade configurável do DTO. Conversões inseguras encontradas dentro de objetos ou
+  itens de coleções são reportadas na propriedade raiz, com o caminho interno completo na mensagem.
+- Para remover o aviso, torne o destino anulável ou exclua a propriedade.
 
 ---
 ## 11. FAQ Rápido

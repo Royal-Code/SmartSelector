@@ -42,8 +42,8 @@
         </member>
         <member name="T:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind">
             <summary>
-            Classificação de cada atribuição da projeção. A política só atua quando há anotação nullable
-            de referência (código oblivious mantém o comportamento anterior).
+            Classificação de cada atribuição da projeção. A política considera anotações nullable
+            de referência e <see cref="T:System.Nullable`1"/>; código oblivious mantém o comportamento anterior.
             </summary>
         </member>
         <member name="F:RoyalCode.SmartSelector.Generators.Models.NullAssignmentKind.None">

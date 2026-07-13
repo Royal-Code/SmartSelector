@@ -101,6 +101,46 @@ public class AutoDetailsContractTests
     }
 
     [Fact]
+    public void AutoDetails_should_complete_a_preexisting_partial_type_in_the_global_namespace()
+    {
+        var result = Util.CompileAndAssert(
+            """
+            using RoyalCode.SmartSelector;
+
+            #nullable disable // poco
+
+            public partial class AddressDto
+            {
+            }
+
+            namespace Tests.SmartSelector.Contracts
+            {
+                public class Address
+                {
+                    public string City { get; set; }
+                }
+
+                public class Customer
+                {
+                    public Address Address { get; set; }
+                }
+
+                [AutoSelect<Customer>, AutoProperties]
+                public partial class CustomerDetails
+                {
+                    [AutoDetails]
+                    public global::AddressDto Address { get; set; }
+                }
+            }
+            """);
+
+        var generated = result.GeneratedSource("AddressDto.AutoDetails.g.cs");
+        generated.Should().Contain("public partial class AddressDto");
+        generated.Should().Contain("public string City");
+        generated.Should().NotContain("namespace ;");
+    }
+
+    [Fact]
     public void RCSS012_should_report_an_existing_non_partial_type()
     {
         AssertDiagnostic(

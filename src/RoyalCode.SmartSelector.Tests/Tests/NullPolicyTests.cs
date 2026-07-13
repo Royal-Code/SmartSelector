@@ -182,6 +182,35 @@ public class NullPolicyTests
     }
 
     [Fact]
+    public void NullPolicy_nullable_value_scalar_to_non_nullable_destination_should_report_RCSS015()
+    {
+        const string fixture =
+            """
+            using RoyalCode.SmartSelector;
+
+            namespace Tests.SmartSelector.NullPolicy;
+
+            public class Person
+            {
+                public int? Age { get; set; }
+            }
+
+            [AutoSelect<Person>]
+            public partial class PersonDetails
+            {
+                public int Age { get; set; }
+            }
+            """;
+
+        var result = Util.Compile(fixture);
+        result.Errors.Should().BeEmpty();
+
+        var warning = result.GeneratorDiagnostics.Single(d => d.Id == "RCSS015");
+        warning.Severity.Should().Be(DiagnosticSeverity.Warning);
+        GetLocationText(fixture, warning).Should().Be("Age");
+    }
+
+    [Fact]
     public void NullPolicy_flattening_through_nullable_parent_should_propagate_or_warn()
     {
         const string fixture =
@@ -240,6 +269,80 @@ public class NullPolicyTests
         var lambda = (System.Linq.Expressions.LambdaExpression)expressionProperty!;
         lambda.ToString().Should().Contain("== null");
         _ = customer;
+    }
+
+    [Fact]
+    public void NullPolicy_flattening_through_nullable_parent_to_nullable_value_should_propagate_null()
+    {
+        const string fixture =
+            """
+            using RoyalCode.SmartSelector;
+
+            namespace Tests.SmartSelector.NullPolicy;
+
+            public class Address
+            {
+                public int Zip { get; set; }
+            }
+
+            public class Customer
+            {
+                public Address? Address { get; set; }
+            }
+
+            [AutoSelect<Customer>]
+            public partial class CustomerDetails
+            {
+                public int? AddressZip { get; set; }
+            }
+            """;
+
+        var result = Util.CompileFast(fixture);
+        result.Errors.Should().BeEmpty();
+
+        var generated = result.GeneratedSource("Tests.SmartSelector.NullPolicy.CustomerDetails.AutoSelect.g.cs");
+        generated.Should().Contain("AddressZip = a.Address == null ? default(Int32?) :");
+        result.GeneratorDiagnostics.Should().NotContain(d => d.Id == "RCSS015");
+    }
+
+    [Fact]
+    public void NullPolicy_nested_unsafe_match_should_report_RCSS015_on_the_root_property()
+    {
+        const string fixture =
+            """
+            using RoyalCode.SmartSelector;
+            using System.Collections.Generic;
+
+            namespace Tests.SmartSelector.NullPolicy;
+
+            public class Item
+            {
+                public string? Name { get; set; }
+            }
+
+            public class Order
+            {
+                public ICollection<Item> Items { get; set; } = [];
+            }
+
+            [AutoSelect<Order>]
+            public partial class OrderDetails
+            {
+                public IReadOnlyList<ItemDetails> Items { get; set; } = [];
+            }
+
+            public class ItemDetails
+            {
+                public string Name { get; set; } = string.Empty;
+            }
+            """;
+
+        var result = Util.Compile(fixture);
+        result.Errors.Should().BeEmpty();
+
+        var warning = result.GeneratorDiagnostics.Single(d => d.Id == "RCSS015");
+        warning.GetMessage().Should().Contain("Items.Name");
+        GetLocationText(fixture, warning).Should().Be("Items");
     }
 
     [Fact]

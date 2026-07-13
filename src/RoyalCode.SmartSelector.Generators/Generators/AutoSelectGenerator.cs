@@ -212,30 +212,77 @@ internal static class AutoSelectGenerator
         ClassDeclarationSyntax classDeclaration,
         MatchSelection matchSelection)
     {
-        // Diagnósticos da política de null (DF5/DF18) para as propriedades do DTO;
-        // seleções internas (AutoDetails/coleções) recebem apenas a forma segura da expressão.
+        // Diagnósticos da política de null (DF5/DF18) para as propriedades do DTO e
+        // para os matches internos de AutoDetails/coleções. Diagnósticos internos são
+        // ancorados na propriedade raiz, que é o ponto configurável pelo consumidor.
         foreach (var propertyMatch in matchSelection.PropertyMatches)
         {
-            var classification = NullAssignmentPolicy.Classify(propertyMatch);
-            var descriptor = classification.Kind switch
-            {
-                NullAssignmentKind.WarnUnsafe => AnalyzerDiagnostics.NullableSourceForNonNullableDestination,
-                NullAssignmentKind.EmptyCollectionFallback => AnalyzerDiagnostics.NullableCollectionProjectedAsEmpty,
-                _ => null,
-            };
-            if (descriptor is null)
-                continue;
-
             var propertySyntax = classDeclaration.Members
                 .OfType<PropertyDeclarationSyntax>()
                 .FirstOrDefault(p => p.Identifier.Text == propertyMatch.Origin.Name);
+            var location = propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation();
 
+            foreach (var diagnostic in CreateNullPolicyDiagnostics(
+                         propertyMatch,
+                         propertyMatch.Origin.Name,
+                         location,
+                         parentSourcePath: null))
+            {
+                yield return diagnostic;
+            }
+        }
+    }
+
+    private static IEnumerable<Diagnostic> CreateNullPolicyDiagnostics(
+        PropertyMatch propertyMatch,
+        string rootPropertyName,
+        Location location,
+        string? parentSourcePath)
+    {
+        var classification = NullAssignmentPolicy.Classify(propertyMatch);
+        var sourcePath = CombineSourcePath(parentSourcePath, classification.SourcePath);
+        var descriptor = classification.Kind switch
+        {
+            NullAssignmentKind.WarnUnsafe => AnalyzerDiagnostics.NullableSourceForNonNullableDestination,
+            NullAssignmentKind.EmptyCollectionFallback => AnalyzerDiagnostics.NullableCollectionProjectedAsEmpty,
+            _ => null,
+        };
+        if (descriptor is not null)
+        {
             yield return Diagnostic.Create(
                 descriptor,
-                propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
-                propertyMatch.Origin.Name,
-                classification.SourcePath);
+                location,
+                rootPropertyName,
+                sourcePath);
         }
+
+        if (propertyMatch.AssignDescriptor?.InnerSelection is not { } innerSelection)
+            yield break;
+
+        foreach (var innerMatch in innerSelection.PropertyMatches)
+        {
+            foreach (var diagnostic in CreateNullPolicyDiagnostics(
+                         innerMatch,
+                         rootPropertyName,
+                         location,
+                         sourcePath))
+            {
+                yield return diagnostic;
+            }
+        }
+    }
+
+    private static string CombineSourcePath(string? parent, string current)
+    {
+        if (string.IsNullOrEmpty(parent))
+            return current;
+        if (string.IsNullOrEmpty(current) || current.Equals(parent, StringComparison.Ordinal) ||
+            current.StartsWith(parent + ".", StringComparison.Ordinal))
+        {
+            return current;
+        }
+
+        return $"{parent}.{current}";
     }
 
     private static Diagnostic[] GetAutoDetailsDiagnostics(

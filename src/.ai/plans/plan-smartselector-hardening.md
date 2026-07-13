@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–12 concluídas; próxima: Fase 13 (DTOs aninhados e diagnóstico permanente para genéricos)
+## Status: EM ANDAMENTO - Fases 0–13 concluídas; próxima: Fase 14 (pipeline incremental sem retenção de símbolos)
 
 ## Progresso
 
-`█████████████░░░` **81%** - 13 de 16 fases
+`██████████████░░` **88%** - 14 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -21,7 +21,7 @@
 | Fase 10 - Contrato do AutoDetails | Concluída em 2026-07-12 |
 | Fase 11 - Código gerado auto-suficiente e nullable-clean | Concluída em 2026-07-12 |
 | Fase 12 - Política de null em From e coleções | Concluída em 2026-07-12 |
-| Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Pendente |
+| Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Concluída em 2026-07-12 |
 | Fase 14 - Pipeline incremental sem retenção de símbolos | Pendente |
 | Fase 15 - Features incrementais de mapeamento | Pendente |
 
@@ -738,7 +738,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ## Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos
 
-**Depende de:** DF7, DF20, Fases 0 e 5; `RoyalCode.Extensions.SourceGenerator` 0.1.15 com containing types.
+**Depende de:** DF7, DF20, Fases 0 e 5; `RoyalCode.Extensions.SourceGenerator` 0.1.16 com containing types.
 
 **Escopo:** emissão de declarações parciais (`ClassGenerator` — mudança no pacote externo conforme spike, com release NuGet), `AutoSelectGenerator`, `AutoPropertiesGenerator`.
 
@@ -746,12 +746,12 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 **Tarefas:**
 
-- [ ] Emitir cadeia de tipos contenedores (`partial class Container { partial class EntityDetails { ... } }`) com modificadores corretos.
-- [ ] Tornar verde `Generated_code_should_compile_for_a_nested_destination_dto` e remover trait.
-- [ ] Tornar permanente o diagnóstico de DTO genérico criado na Fase 5 e converter `Generated_code_should_compile_for_a_generic_destination_dto` em teste de diagnóstico verde (DF20).
-- [ ] Emitir o mesmo diagnóstico permanente quando qualquer containing type do DTO aninhado for genérico (`Container<T>.EntityDetails`), com teste de diagnóstico (DF20).
-- [ ] Remover o diagnóstico temporário de DTO aninhado da Fase 5.
-- [ ] Exercitar o hintName de DF1 com containing types: dois DTOs aninhados homônimos em containing types distintos geram arquivos distintos.
+- [x] Emitir cadeia de tipos contenedores (`partial class Container { partial class EntityDetails { ... } }`) com modificadores corretos.
+- [x] Tornar verde `Generated_code_should_compile_for_a_nested_destination_dto` e remover trait.
+- [x] Tornar permanente o diagnóstico de DTO genérico criado na Fase 5 e converter `Generated_code_should_compile_for_a_generic_destination_dto` em teste de diagnóstico verde (DF20).
+- [x] Emitir o mesmo diagnóstico permanente quando qualquer containing type do DTO aninhado for genérico (`Container<T>.EntityDetails`), com teste de diagnóstico (DF20).
+- [x] Remover o diagnóstico temporário de DTO aninhado da Fase 5.
+- [x] Exercitar o hintName de DF1 com containing types: dois DTOs aninhados homônimos em containing types distintos geram arquivos distintos.
 
 **Critérios de aceite:** zero testes com trait `KnownLimitation` restantes; DTO genérico e containing type genérico produzem diagnóstico permanente com location no identificador da classe; aninhados homônimos não colidem em hintName. A partir desta fase, a suíte sem filtro é o gate padrão.
 
@@ -759,7 +759,14 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ### Resultado da Fase 13
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- `RoyalCode.Extensions.SourceGenerator` 0.1.16 adicionou `ContainingTypeGenerator` e suporte no `ClassGenerator` para emitir uma cadeia ordenada de declarações contenedoras. O pacote foi publicado e o restore foi confirmado em cache NuGet vazio usando somente fontes configuradas, antes do fechamento da fase.
+- `AutoSelect` e `AutoProperties<T>` reaplicam a cadeia completa de tipos, preservando tipo de declaração (`class`, `struct` ou `record`), acessibilidade e `partial`. Um containing type não-`partial` produz diagnóstico localizado em vez de código C# inválido.
+- As extension classes permanecem no namespace, conforme exigido pelo C#, e usam o nome qualificado do DTO (`Container.EntityDetails`) e identificador com a cadeia (`Container_EntityDetails_Extensions`), evitando colisões entre DTOs aninhados homônimos.
+- RCSS008 tornou-se o diagnóstico permanente para DTO genérico e para qualquer containing type genérico, sempre localizado no identificador do DTO. RCSS009, temporário para aninhados, foi removido antes da publicação do analyzer.
+- A baseline `KnownLimitation` foi zerada. `GeneratedCodeCompilationTddTests` agora valida `AutoSelect` e `AutoProperties<T>` aninhados nos reference assemblies net8/net9/net10; `GenerationHardeningTests` cobre hint names e tipos de extensão distintos para aninhados homônimos.
+- Gates: restore público em cache vazio; solution build — **0 erros, 8 warnings já esperados da política de null**; suíte principal sem filtro — **78/78**; Demo — **28/28**; Benchmarks Release — **0 erros/0 warnings**.
 
 ---
 

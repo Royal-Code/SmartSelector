@@ -1,212 +1,353 @@
 # SmartSelector
 
-Gerador/Source Generator para criar automaticamente projeções (`Expression<Func<TFrom, TDto>>`),
-métodos auxiliares e propriedades em DTOs, reduzindo drasticamente boilerplate em consultas LINQ / EF Core.
+SmartSelector is a Roslyn Source Generator for strongly typed DTO projections. It generates reusable `Expression<Func<TSource, TDto>>` selectors, conversion helpers, LINQ extension methods, and optional DTO properties, reducing mapping boilerplate while keeping projections suitable for Entity Framework Core.
 
-## Principais Recursos
-- `[AutoSelect<TFrom>]`: gera expressão de seleção, método `From`, extensões `Select{Dto}` / `To{Dto}`.
-- `[AutoProperties]` ou `[AutoProperties<TFrom>]`: gera propriedades simples automaticamente (primitivos, string, bool, DateTime, enum, struct, coleções simples `IEnumerable<T>` desses tipos).
-- Flattening por convenção: nomes concatenados em PascalCase resolvem cadeias aninhadas (ex.: `CustomerAddressCountryRegionName` ? `a.Customer.Address.Country.Region.Name`).
-- Exclusão de propriedades: `Exclude = [ nameof(Entity.Prop) ]`.
-- Diagnósticos de compilação para uso incorreto, tipos incompatíveis e conflitos.
+## Features
 
-## Quickstart
+- `[AutoSelect<TSource>]` generates a selector expression, a cached `From` converter, and `Select{Dto}` / `To{Dto}` extensions.
+- `[AutoProperties]` and `[AutoProperties<TSource>]` generate supported DTO properties.
+- `Exclude` and `Flattening` can be configured on `AutoProperties`, `AutoDetails`, or directly on `AutoSelect`.
+- Convention-based flattening maps names such as `CustomerAddressCity` to `Customer.Address.City`.
+- `[MapFrom]` maps aliases and explicit nested paths such as `"Warehouse.Location"`.
+- Nested objects, collections, and arrays are projected recursively; object arrays use `Select(...).ToArray()`.
+- `[AutoDetails]` generates or completes the exact nested DTO type declared by a property.
+- Nullable-aware generation propagates null, produces empty non-nullable collections when appropriate, and reports unsafe contracts.
+- Nested destination DTOs are supported when the complete declaration chain is non-generic and `partial`.
+- Compile-time diagnostics cover invalid usage, incompatible mappings, ambiguous flattening, nullability, and invalid paths.
+- The generator package includes analyzer variants for supported Roslyn versions.
 
-1) Instalação
+SmartSelector focuses on declarative 1:1 mappings. It intentionally does not provide custom resolvers, formatters, callbacks, or global naming policies. Use a manually written LINQ expression for calculations or domain-specific transformations.
+
+## Supported platforms
+
+| Component | Target |
+|---|---|
+| `RoyalCode.SmartSelector` | .NET 8, .NET 9, .NET 10 |
+| `RoyalCode.SmartSelector.Generators` | .NET Standard 2.0 analyzer |
+
+## Installation
+
+Reference both packages at the same version:
+
 ```xml
 <ItemGroup>
-  <PackageReference Include="RoyalCode.SmartSelector" Version="x.y.z" />
-  <PackageReference Include="RoyalCode.SmartSelector.Generators" Version="x.y.z" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  <PackageReference Include="RoyalCode.SmartSelector" Version="0.5.0" />
+  <PackageReference Include="RoyalCode.SmartSelector.Generators"
+                    Version="0.5.0"
+                    OutputItemType="Analyzer"
+                    ReferenceOutputAssembly="false" />
 </ItemGroup>
 ```
 
-2) Anote seu DTO
+Then import:
+
 ```csharp
-[AutoSelect<User>, AutoProperties]
+using RoyalCode.SmartSelector;
+```
+
+No runtime registration or dependency injection configuration is required.
+
+## Quick start
+
+Given an entity:
+
+```csharp
+public sealed class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+}
+```
+
+Declare a partial DTO:
+
+```csharp
+using RoyalCode.SmartSelector;
+
+namespace MyApp.Users;
+
+[AutoSelect<User>,
+ AutoProperties(Exclude = [nameof(User.PasswordHash)])]
 public partial class UserDetails { }
 ```
 
-3) Consulte com EF Core
+Use the generated API:
+
 ```csharp
-var list = db.Users.SelectUserDetails().ToList();
-var dto  = UserDetails.From(user);
-var expr = UserDetails.SelectUserExpression; // reutilizável / componível
+// IQueryable: keeps the projection in the expression tree.
+var users = await db.Users
+    .SelectUserDetails()
+    .ToListAsync(ct);
+
+// Already materialized objects: uses a cached compiled delegate.
+UserDetails details = UserDetails.From(user);
+UserDetails details2 = user.ToUserDetails();
+
+// Reuse or compose the generated expression directly.
+Expression<Func<User, UserDetails>> selector =
+    UserDetails.SelectUserExpression;
 ```
 
-Escopo e foco
-- Sem custom resolvers, conditional mapping ou naming policies.
-- Foco: projeções traduzíveis por EF Core e mapeamento 1x1 (estilo Adapt do Mapster).
-
-Links úteis
-- Documentação completa: `src/docs.md`
-- Projeto Demo: `RoyalCode.SmartSelector.Demo`
-- Benchmarks: `RoyalCode.SmartSelector.Benchmarks`
-
-Frameworks e pacotes suportados
-- Runtime lib: `RoyalCode.SmartSelector` (TFMs: .NET 8, .NET 9, .NET 10)
-- Generator: `RoyalCode.SmartSelector.Generators` (TFM: .NET Standard 2.0, instalado como Analyzer)
-
-## Exemplo 1 – Projeção Simples
+For `User` → `UserDetails`, the generated public contract is:
 
 ```csharp
-[AutoSelect<User>, AutoProperties]
-public partial class UserDetails { }
-
-// Uso
-var list = db.Users.SelectUserDetails().ToList();
-var dto  = UserDetails.From(user);
-var expr = UserDetails.SelectUserExpression; // reutilizável / componível
-```
-Código gerado (essencial):
-```csharp
-public static Expression<Func<User, UserDetails>> SelectUserExpression => u => new UserDetails
-{ 
-    Id = u.Id, 
-    Name = u.Name
-};
-
-public static UserDetails From(User u) => (selectUserFunc ??= SelectUserExpression.Compile())(u);
+UserDetails.SelectUserExpression;
+UserDetails.From(User user);
+query.SelectUserDetails();   // IQueryable<User>
+items.SelectUserDetails();   // IEnumerable<User>
+user.ToUserDetails();        // User
 ```
 
-## Exemplo 2 – Objeto Aninhado + Exclusão
-```csharp
-[AutoSelect<Book>, AutoProperties(Exclude = [ nameof(Book.Sku) ])]
-public partial class BookDetails
-{
-    public ShelfDetails Shelf { get; set; }
-}
+## Choosing an attribute
 
-[AutoProperties<Shelf>]
-public partial class ShelfDetails { }
+| Requirement | Declaration |
+|---|---|
+| Selector for manually declared properties | `[AutoSelect<TEntity>]` |
+| Selector and supported automatic properties | `[AutoSelect<TEntity>, AutoProperties]` |
+| Properties only, without selector or extensions | `[AutoProperties<TEntity>]` |
+| Exclude automatic properties | `Exclude = [nameof(TEntity.Property)]` |
+| Generate flattened properties for a root navigation | `Flattening = [nameof(TEntity.Navigation)]` |
+| Rename or explicitly select a source path | `[MapFrom(...)]` |
+| Generate or complete a nested details type | `[AutoDetails]` |
+
+`AutoSelect<TSource>` alone does not generate DTO properties. Declare them manually or add `AutoProperties`. Providing `Exclude` or `Flattening` directly to `AutoSelect` also enables automatic property generation.
+
+Do not combine `AutoSelect<Product>` with `AutoProperties<Product>`. When `AutoSelect<TSource>` is present, use the non-generic `[AutoProperties]` form because the source type is already known.
+
+## Automatic properties
+
+```csharp
+[AutoSelect<Product>, AutoProperties]
+public partial class ProductDetails { }
+
+[AutoProperties<Product>]
+public partial class ProductSnapshot { } // properties only
 ```
-Trecho gerado:
+
+Automatic property generation supports:
+
+- numeric primitives, `bool`, `char`, `string`, `decimal`, and `DateTime`;
+- enums and structs, including application value objects;
+- supported nullable value/reference types;
+- arrays of simple types, enums, or structs;
+- generic collections implementing `IEnumerable<T>` when `T` is a supported simple type, enum, or struct.
+
+Complex classes are not added as ordinary automatic properties. Declare a nested DTO, use `AutoDetails`, or flatten the navigation. Properties already declared by the user are not generated again.
+
+## Exclusion and configured flattening
+
+Configure the options on `AutoProperties`:
+
 ```csharp
-new BookDetails
-{
-    Shelf = new ShelfDetails
-    {
-        Id = a.Shelf.Id,
-        Location = a.Shelf.Location
-    },
-    Price = a.Price,
-};
-// Sku excluído
+[AutoSelect<Order>,
+ AutoProperties(
+     Exclude = [nameof(Order.InternalCode)],
+     Flattening = [nameof(Order.Customer)])]
+public partial class OrderDetails { }
 ```
 
-## Exemplo 3 – Flattening Profundo
-```csharp
-public class Order 
-{ 
-    public Customer Customer { get; set; }
-}
+Or directly on `AutoSelect`:
 
-// Customer -> Address -> Country -> Region
+```csharp
+[AutoSelect<Order>(
+    Exclude = [nameof(Order.InternalCode)],
+    Flattening = [nameof(Order.Customer)])]
+public partial class OrderDetails { }
+```
+
+Both options are case-sensitive. If `Customer` has supported `Name` and `Email` properties, configured flattening generates `CustomerName` and `CustomerEmail` and omits the complex `Customer` property from automatic generation.
+
+## Convention-based flattening
+
+A manually declared DTO property can represent a deep path by concatenating source property names:
+
+```csharp
 [AutoSelect<Order>]
 public partial class OrderDetails
 {
-    public string CustomerAddressCountryRegionName { get; set; }
+    public string CustomerAddressCountryRegionName { get; set; } = string.Empty;
 }
-
-```
-Trecho da expressão:
-```csharp
-CustomerAddressCountryRegionName = a.Customer.Address.Country.Region.Name
 ```
 
-## Exemplos mínimos por atributo
-
-- `AutoSelect<T>`:
+The generated assignment is equivalent to:
 
 ```csharp
-[AutoSelect<Product>]
-public partial class ProductDetails { }
-
-// Uso:
-db.Products.SelectProductDetails().ToList();
+CustomerAddressCountryRegionName =
+    source.Customer.Address.Country.Region.Name;
 ```
 
-- `AutoProperties`:
+If a destination name matches multiple source paths, SmartSelector reports `RCSS010`. Rename it or use `MapFrom`.
+
+## Explicit mapping with `MapFrom`
+
+Use `nameof` for direct members and a dot-separated string for nested paths:
 
 ```csharp
-[AutoSelect<Simple>, AutoProperties]
-public partial class SimpleDto { /* propriedades simples geradas automaticamente */ }
-```
-
-Para usar `AutoProperties`, o tipo de origem é inferido do `AutoSelect<TFrom>`.
-
-- `AutoProperties<TFrom>`:
-
-```csharp
-[AutoProperties<User>]
-public partial class UserSnapshot { }
-```
-
-- DTO aninhado + `Exclude`:
-
-```csharp
-[AutoSelect<Order>, AutoProperties<Order>(Exclude = [ nameof(Order.InternalCode) ])]
-public partial class OrderDetails 
+[AutoSelect<Supplier>]
+public partial class SupplierDetails
 {
-    public CustomerDetails Customer { get; set; }
+    [MapFrom(nameof(Supplier.Name))]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [MapFrom("Warehouse.Location")]
+    public string? Location { get; set; }
+}
+```
+
+Every segment must be a readable public property. An explicit nested path takes precedence over similarly named direct properties. Invalid nested paths report `RCSS017` on the destination property.
+
+## Nested objects, collections, and arrays
+
+Declare the desired shape and SmartSelector projects it recursively:
+
+```csharp
+[AutoSelect<Post>]
+public partial class PostDetails
+{
+    public string Title { get; set; } = string.Empty;
+    public AuthorDetails Author { get; set; } = new();
+    public IReadOnlyList<CommentDetails> Comments { get; set; } = [];
 }
 
-[AutoProperties<Customer>]
-public partial class CustomerDetails { }
-```
-
-- Flattening por nome:
-```csharp
-[AutoSelect<Order>]
-public partial class OrderFlat 
-{ 
-    public string CustomerAddressCity { get; set; }
+public class AuthorDetails
+{
+    public string Name { get; set; } = string.Empty;
 }
 
-// Gera: CustomerAddressCity = a.Customer.Address.City
+public class CommentDetails
+{
+    public string Content { get; set; } = string.Empty;
+    public string AuthorName { get; set; } = string.Empty;
+}
 ```
 
-## Regras de Flattening
-- Nome da propriedade = concatenação PascalCase dos segmentos do caminho.
-- Sem necessidade de atributos extras.
+Object collections are emitted with `Select(...).ToList()` when the destination requires a list. A destination such as `CommentDetails[]` is emitted with `Select(...).ToArray()`.
 
-## Tipos Suportados em AutoProperties
-- Primitivos numéricos, `bool`, `string`, `char`, `DateTime` / nullable simples
-- `enum`, `struct`
-- `IEnumerable<T>` onde `T` é suportado acima / enum / struct
+## Generated nested types with `AutoDetails`
 
-## Exclusões
+`AutoDetails` generates or completes the exact type declared by the property:
+
 ```csharp
-[AutoProperties<Product>(Exclude = [ nameof(Product.InternalCode), nameof(Product.Secret) ])]
+[AutoSelect<Customer>, AutoProperties]
+public partial class CustomerDetails
+{
+    [AutoDetails(Exclude = [nameof(Address.InternalCode)])]
+    public AddressDto Address { get; set; } = new();
+}
 ```
 
-## Diagnósticos Principais
-- Tipos inválidos ou classe não `partial` (`RCSS000`).
-- Propriedade não encontrada (`RCSS001`).
-- Tipos incompatíveis (`RCSS002`).
-- Uso incorreto de atributos (`RCSS003`–`RCSS005`).
+If `AddressDto` does not exist, it is generated from the matching source property type. If it exists, it must be `partial`; existing properties are preserved and only missing supported properties are generated. `AutoDetails` also accepts `Flattening`.
 
-## Limitações Resumidas
-- Sem renome/alias explícito ainda (`MapFrom`).
-- Sem transformações de tipo (formatters / custom converters).
-- Desambiguação de flattening limitada em colisões de prefixo.
+Only one property may request generation of a given details type, and an existing type must be accessible enough for the property.
 
-## Boas Práticas
-- Use `nameof` em `Exclude`.
-- Prefira consumir a expressão gerada para reutilização e composição LINQ.
-- Para caminhos muito longos, avalie DTOs aninhados por clareza.
+## Nullable-aware projections
 
-## FAQ Rápido
-| Pergunta | Resposta |
-|----------|----------|
-| Preciso configurar algo no runtime? | Não, pura geração de código. |
-| Funciona com EF Core? | Sim, a expressão é traduzível. |
-| Posso só gerar propriedades? | Sim: `[AutoProperties<TFrom>]`. |
-| Flattening precisa de atributo? | Não, é por nome. |
+With nullable reference types enabled, SmartSelector applies directional null handling:
 
-## Mais Informações
-- Documentação detalhada: ver `docs.md` no repositório.
-- Projeto Demo: ver `RoyalCode.SmartSelector.Demo`.
-- Benchmarks: ver `RoyalCode.SmartSelector.Benchmarks`.
+| Source | Destination | Behavior |
+|---|---|---|
+| nullable scalar/navigation | nullable destination | propagates `null`, adding a conditional when required |
+| nullable collection | nullable collection | propagates `null` |
+| nullable collection | non-nullable collection | produces an empty collection and reports `RCSS016` (Info) |
+| nullable array | non-nullable array | uses `Array.Empty<T>()` and reports `RCSS016` (Info) |
+| nullable scalar/navigation | non-nullable destination | preserves previous behavior and reports `RCSS015` (Warning) |
 
----
-Happy coding!
+Treat `RCSS015` as a DTO contract issue. Make the destination nullable, change the source model, or exclude the property. SmartSelector does not invent scalar or object defaults to conceal a mismatch.
+
+Nullable-oblivious code (`#nullable disable`) retains its previous behavior without annotation-based guards or diagnostics.
+
+## Nested destination DTOs
+
+Nested DTOs are supported when every declaration is non-generic and `partial`:
+
+```csharp
+public partial class Contracts
+{
+    [AutoSelect<User>]
+    public partial class UserDetails
+    {
+        public int Id { get; set; }
+    }
+}
+```
+
+Destination DTOs must be declared in a namespace. Generic destination DTOs and DTOs inside generic containing types report `RCSS008`.
+
+The `TSource` argument may be namespace-qualified, use `global::`, refer to a nested type, or be a constructed generic type such as `Envelope<string>`.
+
+## Entity Framework Core
+
+The `IQueryable<TSource>` extension applies the generated expression directly:
+
+```csharp
+var page = await db.Orders
+    .Where(order => order.Active)
+    .OrderBy(order => order.Id)
+    .SelectOrderDetails()
+    .Take(50)
+    .ToListAsync(ct);
+
+var query = db.Orders.Select(OrderDetails.SelectOrderExpression);
+```
+
+Apply entity filters and ordering before projection when they depend on members absent from the DTO. Translation depends on the EF Core provider and version, so integration-test important projections with the production provider.
+
+Use `From`, `To{Dto}`, and the `IEnumerable<TSource>` extension for already materialized objects; do not invoke `From` inside an `IQueryable` expression.
+
+## Diagnostics
+
+| ID | Severity | Meaning |
+|---|---|---|
+| `RCSS000` | Error | invalid `AutoSelect` usage, including a non-partial declaration chain |
+| `RCSS001` | Error | no corresponding source property was found |
+| `RCSS002` | Error | source and destination property types are incompatible |
+| `RCSS003` | Error | generic `AutoProperties<TSource>` used with `AutoSelect` |
+| `RCSS004` | Error | generic and non-generic `AutoProperties` used together |
+| `RCSS005` | Error | invalid `AutoProperties<TSource>` type argument |
+| `RCSS006` | Error | `AutoProperties<TSource>` destination is not partial |
+| `RCSS007` | Error | non-generic `AutoProperties` has no `AutoSelect<TSource>` |
+| `RCSS008` | Error | generic destination DTO or generic containing type |
+| `RCSS010` | Warning | ambiguous convention-based flattened path |
+| `RCSS011` | Error | destination DTO is in the global namespace |
+| `RCSS012` | Error | existing `AutoDetails` target type is not partial |
+| `RCSS013` | Error | multiple properties request the same `AutoDetails` type |
+| `RCSS014` | Error | `AutoDetails` target type has insufficient accessibility |
+| `RCSS015` | Warning | nullable source flows into a non-nullable destination |
+| `RCSS016` | Info | nullable collection is projected as empty when null |
+| `RCSS017` | Error | nested `MapFrom` path is invalid or unreadable |
+
+There is no `RCSS009` rule in version 0.5.0.
+
+## Generator compatibility
+
+The generator package contains analyzer variants selected by the compiler API version:
+
+| Validated SDK | SDK Roslyn | Loaded variant | Minimum requirement |
+|---|---:|---|---|
+| 8.0.422 | 4.8 | `roslyn4.8` | Roslyn 4.8 / .NET SDK 8.0.4xx |
+| 9.0.100 | 4.12 | `roslyn4.8` | Roslyn 4.8 / .NET SDK 8.0.4xx |
+| 10.0.301 | 5.6 | `roslyn5.6` | Roslyn 5.6 / .NET SDK 10.0.3xx |
+
+`RoyalCode.Extensions.SourceGenerator` is shipped beside each analyzer variant. This matrix was validated by building and executing a consumer application for each SDK family.
+
+## Limitations
+
+- No custom resolvers, formatters, conditional mapping callbacks, or global naming policies.
+- No generic destination DTOs or generic destination containing types.
+- No destination DTOs in the global namespace.
+- `MapFrom` supports readable public property paths, not methods, fields, or indexers.
+- Provider-specific LINQ translation must be validated by the consuming application.
+
+## Documentation and samples
+
+- [Detailed usage guide](src/docs.md)
+- [Selector reference](src/.docs/selector.md)
+- [Rules for AI tools and coding agents](src/.docs/selector.ai-rules.md)
+- [Demo project](src/RoyalCode.SmartSelector.Demo)
+- [Benchmarks](src/RoyalCode.SmartSelector.Benchmarks)
+- [Release notes](src/RELEASE_NOTES.md)
+
+## License
+
+SmartSelector is licensed under the [GNU Affero General Public License v3.0](LICENSE).

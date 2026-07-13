@@ -8,7 +8,6 @@
 		<ExtSrcGenVer>0.2.0</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<!-- During 0.x, AssemblyVersion follows Ver. The DF16/DF17 breaking API change advances both to 0.5.0. -->
 		<Ver>0.5.0</Ver>
 		<Prev></Prev>
 	</PropertyGroup>

@@ -13,3 +13,4 @@ RCSS013  | Usage    | Error    | Two AutoDetails properties generate the same ty
 RCSS014  | Usage    | Error    | AutoDetails target type is less accessible than the property
 RCSS015  | Usage    | Warning  | Nullable source projected into non-nullable destination
 RCSS016  | Usage    | Info     | Nullable source collection projected as an empty collection when null
+RCSS017  | Usage    | Error    | MapFrom path does not resolve to a readable public source property

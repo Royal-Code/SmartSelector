@@ -9,14 +9,14 @@ public sealed class MapFromAttribute : Attribute
     /// <summary>
     /// Initializes a new instance of the MapFromAttribute class, specifying the source property name to map from.
     /// </summary>
-    /// <param name="propertyName">The name of the source property to be mapped. Cannot be null or empty.</param>
+    /// <param name="propertyName">The source property name or dot-separated property path. Cannot be null or empty.</param>
     public MapFromAttribute(string propertyName)
     { 
         PropertyName = propertyName;
     }
 
     /// <summary>
-    /// Gets or sets the name of the source property to map from.
+    /// Gets or sets the source property name or dot-separated property path to map from.
     /// </summary>
     public string PropertyName { get; set; }
 }

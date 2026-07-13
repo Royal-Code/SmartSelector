@@ -14,7 +14,12 @@ internal static class AutoPropertiesGenerator
     internal static MatchOptions MatchOptions { get; } = new()
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
-        AdditionalAssignDescriptorResolvers = [new AutoDetailsAssignDescriptorResolver()],
+        TargetPropertiesRetriever = new SafeTargetPropertiesRetriever(),
+        AdditionalAssignDescriptorResolvers =
+        [
+            new ArrayAssignDescriptorResolver(),
+            new AutoDetailsAssignDescriptorResolver(),
+        ],
         PropertyNameResolvers = [new MapFromPropertyNameResolver()],
     };
 
@@ -140,19 +145,20 @@ internal static class AutoPropertiesGenerator
     internal static AutoPropertiesInformation CreateInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
-        AttributeData autoPropertyAttribute) =>
-        CreateBuildInformation(modelType, fromType, autoPropertyAttribute).ToInformation();
+        params AttributeData[] configurationAttributes) =>
+        CreateBuildInformation(modelType, fromType, configurationAttributes).ToInformation();
 
     internal static AutoPropertiesBuildInformation CreateBuildInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
-        AttributeData autoPropertyAttribute)
+        params AttributeData[] configurationAttributes)
     {
         var excluded = new HashSet<string>(StringComparer.Ordinal);
         var flattening = new HashSet<string>(StringComparer.Ordinal);
 
         // obtém Exclude de NamedArguments
-        foreach (var namedArg in autoPropertyAttribute.NamedArguments)
+        foreach (var configurationAttribute in configurationAttributes)
+        foreach (var namedArg in configurationAttribute.NamedArguments)
             if (namedArg.Key == "Exclude" &&
                 namedArg.Value.Kind == TypedConstantKind.Array &&
                 !namedArg.Value.IsNull)
@@ -183,7 +189,7 @@ internal static class AutoPropertiesGenerator
         var autoDetailsTypeKeys = new HashSet<string>(StringComparer.Ordinal);
 
         // Propriedades já declaradas no modelo são sempre excluídas.
-        foreach (var p in modelType.CreateProperties(_ => true))
+        foreach (var p in CreateReadableProperties(modelType, _ => true))
         {
             excluded.Add(p.Name);
 
@@ -193,7 +199,7 @@ internal static class AutoPropertiesGenerator
                 autoDetails.Add(autoDetailInfo!);
             }
         }
-        var sourceProps = fromType.CreateProperties(p => p.GetMethod is not null);
+        var sourceProps = CreateReadableProperties(fromType, p => p.GetMethod is not null);
 
         // filtra propriedades da origem,
         // remove propriedades que estão na lista de excluídas,
@@ -246,7 +252,7 @@ internal static class AutoPropertiesGenerator
                 continue;
 
             // obtém as propriedades do tipo
-            var nestedProps = TypeDescriptor.Create(namedType).CreateProperties(p => p.GetMethod is not null);
+            var nestedProps = CreateReadableProperties(TypeDescriptor.Create(namedType), p => p.GetMethod is not null);
             foreach (var np in nestedProps.Where(IsSupportedType))
             {
                 // cria nova propriedade com o nome composto
@@ -281,6 +287,13 @@ internal static class AutoPropertiesGenerator
         if (SupportedPrimitiveTypes.Contains(typeName))
             return true;
 
+        if (type.Symbol is IArrayTypeSymbol arrayType)
+        {
+            var elementType = TypeDescriptor.Create(arrayType.ElementType);
+            return SupportedPrimitiveTypes.Contains(elementType.UnderlyingType) ||
+                   arrayType.ElementType.TypeKind is TypeKind.Enum or TypeKind.Struct;
+        }
+
         if (!type.HasNamedTypeSymbol(out var namedType))
             return false;
 
@@ -313,6 +326,54 @@ internal static class AutoPropertiesGenerator
         }
 
         return false;
+    }
+
+    internal static IReadOnlyList<PropertyDescriptor> CreateReadableProperties(
+        TypeDescriptor type,
+        Func<IPropertySymbol, bool>? predicate)
+    {
+        if (type.DefinedProperties is not null)
+            return type.DefinedProperties;
+        if (type.Symbol is not INamedTypeSymbol symbol)
+            return [];
+
+        var hierarchy = new Stack<INamedTypeSymbol>();
+        for (var current = symbol;
+             current is not null && current.SpecialType != SpecialType.System_Object;
+             current = current.BaseType)
+        {
+            hierarchy.Push(current);
+        }
+
+        var properties = new List<PropertyDescriptor>();
+        while (hierarchy.Count > 0)
+        {
+            properties.AddRange(hierarchy.Pop().GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(property => property.DeclaredAccessibility == Accessibility.Public && !property.IsStatic)
+                .Where(property => predicate is null || predicate(property))
+                .Select(CreatePropertyDescriptor));
+        }
+
+        return properties.GroupBy(property => property.Name)
+            .Select(group => group.Last())
+            .ToArray();
+    }
+
+    private static PropertyDescriptor CreatePropertyDescriptor(IPropertySymbol property)
+    {
+        if (property.Type is not IArrayTypeSymbol arrayType)
+            return PropertyDescriptor.Create(property);
+
+        var elementType = TypeDescriptor.Create(arrayType.ElementType);
+        var nullableSuffix = arrayType.NullableAnnotation == NullableAnnotation.Annotated ? "?" : string.Empty;
+        var arrayDescriptor = new TypeDescriptor(
+            $"{elementType.Name}[]{nullableSuffix}",
+            elementType.Namespaces,
+            arrayType,
+            isNullable: false,
+            arrayType.NullableAnnotation);
+        return new PropertyDescriptor(arrayDescriptor, property.Name, property);
     }
 
     internal static void Generate(AutoPropertiesInformation propertiesInfo, SourceProductionContext context)
@@ -385,6 +446,58 @@ internal static class AutoPropertiesGenerator
             .FirstOrDefault(type => !type.Modifiers.Any(SyntaxKind.PartialKeyword));
 }
 
+internal sealed class ArrayAssignDescriptorResolver : IAssignDescriptorResolver
+{
+    public bool TryCreateAssignDescriptor(
+        TypeDescriptor leftType,
+        TypeDescriptor rightType,
+        SemanticModel model,
+        MatchOptions options,
+        out AssignDescriptor? descriptor)
+    {
+        descriptor = null;
+        if (leftType.Symbol is not IArrayTypeSymbol leftArray || rightType.Symbol is null)
+            return false;
+
+        // Conversões diretas de array continuam a cargo do resolver padrão.
+        if (model.Compilation.ClassifyConversion(rightType.Symbol, leftType.Symbol).IsImplicit)
+            return false;
+
+        ITypeSymbol? rightElement = rightType.Symbol is IArrayTypeSymbol rightArray
+            ? rightArray.ElementType
+            : rightType.Symbol.TryGetEnumerableGenericType(out var enumerableElement)
+                ? enumerableElement
+                : null;
+        if (rightElement is null)
+            return false;
+
+        var leftElementType = TypeDescriptor.Create(leftArray.ElementType);
+        var rightElementType = TypeDescriptor.Create(rightElement);
+        var leftProperties = options.OriginPropertiesRetriever.GetProperties(leftElementType);
+        var rightProperties = options.TargetPropertiesRetriever.GetProperties(rightElementType);
+        if (leftProperties.Count == 0 || rightProperties.Count == 0)
+            return false;
+
+        var inner = MatchSelection.Create(
+            leftElementType,
+            leftProperties,
+            rightElementType,
+            rightProperties,
+            model,
+            options);
+        if (inner.HasMissingProperties(out _) || inner.HasNotAssignableProperties(out _))
+            return false;
+
+        descriptor = new AssignDescriptor
+        {
+            AssignType = AssignType.Select,
+            InnerSelection = inner,
+            RequireToList = false,
+        };
+        return true;
+    }
+}
+
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever
 {
     private const string AutoSelectAttributeName = "AutoSelectAttribute";
@@ -393,7 +506,7 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
 
     public IReadOnlyList<PropertyDescriptor> GetProperties(TypeDescriptor origin)
     {
-        var originProperties = MatchOptions.GetOriginProperties(origin);
+        var originProperties = AutoPropertiesGenerator.CreateReadableProperties(origin, property => property.GetMethod is not null);
         origin.DefinedProperties = originProperties;
         var typeSymbol = origin.Symbol;
 
@@ -435,9 +548,27 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
             var info = AutoPropertiesGenerator.CreateBuildInformation(
                 origin,
                 TypeDescriptor.Create(fromType),
+                autoSelectAttribute,
                 autoPropertiesAttribute);
 
             // pega as propriedades da origem mais as da informação
+            return [.. originProperties, .. info.Properties];
+        }
+
+        // AutoSelect<TFrom> pode configurar AutoProperties diretamente por Exclude/Flattening.
+        var directAutoSelect = attributes.FirstOrDefault(attr =>
+            attr.AttributeClass?.OriginalDefinition.MetadataName == "AutoSelectAttribute`1" &&
+            attr.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector" &&
+            attr.NamedArguments.Any(argument => argument.Key is "Exclude" or "Flattening"));
+        if (directAutoSelect is not null)
+        {
+            var fromType = directAutoSelect.AttributeClass?.TypeArguments.FirstOrDefault();
+            if (fromType is null)
+                return originProperties;
+            var info = AutoPropertiesGenerator.CreateBuildInformation(
+                origin,
+                TypeDescriptor.Create(fromType),
+                directAutoSelect);
             return [.. originProperties, .. info.Properties];
         }
 
@@ -467,6 +598,12 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
 
         return originProperties;
     }
+}
+
+internal sealed class SafeTargetPropertiesRetriever : ITargetPropertiesRetriever
+{
+    public IReadOnlyList<PropertyDescriptor> GetProperties(TypeDescriptor target) =>
+        AutoPropertiesGenerator.CreateReadableProperties(target, property => property.GetMethod is not null);
 }
 
 internal class AutoDetailsAssignDescriptorResolver : IAssignDescriptorResolver
@@ -532,6 +669,8 @@ internal class MapFromPropertyNameResolver : IPropertyNameResolver
         propertyName = attr is { ConstructorArguments.Length: 1 }
             ? attr.ConstructorArguments[0].Value as string
             : null;
+        if (propertyName?.Contains('.') == true)
+            propertyName = propertyName.Replace(".", string.Empty);
         return !string.IsNullOrEmpty(propertyName);
     }
 }

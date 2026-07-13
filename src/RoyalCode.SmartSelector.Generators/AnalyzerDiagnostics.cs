@@ -134,6 +134,14 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor InvalidMapFromPath = new(
+        id: "RCSS017",
+        title: "Invalid MapFrom source path",
+        messageFormat: "The MapFrom path '{0}' configured for property '{1}' does not resolve to a readable public source property",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     internal static DiagnosticDescriptor Get(string id) => id switch
     {
         "RCSS000" => InvalidAutoSelectType,
@@ -152,6 +160,7 @@ internal static class AnalyzerDiagnostics
         "RCSS014" => AutoDetailsTypeAccessibilityMismatch,
         "RCSS015" => NullableSourceForNonNullableDestination,
         "RCSS016" => NullableCollectionProjectedAsEmpty,
+        "RCSS017" => InvalidMapFromPath,
         _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Unknown SmartSelector diagnostic."),
     };
 

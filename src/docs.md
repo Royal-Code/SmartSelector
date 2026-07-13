@@ -192,7 +192,7 @@ A convenção concatena os identificadores do caminho em PascalCase.
 |----------|----------|
 | `Model / Details` | Classe parcial alvo da projeção (DTO). |
 | `TFrom` | Tipo origem da projeção. |
-| `AutoSelect<TFrom>` | Ativa geração de expressão + extensões. |
+| `AutoSelect<TFrom>` | Ativa geração de expressão + extensões; `Exclude`/`Flattening` opcionais também ativam propriedades automáticas. |
 | `AutoProperties` / `AutoProperties<TFrom>` | Geração automática de propriedades simples. |
 | Flattening | Casamento por convenção de nomes concatenados para acessar membros aninhados. |
 | `MapFrom` | Mapeia explicitamente a origem de uma propriedade do DTO usando nome de membro da origem. |
@@ -240,6 +240,19 @@ new CustomProductDetails
 }
 ```
 
+Também é possível indicar um caminho aninhado:
+
+```csharp
+[MapFrom("Address.City")]
+public string City { get; set; } = string.Empty;
+
+// Gera: City = a.Address.City
+```
+
+Cada segmento precisa ser uma propriedade pública legível. Um caminho inexistente produz **RCSS017** na propriedade
+do DTO. O primeiro segmento é resolvido explicitamente, portanto `Address.City` não é confundido com uma propriedade
+direta chamada `AddressCity`.
+
 ---
 ## 5. Membros Gerados
 
@@ -253,11 +266,23 @@ new CustomProductDetails
 
 ---
 ## 6. Propriedades Suportadas e Filtragem
-Mesmos critérios: primitivos, string, bool, DateTime, enum, struct e coleções simples (`IEnumerable<T>` de tipo suportado).
+Mesmos critérios: primitivos, string, bool, DateTime, enum, struct, arrays simples (`T[]`) e coleções simples
+(`IEnumerable<T>` de tipo suportado). Quando o DTO declara um array de objetos e a origem contém uma coleção ou array
+compatível, os itens são projetados com `Select(...)` e materializados com `ToArray()`.
 
 ---
 ## 7. Exclusão de Propriedades
 Via `Exclude = [ nameof(T.Prop) ]` ou array de strings.
+
+`Exclude` e `Flattening` podem ser configurados diretamente em `AutoSelect<TFrom>`. A presença de qualquer uma dessas
+opções ativa a geração automática de propriedades, tornando o `AutoProperties` separado opcional:
+
+```csharp
+[AutoSelect<Order>(
+    Exclude = [nameof(Order.InternalCode)],
+    Flattening = [nameof(Order.Customer)])]
+public partial class OrderDetails { }
+```
 
 ---
 ## 8. Flattening (Projeção de Caminhos Aninhados)
@@ -291,7 +316,7 @@ Quando usar:
 - Útil para garantir clareza e evitar dependência da heurística de caminhos.
 
 Boas práticas:
-- Use `nameof(T.Prop)` sempre que possível para segurança em refactors.
+- Use `nameof(T.Prop)` para membros diretos e string com pontos para caminhos aninhados.
 - Evite caminhos inexistentes; o gerador emitirá diagnósticos em caso de propriedade inválida.
 
 Interação com EF Core:

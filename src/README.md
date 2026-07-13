@@ -137,6 +137,16 @@ public partial class ProductDetails { }
 db.Products.SelectProductDetails().ToList();
 ```
 
+`AutoSelect<T>` também pode gerar propriedades automaticamente quando recebe `Exclude` ou `Flattening`, sem exigir
+um atributo `AutoProperties` separado:
+
+```csharp
+[AutoSelect<Order>(
+    Exclude = [nameof(Order.InternalCode)],
+    Flattening = [nameof(Order.Customer)])]
+public partial class OrderDetails { }
+```
+
 - `AutoProperties`:
 
 ```csharp
@@ -185,6 +195,18 @@ public partial class OrderFlat
 - Primitivos numéricos, `bool`, `string`, `char`, `DateTime` / nullable simples
 - `enum`, `struct`
 - `IEnumerable<T>` onde `T` é suportado acima / enum / struct
+- Arrays simples (`T[]`); arrays de objetos declarados no DTO são projetados item a item com `ToArray()`
+
+## MapFrom com caminho aninhado
+
+`MapFrom` aceita um caminho separado por pontos. O caminho explícito prevalece sobre membros diretos homônimos:
+
+```csharp
+[MapFrom("Address.City")]
+public string City { get; set; }
+```
+
+Caminhos inválidos produzem `RCSS017` na propriedade do DTO.
 
 ## Exclusões
 ```csharp
@@ -196,6 +218,7 @@ public partial class OrderFlat
 - Propriedade não encontrada (`RCSS001`).
 - Tipos incompatíveis (`RCSS002`).
 - Uso incorreto de atributos (`RCSS003`–`RCSS005`).
+- Caminho `MapFrom` inválido (`RCSS017`).
 
 ## Limitações Resumidas
 - Sem transformações de tipo (formatters / custom converters).

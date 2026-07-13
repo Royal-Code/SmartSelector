@@ -62,7 +62,10 @@ internal class SelectLambdaGenerator : ValueNode
                     break;
                 case NullAssignmentKind.EmptyCollectionFallback:
                     AppendNullChecks(sb, param, classification.NullCheckPaths);
-                    sb.Append(" ? new List<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
+                    if (propMatch.Origin.Type.UnderlyingType.EndsWith("[]", StringComparison.Ordinal))
+                        sb.Append(" ? Array.Empty<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
+                    else
+                        sb.Append(" ? new List<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
                     break;
             }
 
@@ -70,7 +73,12 @@ internal class SelectLambdaGenerator : ValueNode
             assignGenerator(sb, indent, param, assign);
 
             // check ToList
-            if (assignDescriptor.RequireToList)
+            if (assignDescriptor.AssignType == AssignType.Select &&
+                propMatch.Origin.Type.UnderlyingType.EndsWith("[]", StringComparison.Ordinal))
+            {
+                sb.Append('.').Append("ToArray()");
+            }
+            else if (assignDescriptor.RequireToList)
             {
                 sb.Append('.').Append("ToList()");
             }
@@ -84,6 +92,8 @@ internal class SelectLambdaGenerator : ValueNode
     {
         // extrai o argumento genérico ignorando a anotação nullable do tipo externo
         var name = type.UnderlyingType;
+        if (name.EndsWith("[]", StringComparison.Ordinal))
+            return name.Substring(0, name.Length - 2);
         var index = name.IndexOf('<');
         return index == -1 ? name : name.Substring(index + 1, name.Length - index - 2);
     }

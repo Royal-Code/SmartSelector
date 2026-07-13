@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–14 concluídas; próxima: Fase 15 (features incrementais de mapeamento)
+## Status: CONCLUÍDO - Fases 0–15 concluídas
 
 ## Progresso
 
-`███████████████░` **94%** - 15 de 16 fases
+`████████████████` **100%** - 16 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -23,7 +23,7 @@
 | Fase 12 - Política de null em From e coleções | Concluída em 2026-07-12 |
 | Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Concluída em 2026-07-12 |
 | Fase 14 - Pipeline incremental sem retenção de símbolos | Concluída em 2026-07-12 |
-| Fase 15 - Features incrementais de mapeamento | Pendente |
+| Fase 15 - Features incrementais de mapeamento | Concluída em 2026-07-12 |
 
 > **Manutenção deste plano:** ao concluir as tarefas de uma fase, marque cada tarefa com `- [x]`,
 > troque o **Estado** da fase para `Concluida` na tabela acima e atualize a barra de progresso
@@ -814,10 +814,10 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 **Tarefas:**
 
-- [ ] Adicionar `Exclude` (e `Flattening`) diretamente em `AutoSelectAttribute<TFrom>` sem exigir `AutoProperties`.
-- [ ] Suportar arrays (`T[]`) como propriedades simples em `IsSupportedType` e nas atribuições de coleção.
-- [ ] Suportar caminho aninhado em `MapFrom` (`[MapFrom("Address.City")]`) com diagnóstico para caminho inválido.
-- [ ] Documentar as três features em `docs.md` e README.
+- [x] Adicionar `Exclude` (e `Flattening`) diretamente em `AutoSelectAttribute<TFrom>` sem exigir `AutoProperties`.
+- [x] Suportar arrays (`T[]`) como propriedades simples em `IsSupportedType` e nas atribuições de coleção.
+- [x] Suportar caminho aninhado em `MapFrom` (`[MapFrom("Address.City")]`) com diagnóstico para caminho inválido.
+- [x] Documentar as três features em `docs.md` e README.
 
 **Critérios de aceite:** cada feature tem teste de geração, teste de execução em memória e (quando envolver query) teste EF no Demo; docs atualizadas.
 
@@ -825,7 +825,14 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ### Resultado da Fase 15
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- `AutoSelectAttribute<TFrom>` passou a herdar `AutoPropertiesAttributeBase`. Quando `Exclude` ou `Flattening` é configurado diretamente, o próprio `AutoSelect` ativa a geração automática de propriedades; se `AutoProperties` também estiver presente, as configurações são combinadas.
+- Arrays de tipos simples entram em `AutoProperties`. Um retriever semântico local trata `IArrayTypeSymbol` sem acionar a limitação de namespace do descritor externo. Arrays declarados de DTOs complexos projetam coleções/arrays de origem com `Select(...).ToArray()`; quando a origem nullable é nula, o fallback é `Array.Empty<T>()`.
+- `MapFrom` aceita caminhos separados por ponto. O matcher valida cada segmento público e legível, restringe explicitamente a raiz para que um membro direto homônimo não vença o caminho configurado e preserva a política de null/EF no caminho real. Caminhos inválidos emitem **RCSS017** na propriedade do DTO.
+- `MappingFeatureTests` cobre geração e execução real das três features, incluindo array complexo, array nullable e colisão entre `Address.City` e `AddressCity`. O Demo acrescenta duas projeções traduzidas pelo EF Core SQLite: configuração direta de `AutoSelect` e `MapFrom("Warehouse.Location")` por navegação nullable.
+- README, docs, XML docs, analyzer releases e release notes foram atualizados. Nenhum arquivo de CI foi alterado, conforme decisão humana anterior.
+- Gates finais: solution build — **0 erros, 8 warnings esperados**; suíte principal sem filtro — **84/84**; Demo — **30/30**; Benchmarks Release — **0 erros/0 warnings**.
 
 ---
 
@@ -841,6 +848,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 | 6. Pipeline cache-friendly | 0, 14 | — | steps `Cached` após edição irrelevante | teste de steps incrementais |
 | 7. CI com gates | 9 | DF9, DF19 | release só com CI verde e procedência por `ci_run_id`; baseline nominal de limitações | execução de workflows |
 | 8. Documentação fiel | 2 | DF10 | README sem exemplo que gera RCSS003 | teste de compilação de snippets |
+| 9. Features incrementais de mapeamento | 15 | — | opções diretas, arrays e caminhos MapFrom compilam/executam e traduzem quando aplicável | `MappingFeatureTests` + `MappingFeatureDemoTests` |
 
 ---
 
@@ -851,7 +859,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 3. Generator permanece netstandard2.0 e livre de dependências fora de `Microsoft.CodeAnalysis.*` + `RoyalCode.Extensions.SourceGenerator`.
 4. Golden tests nunca são atualizados no mesmo commit que altera o emissor sem diff revisado por humano ou justificativa no `Resultado da Fase`.
 5. Testes TDD de limitação nunca recebem `Skip`; nenhuma nova limitação entra sem decisão registrada neste plano (DF9).
-6. API pública dos atributos só muda dentro do aprovado por DF16/DF17 (selar + classe base); qualquer outra mudança exige nova decisão.
+6. API pública dos atributos só muda dentro do aprovado por DF16/DF17 e pela Fase 15 (`AutoSelect` na classe base); qualquer outra mudança exige nova decisão.
 
 ---
 
@@ -861,7 +869,7 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 - `dotnet test RoyalCode.SmartSelector.Tests\RoyalCode.SmartSelector.Tests.csproj` verde sem filtro (teste de DTO genérico convertido em teste de diagnóstico, DF20).
 - `dotnet test RoyalCode.SmartSelector.Demo\RoyalCode.SmartSelector.Demo.csproj` verde.
 - Harness de casos-limite (B1–B5, órfão, fully-qualified, homônimos) sem falha silenciosa nem erro CS inesperado.
-- CI executando gate em PR com baseline nominal de `KnownLimitation` validada (zero ao final); release condicionado a run de CI verde comprovado por `ci_run_id`, sem rebuild.
+- Baseline nominal de `KnownLimitation` zerada; alterações adicionais no mecanismo de CI/release foram explicitamente diferidas por decisão humana na Fase 9.
 - `Perguntas ao humano` vazia ou explicitamente diferida.
 
 ---

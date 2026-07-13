@@ -12,4 +12,4 @@
 ///     The type to convert from.
 /// </typeparam>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-public sealed class AutoSelectAttribute<TFrom> : Attribute { }
+public sealed class AutoSelectAttribute<TFrom> : AutoPropertiesAttributeBase { }

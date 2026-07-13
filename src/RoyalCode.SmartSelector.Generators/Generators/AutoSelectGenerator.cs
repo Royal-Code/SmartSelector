@@ -134,9 +134,17 @@ internal static class AutoSelectGenerator
         var autoProperties = attributes.FirstOrDefault(attribute =>
             attribute.AttributeClass?.MetadataName == "AutoPropertiesAttribute" &&
             attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
-        if (autoProperties is not null)
+        var hasDirectAutoPropertiesConfiguration = autoSelectAttribute!.NamedArguments.Any(argument =>
+            argument.Key is "Exclude" or "Flattening");
+        if (autoProperties is not null || hasDirectAutoPropertiesConfiguration)
         {
-            propertiesInfo = AutoPropertiesGenerator.CreateBuildInformation(modelType, fromType, autoProperties).ToInformation();
+            var configurationAttributes = autoProperties is null
+                ? new[] { autoSelectAttribute }
+                : new[] { autoSelectAttribute, autoProperties };
+            propertiesInfo = AutoPropertiesGenerator.CreateBuildInformation(
+                modelType,
+                fromType,
+                configurationAttributes).ToInformation();
         }
 
         // Corresponde as propriedades da classe com o atributo e a classe definida em TFrom.
@@ -145,6 +153,14 @@ internal static class AutoSelectGenerator
             fromType,
             context.SemanticModel,
             AutoPropertiesGenerator.MatchOptions);
+        matchSelection = RewriteNestedMapFromPaths(
+            matchSelection,
+            fromType,
+            context.SemanticModel,
+            classDeclaration,
+            out var mapFromDiagnostics);
+        if (mapFromDiagnostics.Length > 0)
+            return new AutoSelectInformation(mapFromDiagnostics);
 
         // Diagnósticos de AutoDetails prevalecem sobre as falhas de correspondência das mesmas propriedades.
         var autoDetailsDiagnostics = GetAutoDetailsDiagnostics(propertiesInfo, out var autoDetailsFailedProperties);
@@ -333,7 +349,7 @@ internal static class AutoSelectGenerator
 
     private static int CountPropertyPaths(TypeDescriptor type, string remainingName)
     {
-        var properties = type.CreateProperties(property => property.GetMethod is not null);
+        var properties = AutoPropertiesGenerator.CreateReadableProperties(type, property => property.GetMethod is not null);
         if (properties.Any(property => property.Name == remainingName))
         {
             return 1;
@@ -612,6 +628,112 @@ internal static class AutoSelectGenerator
         // 2.4 Gera o código da classe de extensão
         extensionClass.Generate(context);
     }
+
+    private static MatchSelection RewriteNestedMapFromPaths(
+        MatchSelection selection,
+        TypeDescriptor sourceType,
+        SemanticModel semanticModel,
+        ClassDeclarationSyntax classDeclaration,
+        out DiagnosticInfo[] diagnostics)
+    {
+        List<DiagnosticInfo> invalidPaths = [];
+        var matches = selection.PropertyMatches.ToArray();
+        var sourceRootProperties = AutoPropertiesGenerator.CreateReadableProperties(
+            sourceType,
+            property => property.GetMethod is not null);
+
+        for (var index = 0; index < matches.Length; index++)
+        {
+            var match = matches[index];
+            var mapFrom = match.Origin.Symbol?.GetAttributes().FirstOrDefault(attribute =>
+                attribute.AttributeClass?.MetadataName == AutoPropertiesGenerator.MapFromAttributeName &&
+                attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
+            var path = mapFrom?.ConstructorArguments is { Length: 1 } arguments
+                ? arguments[0].Value as string
+                : null;
+            if (path is null || string.IsNullOrWhiteSpace(path) || !path.Contains('.'))
+                continue;
+
+            var segments = path.Split('.');
+            if (!TryResolveReadablePath(sourceType.Symbol, segments))
+            {
+                invalidPaths.Add(DiagnosticInfo.Create(
+                    AnalyzerDiagnostics.InvalidMapFromPath,
+                    FindPropertyLocation(classDeclaration, match.Origin.Name),
+                    path,
+                    match.Origin.Name));
+                continue;
+            }
+
+            // Limita a raiz ao primeiro segmento para que um membro direto homônimo do
+            // caminho achatado não prevaleça sobre o caminho explicitamente configurado.
+            var rootProperties = sourceRootProperties
+                .Where(property => property.Name == segments[0])
+                .ToArray();
+            var explicitSelection = MatchSelection.Create(
+                selection.OriginType,
+                [match.Origin],
+                selection.TargetType,
+                rootProperties,
+                semanticModel,
+                AutoPropertiesGenerator.MatchOptions);
+            var explicitMatch = explicitSelection.PropertyMatches.Single();
+            if (explicitMatch.IsMissing || !explicitMatch.CanAssign)
+            {
+                invalidPaths.Add(DiagnosticInfo.Create(
+                    AnalyzerDiagnostics.InvalidMapFromPath,
+                    FindPropertyLocation(classDeclaration, match.Origin.Name),
+                    path,
+                    match.Origin.Name));
+                continue;
+            }
+
+            matches[index] = explicitMatch;
+        }
+
+        diagnostics = invalidPaths.ToArray();
+        return new MatchSelection(selection.OriginType, selection.TargetType, matches);
+    }
+
+    private static bool TryResolveReadablePath(ITypeSymbol? rootType, IReadOnlyList<string> segments)
+    {
+        var currentType = rootType;
+        foreach (var segment in segments)
+        {
+            if (currentType is not INamedTypeSymbol namedType)
+                return false;
+            var property = FindReadableProperty(namedType, segment);
+            if (property is null)
+                return false;
+            currentType = property.Type;
+        }
+        return true;
+    }
+
+    private static IPropertySymbol? FindReadableProperty(INamedTypeSymbol type, string name)
+    {
+        for (var current = type;
+             current is not null && current.SpecialType != SpecialType.System_Object;
+             current = current.BaseType)
+        {
+            var property = current.GetMembers(name)
+                .OfType<IPropertySymbol>()
+                .FirstOrDefault(candidate =>
+                    !candidate.IsStatic &&
+                    candidate.DeclaredAccessibility == Accessibility.Public &&
+                    candidate.GetMethod is not null);
+            if (property is not null)
+                return property;
+        }
+        return null;
+    }
+
+    private static Location FindPropertyLocation(
+        ClassDeclarationSyntax declaration,
+        string propertyName) =>
+        declaration.Members.OfType<PropertyDeclarationSyntax>()
+            .FirstOrDefault(property => property.Identifier.Text == propertyName)?
+            .Identifier.GetLocation() ?? declaration.Identifier.GetLocation();
 
     private static bool HasGenericContainingType(INamedTypeSymbol symbol)
     {

@@ -5,7 +5,7 @@
 		<GenFrwkVer>netstandard2.0</GenFrwkVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<ExtSrcGenVer>0.1.16</ExtSrcGenVer>
+		<ExtSrcGenVer>0.2.0</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
 		<!-- During 0.x, AssemblyVersion follows Ver. The DF16/DF17 breaking API change advances both to 0.5.0. -->

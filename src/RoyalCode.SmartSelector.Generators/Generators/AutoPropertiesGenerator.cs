@@ -28,7 +28,7 @@ internal static class AutoPropertiesGenerator
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, token);
         if (classSymbol is null)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
                 classDeclaration.Identifier.GetLocation(),
                 classDeclaration.Identifier.Text);
             return new AutoPropertiesInformation(diagnostic);
@@ -37,7 +37,7 @@ internal static class AutoPropertiesGenerator
         // A classe deve ser partial (seguindo o padrão usado pelo AutoSelect)
         if (!classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.AutoPropertiesRequiresPartialClass,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.AutoPropertiesRequiresPartialClass,
                 classDeclaration.Identifier.GetLocation(),
                 classDeclaration.Identifier.Text);
             return new AutoPropertiesInformation(diagnostic);
@@ -45,7 +45,7 @@ internal static class AutoPropertiesGenerator
 
         if (classSymbol.Arity > 0 || HasGenericContainingType(classSymbol))
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
                 classDeclaration.Identifier.GetLocation(),
                 classSymbol.Name);
@@ -54,7 +54,7 @@ internal static class AutoPropertiesGenerator
 
         if (FindNonPartialContainingType(classDeclaration) is { } nonPartialContainingType)
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.AutoPropertiesRequiresPartialClass,
                 classDeclaration.Identifier.GetLocation(),
                 nonPartialContainingType.Identifier.Text);
@@ -63,7 +63,7 @@ internal static class AutoPropertiesGenerator
 
         if (classSymbol.ContainingNamespace.IsGlobalNamespace)
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.GlobalNamespaceNotSupported,
                 classDeclaration.Identifier.GetLocation(),
                 classSymbol.Name);
@@ -77,7 +77,7 @@ internal static class AutoPropertiesGenerator
             as AttributeSyntax;
         if (autoPropertiesAttribute is null)
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
                 classDeclaration.Identifier.GetLocation(),
                 "<missing>");
@@ -90,7 +90,7 @@ internal static class AutoPropertiesGenerator
             attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
         if (hasNonGeneric)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.ConflictingAutoPropertiesAttributes,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.ConflictingAutoPropertiesAttributes,
                 classDeclaration.Identifier.GetLocation(),
                 classDeclaration.Identifier.Text);
             return new AutoPropertiesInformation(diagnostic);
@@ -101,7 +101,7 @@ internal static class AutoPropertiesGenerator
         if (fromSymbol is null ||
             fromSymbol.TypeKind is not TypeKind.Class and not TypeKind.Struct)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoPropertiesTypeArgument,
                 attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
                 fromSymbol?.ToDisplayString() ?? "<missing>");
             return new AutoPropertiesInformation(diagnostic);
@@ -110,7 +110,7 @@ internal static class AutoPropertiesGenerator
         return CreateInformation(modelType, TypeDescriptor.Create(fromSymbol), autoPropertiesAttribute);
     }
 
-    internal static Diagnostic? ValidateNonGenericUsage(
+    internal static DiagnosticInfo? ValidateNonGenericUsage(
         GeneratorAttributeSyntaxContext context,
         CancellationToken token)
     {
@@ -131,13 +131,19 @@ internal static class AutoPropertiesGenerator
 
         var attributeSyntax = context.Attributes.FirstOrDefault()?.ApplicationSyntaxReference?.GetSyntax(token)
             as AttributeSyntax;
-        return Diagnostic.Create(
+        return DiagnosticInfo.Create(
             AnalyzerDiagnostics.AutoPropertiesRequiresAutoSelect,
             attributeSyntax?.Name.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
             classSymbol.Name);
     }
 
     internal static AutoPropertiesInformation CreateInformation(
+        TypeDescriptor modelType,
+        TypeDescriptor fromType,
+        AttributeData autoPropertyAttribute) =>
+        CreateBuildInformation(modelType, fromType, autoPropertyAttribute).ToInformation();
+
+    internal static AutoPropertiesBuildInformation CreateBuildInformation(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
         AttributeData autoPropertyAttribute)
@@ -167,7 +173,7 @@ internal static class AutoPropertiesGenerator
         return CreateInformationCore(modelType, fromType, excluded, flattening);
     }
 
-    private static AutoPropertiesInformation CreateInformationCore(
+    private static AutoPropertiesBuildInformation CreateInformationCore(
         TypeDescriptor modelType,
         TypeDescriptor fromType,
         HashSet<string> excluded,
@@ -213,7 +219,7 @@ internal static class AutoPropertiesGenerator
             generated.Add(new PropertyDescriptor(p.Type, p.Name, p.Symbol));
         }
 
-        return new AutoPropertiesInformation(modelType, [.. generated], [.. autoDetails]);
+        return new AutoPropertiesBuildInformation(modelType, [.. generated], [.. autoDetails]);
     }
 
     private static IReadOnlyList<PropertyDescriptor> CreateFlattening(
@@ -324,20 +330,17 @@ internal static class AutoPropertiesGenerator
         GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
         GeneratedSourceConventions.ApplyContainingTypes(
             partialClass,
-            origin.Symbol as INamedTypeSymbol);
+            origin.Declaration);
 
         // 1.1 modificadores
-        GeneratedSourceConventions.ApplyDeclaredAccessibility(partialClass, origin.Symbol);
+        GeneratedSourceConventions.ApplyDeclaredAccessibility(partialClass, origin.Declaration);
 
         partialClass.Modifiers.Partial();
 
         // 2 - criação das propriedades
         foreach (var p in properties)
         {
-            var propertyType = p.Type.HasNamedTypeSymbol(out var typeSymbol)
-                ? TypeDescriptor.Create(typeSymbol)
-                : p.Type;
-            propertyType = GeneratedSourceConventions.PreserveNullableAnnotation(propertyType);
+            var propertyType = GeneratedSourceConventions.ToTypeDescriptor(p.Type);
 
             // membros gerados em tipo declarado pelo usuário: docs e [GeneratedCode] por membro (DF11)
             var prop = new AnnotatedPropertyGenerator(
@@ -429,7 +432,7 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
 
             // cria a informação; Exclude/Flattening vêm do AutoPropertiesAttribute,
             // não do AutoSelectAttribute (que não declara esses argumentos)
-            var info = AutoPropertiesGenerator.CreateInformation(
+            var info = AutoPropertiesGenerator.CreateBuildInformation(
                 origin,
                 TypeDescriptor.Create(fromType),
                 autoPropertiesAttribute);
@@ -453,7 +456,7 @@ internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetrieve
                 return originProperties;
 
             // cria a informação
-            var info = AutoPropertiesGenerator.CreateInformation(
+            var info = AutoPropertiesGenerator.CreateBuildInformation(
                 origin,
                 TypeDescriptor.Create(fromType),
                 autoPropertiesAttribute);

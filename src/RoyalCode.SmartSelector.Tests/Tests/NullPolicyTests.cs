@@ -391,7 +391,7 @@ public class NullPolicyTests
 
     private static string GetLocationText(string source, Diagnostic diagnostic)
     {
-        diagnostic.Location.IsInSource.Should().BeTrue();
+        diagnostic.Location.Kind.Should().Be(LocationKind.ExternalFile);
         return source.Substring(
             diagnostic.Location.SourceSpan.Start,
             diagnostic.Location.SourceSpan.Length);

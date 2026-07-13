@@ -11,7 +11,8 @@
 - The generator now honors `Exclude`/`Flattening` of `AutoProperties` in nested match contexts (previously read from the wrong attribute and ignored).
 - Null policy for nullable reference annotations and `Nullable<T>`: nullable sources projected into nullable destinations propagate `null` through translatable conditionals (`a.X == null ? null : ...`, using `default(T?)` for nullable value types); nullable collections projected into non-nullable destination collections produce an empty collection when null (diagnostic RCSS016, Info); nullable sources flowing into non-nullable destinations keep the previous behavior and report the new warning RCSS015, including unsafe matches nested inside objects and collections. Oblivious (non-annotated) code keeps the previous behavior. See the "Política de Null" section in docs.md.
 - Nested destination DTOs are supported when every containing type is partial. Generated declarations preserve the containing chain and accessibility; namespace-level extension classes use qualified destination names and collision-free identifiers. Generic destination DTOs and generic containing types remain unsupported and report RCSS008.
-- Requires `RoyalCode.Extensions.SourceGenerator` 0.1.16 (bundled inside the generator package).
+- Incremental transforms now retain immutable, symbol-free snapshots. Diagnostics are retained as scalar `DiagnosticInfo` data and materialized only in source output; lambda generation no longer mutates matched property paths. Unrelated source edits keep source outputs cached or unchanged.
+- Requires `RoyalCode.Extensions.SourceGenerator` 0.2.0 (bundled inside the generator package).
 
 ## Breaking changes
 

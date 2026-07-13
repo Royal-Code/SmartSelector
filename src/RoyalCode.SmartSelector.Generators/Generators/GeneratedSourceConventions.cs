@@ -149,6 +149,78 @@ internal static class GeneratedSourceConventions
         };
     }
 
+    internal static void ApplyDeclaredAccessibility(
+        ClassGenerator generator,
+        TypeDeclarationSnapshot? declaration)
+    {
+        ApplyAccessibility(generator.Modifiers, declaration?.Accessibility ?? "public");
+    }
+
+    internal static void ApplyContainingTypes(
+        ClassGenerator generator,
+        TypeDeclarationSnapshot? declaration)
+    {
+        if (declaration is null)
+            return;
+
+        foreach (var containingType in declaration.ContainingTypes)
+        {
+            var containingGenerator = new ContainingTypeGenerator(
+                containingType.Name,
+                containingType.DeclarationKeyword);
+            ApplyAccessibility(containingGenerator.Modifiers, containingType.Accessibility);
+            containingGenerator.Modifiers.Partial();
+            generator.ContainingTypes.Add(containingGenerator);
+        }
+    }
+
+    internal static TypeDescriptor ToTypeDescriptor(TypeSnapshot type)
+    {
+        var name = type.IsNullableReference && !type.Name.EndsWith("?", StringComparison.Ordinal)
+            ? type.Name + "?"
+            : type.Name;
+        return new TypeDescriptor(name, type.Namespaces.ToArray(), null, type.IsNullable);
+    }
+
+    internal static string QualifiedTypeName(TypeSnapshot type) =>
+        type.Declaration?.QualifiedName ?? type.Name;
+
+    internal static string TypeIdentityIdentifier(TypeSnapshot type) =>
+        type.Declaration?.IdentityIdentifier ?? type.Name;
+
+    internal static string FileName(
+        TypeSnapshot type,
+        string generatedTypeName,
+        string category)
+    {
+        var parts = new List<string>();
+        var declaration = type.Declaration;
+        if (declaration is { IsError: false })
+        {
+            if (!string.IsNullOrWhiteSpace(declaration.NamespaceName))
+                parts.Add(declaration.NamespaceName);
+            foreach (var containingType in declaration.ContainingTypes)
+                parts.Add(containingType.Name);
+            parts.Add(declaration.Name == generatedTypeName ? declaration.MetadataName : generatedTypeName);
+        }
+        else
+        {
+            var typeNamespace = type.Namespaces.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(typeNamespace))
+                parts.Add(typeNamespace!);
+            parts.Add(generatedTypeName);
+        }
+
+        parts.Add(category);
+        return $"{string.Join(".", parts)}.g.cs";
+    }
+
+    private static void ApplyAccessibility(ModifiersGenerator modifiers, string accessibility)
+    {
+        foreach (var modifier in accessibility.Split(' '))
+            modifiers.Add(modifier);
+    }
+
     /// <summary>
     /// Aplica ao nome do tipo a anotação nullable modelada pelo <see cref="TypeDescriptor"/> externo,
     /// quando o nome ainda não a carrega (tipos não especiais perdem o '?' na criação por símbolo).

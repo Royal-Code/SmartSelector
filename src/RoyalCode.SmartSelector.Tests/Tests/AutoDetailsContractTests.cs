@@ -269,7 +269,7 @@ public class AutoDetailsContractTests
             string.Join("\n", result.GeneratorDiagnostics.Concat(result.CompilationDiagnostics)));
 
         diagnostic.Location.Should().NotBe(Location.None);
-        diagnostic.Location.IsInSource.Should().BeTrue();
+        diagnostic.Location.Kind.Should().Be(LocationKind.ExternalFile);
         diagnostic.Location.SourceSpan.Length.Should().BeGreaterThan(0);
 
         var actualLocationText = source.Substring(

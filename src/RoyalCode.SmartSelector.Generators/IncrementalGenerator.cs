@@ -36,7 +36,7 @@ public class IncrementalGenerator : IIncrementalGenerator
         {
             if (diagnostic is not null)
             {
-                context.ReportDiagnostic(diagnostic);
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
             }
         });
 

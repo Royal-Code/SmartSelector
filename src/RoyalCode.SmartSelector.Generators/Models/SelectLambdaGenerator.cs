@@ -1,13 +1,12 @@
 ﻿using System.Text;
-using Microsoft.CodeAnalysis;
 
 namespace RoyalCode.SmartSelector.Generators.Models;
 
 internal class SelectLambdaGenerator : ValueNode
 {
-    private readonly MatchSelection match;
+    private readonly MatchSelectionSnapshot match;
 
-    public SelectLambdaGenerator(MatchSelection match)
+    public SelectLambdaGenerator(MatchSelectionSnapshot match)
     {
         this.match = match;
     }
@@ -37,7 +36,7 @@ internal class SelectLambdaGenerator : ValueNode
         return sb.ToString();
     }
 
-    private static void GeneratePropertyCode(int indent, StringBuilder sb, char param, IReadOnlyList<PropertyMatch> properties)
+    private static void GeneratePropertyCode(int indent, StringBuilder sb, char param, IReadOnlyList<PropertyMatchSnapshot> properties)
     {
         foreach (var propMatch in properties)
         {
@@ -46,7 +45,7 @@ internal class SelectLambdaGenerator : ValueNode
             //     PropertyName =
             sb.Indent(indent).Append(propMatch.Origin.Name).Append(" = ");
 
-            var assignDescriptor = propMatch.AssignDescriptor!;
+            var assignDescriptor = propMatch.Assignment!;
             var assignGenerator = GetAssignGenerator(assignDescriptor);
 
             // política de null (DF5/DF18): o prefixo condicional envolve a atribuição;
@@ -81,7 +80,7 @@ internal class SelectLambdaGenerator : ValueNode
         sb.Length--;
     }
 
-    private static string GenericItemName(TypeDescriptor type)
+    private static string GenericItemName(TypeSnapshot type)
     {
         // extrai o argumento genérico ignorando a anotação nullable do tipo externo
         var name = type.UnderlyingType;
@@ -89,13 +88,7 @@ internal class SelectLambdaGenerator : ValueNode
         return index == -1 ? name : name.Substring(index + 1, name.Length - index - 2);
     }
 
-    private static bool IsNullableValueType(TypeDescriptor type)
-    {
-        if (!type.IsNullable || type.Symbol is not INamedTypeSymbol namedType || namedType.TypeArguments.Length != 1)
-            return false;
-
-        return namedType.TypeArguments[0].IsValueType;
-    }
+    private static bool IsNullableValueType(TypeSnapshot type) => type.IsNullableValueType;
 
     private static void AppendNullChecks(StringBuilder sb, char param, IReadOnlyList<string> nullCheckPaths)
     {
@@ -107,7 +100,7 @@ internal class SelectLambdaGenerator : ValueNode
         }
     }
 
-    private static AssignGenerator GetAssignGenerator(AssignDescriptor assignDescriptor)
+    private static AssignGenerator GetAssignGenerator(AssignmentSnapshot assignDescriptor)
     {
         return assignDescriptor.AssignType switch
         {
@@ -123,7 +116,7 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static void AssignDirect(StringBuilder sb, int indent, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target);
+        sb.Append(param).Append('.').Append(assign.Target.Path);
     }
 
     private static void AssignCast(StringBuilder sb, int indent, char param, AssignProperties assign)
@@ -134,15 +127,15 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static void AssignNullableTernary(StringBuilder sb, int indent, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".HasValue ? ");
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Value : default");
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".HasValue ? ");
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".Value : default");
     }
 
     private static void AssignNullableTernaryCast(StringBuilder sb, int indent, char param, AssignProperties assign)
     {
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".HasValue ? ");
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".HasValue ? ");
         sb.Append('(').Append(assign.Origin.Type.Name).Append(')');
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Value : default");
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".Value : default");
     }
 
     private static void AssignNewInstance(StringBuilder sb, int indent, char param, AssignProperties assign)
@@ -150,8 +143,6 @@ internal class SelectLambdaGenerator : ValueNode
         var inner = assign.InnerSelection;
         if (inner is null)
             throw new ArgumentException("Inner selection is null.", nameof(inner));
-
-        inner.AddParentProperty(assign.Target);
 
         // o nome pode carregar a anotação nullable ('AddressDetails?'); a instância usa o tipo subjacente
         sb.Append("new ").AppendLine(assign.Origin.Type.UnderlyingType)
@@ -168,7 +159,7 @@ internal class SelectLambdaGenerator : ValueNode
         if (inner is null)
             throw new ArgumentException("Inner selection is null.", nameof(inner));
 
-        sb.Append(param).Append('.').AppendPropertyPath(assign.Target).Append(".Select(");
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".Select(");
 
         var nextParam = (char)(param + 1);
 
@@ -182,21 +173,21 @@ internal class SelectLambdaGenerator : ValueNode
 
     private delegate void AssignGenerator(StringBuilder sb, int indent, char param, AssignProperties assign);
 
-    private readonly ref struct AssignProperties(PropertyDescriptor origin, PropertySelection target, MatchSelection? inner)
+    private readonly ref struct AssignProperties(PropertySnapshot origin, PropertyPathSnapshot target, MatchSelectionSnapshot? inner)
     {
         /// <summary>
         /// The origin property type descriptor. (DTO property)
         /// </summary>
-        public PropertyDescriptor Origin { get; } = origin;
+        public PropertySnapshot Origin { get; } = origin;
 
         /// <summary>
         /// The target property selection. (Entity property)
         /// </summary>
-        public PropertySelection Target { get; } = target;
+        public PropertyPathSnapshot Target { get; } = target;
 
         /// <summary>
         /// The inner selection of the target property. (Entity property)
         /// </summary>
-        public MatchSelection? InnerSelection { get; } = inner;
+        public MatchSelectionSnapshot? InnerSelection { get; } = inner;
     }
 }

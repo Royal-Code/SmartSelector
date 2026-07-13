@@ -1,10 +1,10 @@
 # Plan: Endurecimento e evolução do SmartSelector (`smartselector-hardening`)
 
-## Status: EM ANDAMENTO - Fases 0–13 concluídas; próxima: Fase 14 (pipeline incremental sem retenção de símbolos)
+## Status: EM ANDAMENTO - Fases 0–14 concluídas; próxima: Fase 15 (features incrementais de mapeamento)
 
 ## Progresso
 
-`██████████████░░` **88%** - 14 de 16 fases
+`███████████████░` **94%** - 15 de 16 fases
 
 | Fase | Estado |
 |---|---|
@@ -22,7 +22,7 @@
 | Fase 11 - Código gerado auto-suficiente e nullable-clean | Concluída em 2026-07-12 |
 | Fase 12 - Política de null em From e coleções | Concluída em 2026-07-12 |
 | Fase 13 - DTOs aninhados e diagnóstico permanente para genéricos | Concluída em 2026-07-12 |
-| Fase 14 - Pipeline incremental sem retenção de símbolos | Pendente |
+| Fase 14 - Pipeline incremental sem retenção de símbolos | Concluída em 2026-07-12 |
 | Fase 15 - Features incrementais de mapeamento | Pendente |
 
 > **Manutenção deste plano:** ao concluir as tarefas de uma fase, marque cada tarefa com `- [x]`,
@@ -780,12 +780,12 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 **Tarefas:**
 
-- [ ] Definir `DiagnosticInfo` (id, args, FilePath+TextSpan+LineSpan) e substituir `Diagnostic[]` nos modelos.
-- [ ] Remover `ISymbol` dos dados retidos pelos modelos (consumir `TypeDescriptor.Symbol` dentro do Transform e descartar).
-- [ ] Eliminar mutações durante a geração (`AddParentProperty` em `SelectLambdaGenerator.cs:109` → cálculo de caminho imutável).
-- [ ] Adicionar teste de cacheabilidade usando `GeneratorDriver` com `trackIncrementalGeneratorSteps: true` verificando `IncrementalStepRunReason.Cached`/`Unchanged` após edição irrelevante.
-- [ ] Adicionar teste de retenção transitiva: percorrer por reflexão o grafo de objetos alcançável a partir dos modelos cacheados e falhar se qualquer nó for `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` ou `Location`.
-- [ ] Aplicar o `RoyalCode.Extensions.SourceGenerator` 0.2.0 com modelo imutável e sem retenção direta ou transitiva de `ISymbol`; manter as correções críticas já entregues no 0.1.14 cobertas por regressão.
+- [x] Definir `DiagnosticInfo` (id, args, FilePath+TextSpan+LineSpan) e substituir `Diagnostic[]` nos modelos.
+- [x] Remover `ISymbol` dos dados retidos pelos modelos (consumir `TypeDescriptor.Symbol` dentro do Transform e descartar).
+- [x] Eliminar mutações durante a geração (`AddParentProperty` em `SelectLambdaGenerator.cs:109` → cálculo de caminho imutável).
+- [x] Adicionar teste de cacheabilidade usando `GeneratorDriver` com `trackIncrementalGeneratorSteps: true` verificando `IncrementalStepRunReason.Cached`/`Unchanged` após edição irrelevante.
+- [x] Adicionar teste de retenção transitiva: percorrer por reflexão o grafo de objetos alcançável a partir dos modelos cacheados e falhar se qualquer nó for `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` ou `Location`.
+- [x] Aplicar o `RoyalCode.Extensions.SourceGenerator` 0.2.0 com modelo imutável e sem retenção direta ou transitiva de `ISymbol`; manter as correções críticas já entregues no 0.1.14 cobertas por regressão.
 
 **Critérios de aceite:** teste de cacheabilidade passa (edição em arquivo não relacionado não reexecuta o output); golden tests inalterados; **nenhum objeto alcançável** a partir dos valores cacheados retém `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` ou `Location` (retenção direta ou indireta, ex.: `TypeDescriptor.Symbol` aninhado).
 
@@ -793,7 +793,14 @@ O restore da solução, o empacotamento e toda a matriz foram repetidos usando o
 
 ### Resultado da Fase 14
 
-*a preencher*
+**Concluída em 2026-07-12.**
+
+- `RoyalCode.Extensions.SourceGenerator` 0.2.0 introduziu snapshots imutáveis de tipo, propriedade, caminho, assignment e match. A conversão ocorre no final do `Transform`; os snapshots preservam somente strings, flags, enums e coleções read-only, sem objetos Roslyn. O pacote foi publicado e consumido pelo SmartSelector.
+- `AutoSelectInformation`, `AutoPropertiesInformation` e `AutoDetailsInformation` retêm apenas snapshots e `DiagnosticInfo`. Um modelo transitório (`AutoPropertiesBuildInformation`) mantém os descritores semânticos estritamente dentro do `Transform` e nunca cruza o limite incremental.
+- `DiagnosticInfo` retém ID, argumentos, FilePath, TextSpan e LineSpan; `Diagnostic` é criado somente no source output. Como a API Roslyn não permite recriar uma `SourceFile Location` sem a `SyntaxTree`, a localização materializada é `ExternalFile`, preservando arquivo e span sem reter a árvore.
+- O caminho pai de objetos `NewInstance` é incorporado recursivamente ao snapshot. `SelectLambdaGenerator` tornou-se uma emissão pura e não chama mais `MatchSelection.AddParentProperty`.
+- `IncrementalPipelineTests` usa `trackIncrementalGeneratorSteps: true`: uma edição irrelevante mantém todos os source outputs em `Cached`/`Unchanged`; a travessia reflexiva do grafo, incluindo `AutoDetails`, rejeita `ISymbol`, `SyntaxNode`, `SyntaxTree`, `SemanticModel`, `Compilation`, `Diagnostic` e `Location`.
+- Os goldens permaneceram inalterados. Gates com o pacote publicado: solution build — **0 erros, 8 warnings esperados**; suíte principal sem filtro — **80/80**; Demo — **28/28**; Benchmarks Release — **0 erros/0 warnings**; pacote externo — **36/36**.
 
 ---
 

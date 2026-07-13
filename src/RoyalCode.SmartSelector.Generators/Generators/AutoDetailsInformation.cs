@@ -4,12 +4,12 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
 {
-    private readonly Diagnostic[]? diagnostics;
+    private readonly DiagnosticInfo[]? diagnostics;
 
     private readonly string? detailsClassName;
     private readonly AutoPropertiesInformation? autoPropertiesInformation;
 
-    public AutoDetailsInformation(Diagnostic diagnostic, string? propertyName = null)
+    public AutoDetailsInformation(DiagnosticInfo diagnostic, string? propertyName = null)
     {
         diagnostics = [diagnostic];
         PropertyName = propertyName;
@@ -28,7 +28,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
     /// </summary>
     internal string? PropertyName { get; }
 
-    internal Diagnostic[]? Diagnostics => diagnostics;
+    internal DiagnosticInfo[]? Diagnostics => diagnostics;
 
     public bool Equals(AutoDetailsInformation? other)
     {
@@ -70,7 +70,7 @@ internal class AutoDetailsInformation : IEquatable<AutoDetailsInformation>
         {
             foreach (var diagnostic in diagnostics)
             {
-                context.ReportDiagnostic(diagnostic);
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
             }
         }
 

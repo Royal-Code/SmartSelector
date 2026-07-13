@@ -4,28 +4,34 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 {
-    private readonly Diagnostic[]? diagnostics;
-    private readonly MatchSelection? matchSelection;
+    private readonly DiagnosticInfo[]? diagnostics;
+    private readonly MatchSelectionSnapshot? matchSelection;
     private readonly AutoPropertiesInformation? autoPropertyInformation;
+    private readonly bool hideExpressionMember;
+    private readonly bool hideFromMember;
 
-    public AutoSelectInformation(Diagnostic diagnostic)
+    public AutoSelectInformation(DiagnosticInfo diagnostic)
     {
         diagnostics = [diagnostic];
     }
 
-    public AutoSelectInformation(Diagnostic[] diagnostics)
+    public AutoSelectInformation(DiagnosticInfo[] diagnostics)
     {
         this.diagnostics = diagnostics;
     }
 
     public AutoSelectInformation(
-        MatchSelection matchSelection,
+        MatchSelectionSnapshot matchSelection,
         AutoPropertiesInformation? autoPropertyInformation,
-        Diagnostic[]? diagnostics = null)
+        DiagnosticInfo[]? diagnostics = null,
+        bool hideExpressionMember = false,
+        bool hideFromMember = false)
     {
         this.diagnostics = diagnostics;
         this.autoPropertyInformation = autoPropertyInformation;
         this.matchSelection = matchSelection;
+        this.hideExpressionMember = hideExpressionMember;
+        this.hideFromMember = hideFromMember;
     }
 
     internal void Generate(SourceProductionContext context)
@@ -34,7 +40,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
         {
             foreach (var diagnostic in diagnostics)
             {
-                context.ReportDiagnostic(diagnostic);
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
             }
         }
 
@@ -45,7 +51,7 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
         if (matchSelection is not null)
         {
-            AutoSelectGenerator.Generate(matchSelection, context);
+            AutoSelectGenerator.Generate(matchSelection, context, hideExpressionMember, hideFromMember);
         }
     }
 
@@ -59,7 +65,9 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
 
         return InformationEquality.SequenceEqual(diagnostics, other.diagnostics) &&
                Equals(matchSelection, other.matchSelection) &&
-               Equals(autoPropertyInformation, other.autoPropertyInformation);
+               Equals(autoPropertyInformation, other.autoPropertyInformation) &&
+               hideExpressionMember == other.hideExpressionMember &&
+               hideFromMember == other.hideFromMember;
     }
 
     public override bool Equals(object? obj)
@@ -75,6 +83,8 @@ internal class AutoSelectInformation : IEquatable<AutoSelectInformation>
             hashCode = (hashCode * 31) + InformationEquality.SequenceHashCode(diagnostics);
             hashCode = (hashCode * 31) + (matchSelection?.GetHashCode() ?? 0);
             hashCode = (hashCode * 31) + (autoPropertyInformation?.GetHashCode() ?? 0);
+            hashCode = (hashCode * 31) + hideExpressionMember.GetHashCode();
+            hashCode = (hashCode * 31) + hideFromMember.GetHashCode();
             return hashCode;
         }
     }

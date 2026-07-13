@@ -31,7 +31,7 @@ internal static class AutoSelectGenerator
         // se não existe o símbolo, não é um tipo válido
         if (classSymbol is null)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
 
                 "The AutoSelectAttribute must be used with a class.");
@@ -42,7 +42,7 @@ internal static class AutoSelectGenerator
         var constructor = classSymbol.Constructors.FirstOrDefault(c => c.Parameters.Length == 0);
         if (constructor is null)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
                 "The class with the AutoSelectAttribute must have a public constructor without parameters.");
 
@@ -55,7 +55,7 @@ internal static class AutoSelectGenerator
         var fromSymbol = autoSelectAttribute?.AttributeClass?.TypeArguments.FirstOrDefault();
         if (fromSymbol is null)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
                 "The AutoSelectAttribute must be used with a class.");
 
@@ -65,7 +65,7 @@ internal static class AutoSelectGenerator
         // valida a classe, que deve ser partial
         if (!classDeclaration.Modifiers.Any(SyntaxKind.PartialKeyword))
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
                 "The AutoSelectAttribute must be used with a partial class.");
 
@@ -74,7 +74,7 @@ internal static class AutoSelectGenerator
 
         if (classSymbol.Arity > 0 || HasGenericContainingType(classSymbol))
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
                 classDeclaration.Identifier.GetLocation(),
                 classSymbol.Name);
@@ -83,7 +83,7 @@ internal static class AutoSelectGenerator
 
         if (FindNonPartialContainingType(classDeclaration) is { } nonPartialContainingType)
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.InvalidAutoSelectType,
                 classDeclaration.Identifier.GetLocation(),
                 $"The containing type '{nonPartialContainingType.Identifier.Text}' must be partial.");
@@ -92,7 +92,7 @@ internal static class AutoSelectGenerator
 
         if (classSymbol.ContainingNamespace.IsGlobalNamespace)
         {
-            var diagnostic = Diagnostic.Create(
+            var diagnostic = DiagnosticInfo.Create(
                 AnalyzerDiagnostics.GlobalNamespaceNotSupported,
                 classDeclaration.Identifier.GetLocation(),
                 classSymbol.Name);
@@ -102,7 +102,7 @@ internal static class AutoSelectGenerator
         // O tipo de origem precisa ser uma classe.
         if (fromSymbol.TypeKind != TypeKind.Class)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoSelectType,
                 location: classDeclaration.Identifier.GetLocation(),
                 "Invalid type for AutoSelectAttribute, it must be a class.");
 
@@ -124,7 +124,7 @@ internal static class AutoSelectGenerator
             attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
         if (typedAutoProperties is not null)
         {
-            var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.InvalidAutoProperty,
+            var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.InvalidAutoProperty,
                 location: classDeclaration.Identifier.GetLocation(),
                 classDeclaration.Identifier.Text);
 
@@ -136,7 +136,7 @@ internal static class AutoSelectGenerator
             attribute.AttributeClass.ContainingNamespace.ToDisplayString() == "RoyalCode.SmartSelector");
         if (autoProperties is not null)
         {
-            propertiesInfo = AutoPropertiesGenerator.CreateInformation(modelType, fromType, autoProperties);
+            propertiesInfo = AutoPropertiesGenerator.CreateBuildInformation(modelType, fromType, autoProperties).ToInformation();
         }
 
         // Corresponde as propriedades da classe com o atributo e a classe definida em TFrom.
@@ -152,7 +152,7 @@ internal static class AutoSelectGenerator
         // se houve propriedades que não foram encontradas, exibe o(s) erro(s)
         if (matchSelection.HasMissingProperties(out var missingProperties))
         {
-            List<Diagnostic> diagnostics = [.. autoDetailsDiagnostics];
+            List<DiagnosticInfo> diagnostics = [.. autoDetailsDiagnostics];
             foreach (var property in missingProperties)
             {
                 if (autoDetailsFailedProperties.Contains(property.Name))
@@ -163,7 +163,7 @@ internal static class AutoSelectGenerator
                     .OfType<PropertyDeclarationSyntax>()
                     .FirstOrDefault(p => p.Identifier.Text == property.Name);
 
-                var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch,
+                var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.PropertyNotMatch,
                     location: propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
                     property.Name);
 
@@ -176,7 +176,7 @@ internal static class AutoSelectGenerator
         // se há propriedades que não podem ser atribuídas, exibe o(s) erro(s)
         if (matchSelection.HasNotAssignableProperties(out var notAssignableProperties))
         {
-            List<Diagnostic> diagnostics = [.. autoDetailsDiagnostics];
+            List<DiagnosticInfo> diagnostics = [.. autoDetailsDiagnostics];
             foreach (var property in notAssignableProperties)
             {
                 if (autoDetailsFailedProperties.Contains(property.Origin.Name))
@@ -187,7 +187,7 @@ internal static class AutoSelectGenerator
                     .OfType<PropertyDeclarationSyntax>()
                     .FirstOrDefault(p => p.Identifier.Text == property.Origin.Name);
 
-                var diagnostic = Diagnostic.Create(AnalyzerDiagnostics.PropertyNotCompatible,
+                var diagnostic = DiagnosticInfo.Create(AnalyzerDiagnostics.PropertyNotCompatible,
                     location: propertySyntax?.Identifier.GetLocation() ?? classDeclaration.Identifier.GetLocation(),
                     property.Origin.Name,
                     property.Origin.Type.Name,
@@ -202,13 +202,16 @@ internal static class AutoSelectGenerator
 
         var flatteningDiagnostics = CreateFlatteningDiagnostics(classDeclaration, fromType);
         var nullPolicyDiagnostics = CreateNullPolicyDiagnostics(classDeclaration, matchSelection);
+        var targetTypeIdentifier = fromSymbol.Name;
         return new AutoSelectInformation(
-            matchSelection,
+            MatchSelectionSnapshotFactory.Create(matchSelection),
             propertiesInfo,
-            [.. flatteningDiagnostics, .. nullPolicyDiagnostics]);
+            [.. flatteningDiagnostics, .. nullPolicyDiagnostics],
+            HasAccessibleBaseMember(classSymbol, $"Select{targetTypeIdentifier}Expression"),
+            HasAccessibleBaseMember(classSymbol, "From"));
     }
 
-    private static IEnumerable<Diagnostic> CreateNullPolicyDiagnostics(
+    private static IEnumerable<DiagnosticInfo> CreateNullPolicyDiagnostics(
         ClassDeclarationSyntax classDeclaration,
         MatchSelection matchSelection)
     {
@@ -233,7 +236,7 @@ internal static class AutoSelectGenerator
         }
     }
 
-    private static IEnumerable<Diagnostic> CreateNullPolicyDiagnostics(
+    private static IEnumerable<DiagnosticInfo> CreateNullPolicyDiagnostics(
         PropertyMatch propertyMatch,
         string rootPropertyName,
         Location location,
@@ -249,7 +252,7 @@ internal static class AutoSelectGenerator
         };
         if (descriptor is not null)
         {
-            yield return Diagnostic.Create(
+            yield return DiagnosticInfo.Create(
                 descriptor,
                 location,
                 rootPropertyName,
@@ -285,7 +288,7 @@ internal static class AutoSelectGenerator
         return $"{parent}.{current}";
     }
 
-    private static Diagnostic[] GetAutoDetailsDiagnostics(
+    private static DiagnosticInfo[] GetAutoDetailsDiagnostics(
         AutoPropertiesInformation? propertiesInfo,
         out HashSet<string> failedProperties)
     {
@@ -293,7 +296,7 @@ internal static class AutoSelectGenerator
         if (propertiesInfo is null)
             return [];
 
-        List<Diagnostic> diagnostics = [];
+        List<DiagnosticInfo> diagnostics = [];
         foreach (var autoDetail in propertiesInfo.AutoDetails)
         {
             if (autoDetail.Diagnostics is not { Length: > 0 } autoDetailDiagnostics)
@@ -307,11 +310,11 @@ internal static class AutoSelectGenerator
         return [.. diagnostics];
     }
 
-    private static Diagnostic[] CreateFlatteningDiagnostics(
+    private static DiagnosticInfo[] CreateFlatteningDiagnostics(
         ClassDeclarationSyntax classDeclaration,
         TypeDescriptor fromType)
     {
-        List<Diagnostic> diagnostics = [];
+        List<DiagnosticInfo> diagnostics = [];
         foreach (var property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>())
         {
             if (CountPropertyPaths(fromType, property.Identifier.Text) < 2)
@@ -319,7 +322,7 @@ internal static class AutoSelectGenerator
                 continue;
             }
 
-            diagnostics.Add(Diagnostic.Create(
+            diagnostics.Add(DiagnosticInfo.Create(
                 AnalyzerDiagnostics.AmbiguousFlattening,
                 property.Identifier.GetLocation(),
                 property.Identifier.Text));
@@ -357,20 +360,24 @@ internal static class AutoSelectGenerator
         return count;
     }
 
-    public static void Generate(MatchSelection match, SourceProductionContext context)
+    public static void Generate(
+        MatchSelectionSnapshot match,
+        SourceProductionContext context,
+        bool hideExpressionMember,
+        bool hideFromMember)
     {
         // gera o código de seleção automática
 
         // TypeDescriptor.Name representa a sintaxe completa do tipo e pode conter pontos ou
         // argumentos genéricos. Nomes de membros e parâmetros precisam usar apenas o identificador.
-        var targetTypeIdentifier = match.TargetType.Symbol?.Name ?? match.TargetType.Name;
+        var targetTypeIdentifier = match.TargetType.Declaration?.Name ?? match.TargetType.Name;
 
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(match.OriginType.Name, match.OriginType.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
         GeneratedSourceConventions.ApplyContainingTypes(
             partialClass,
-            match.OriginType.Symbol as INamedTypeSymbol);
+            match.OriginType.Declaration);
         partialClass.FileName = GeneratedSourceConventions.FileName(
             match.OriginType,
             match.OriginType.Name,
@@ -379,7 +386,7 @@ internal static class AutoSelectGenerator
         // 1.1 modificadores
         GeneratedSourceConventions.ApplyDeclaredAccessibility(
             partialClass,
-            match.OriginType.Symbol);
+            match.OriginType.Declaration);
 
         partialClass.Modifiers.Partial();
 
@@ -419,7 +426,7 @@ internal static class AutoSelectGenerator
 
         expressionProperty.Modifiers.Public();
         expressionProperty.Modifiers.Static();
-        if (HasAccessibleBaseMember(match.OriginType.Symbol, expressionProperty.Name))
+        if (hideExpressionMember)
         {
             expressionProperty.Modifiers.New();
         }
@@ -434,7 +441,7 @@ internal static class AutoSelectGenerator
         // 1.4 cria método static From
 
         // 1.4.1 cria o método
-        var method = new MethodGenerator("From", match.OriginType);
+        var method = new MethodGenerator("From", GeneratedSourceConventions.ToTypeDescriptor(match.OriginType));
         var paramName = targetTypeIdentifier.ToLowerCamelCase();
         method.Attributes.Add(new RawLinesGeneratorNode(
             $"/// <summary>Creates a new <see cref=\"{match.OriginType.Name}\"/> projected from a <see cref=\"{match.TargetType.Name}\"/> instance.</summary>",
@@ -443,7 +450,7 @@ internal static class AutoSelectGenerator
             GeneratedSourceConventions.GeneratedCodeAttributeLine));
         method.Modifiers.Public();
         method.Modifiers.Static();
-        if (HasAccessibleBaseMember(match.OriginType.Symbol, method.Name))
+        if (hideFromMember)
         {
             method.Modifiers.New();
         }
@@ -453,7 +460,7 @@ internal static class AutoSelectGenerator
         method.Parameters.Add(
             new ParameterGenerator(
                 new ParameterDescriptor(
-                    match.TargetType, paramName)));
+                    GeneratedSourceConventions.ToTypeDescriptor(match.TargetType), paramName)));
 
         // 1.4.3 cria o comando de retorno
         method.Commands.Add(new CompileLambdaGenerator(
@@ -470,8 +477,7 @@ internal static class AutoSelectGenerator
         var extensionTypeIdentifier = GeneratedSourceConventions.TypeIdentityIdentifier(match.OriginType);
         var extensionOriginType = new TypeDescriptor(
             qualifiedOriginTypeName,
-            match.OriginType.Namespaces,
-            match.OriginType.Symbol);
+            match.OriginType.Namespaces.ToArray());
         var extensionClass = new ClassGenerator($"{extensionTypeIdentifier}_Extensions", match.OriginType.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(extensionClass);
         extensionClass.FileName = GeneratedSourceConventions.FileName(
@@ -492,7 +498,7 @@ internal static class AutoSelectGenerator
         // 2.1.1 cria tipo de retorno
         var queryType = new TypeDescriptor(
             $"IQueryable<{qualifiedOriginTypeName}>",
-            [match.OriginType.Namespaces[0], "System.Linq"], 
+            [match.OriginType.Namespaces[0], "System.Linq"],
             null);
 
         // 2.1.2 cria o gerador para o método
@@ -586,7 +592,8 @@ internal static class AutoSelectGenerator
 
         // 2.3.2 cria o parâmetro do método: Target target
         toMethod.Parameters.Add(
-            new ParameterGenerator(new ParameterDescriptor(match.TargetType, toParamName))
+            new ParameterGenerator(new ParameterDescriptor(
+                GeneratedSourceConventions.ToTypeDescriptor(match.TargetType), toParamName))
             { 
                 ThisModifier = true 
             });

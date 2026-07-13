@@ -9,6 +9,18 @@
             Nome da propriedade com AutoDetails que originou os diagnósticos, quando houver.
             </summary>
         </member>
+        <member name="T:RoyalCode.SmartSelector.Generators.Generators.AutoPropertiesBuildInformation">
+            <summary>
+            Transient semantic model used only inside a Transform. It must never cross the
+            incremental pipeline boundary; <see cref="M:RoyalCode.SmartSelector.Generators.Generators.AutoPropertiesBuildInformation.ToInformation"/> produces the retained snapshot.
+            </summary>
+        </member>
+        <member name="M:RoyalCode.SmartSelector.Generators.Generators.AutoPropertiesBuildInformation.#ctor(RoyalCode.Extensions.SourceGenerator.Descriptors.TypeDescriptor,RoyalCode.Extensions.SourceGenerator.Descriptors.PropertyDescriptor[],RoyalCode.SmartSelector.Generators.Generators.AutoDetailsInformation[])">
+            <summary>
+            Transient semantic model used only inside a Transform. It must never cross the
+            incremental pipeline boundary; <see cref="M:RoyalCode.SmartSelector.Generators.Generators.AutoPropertiesBuildInformation.ToInformation"/> produces the retained snapshot.
+            </summary>
+        </member>
         <member name="T:RoyalCode.SmartSelector.Generators.Generators.RawLinesGeneratorNode">
             <summary>
             Nó que escreve linhas pré-formatadas (XML docs e atributos) com a indentação do ponto de inserção.

@@ -148,4 +148,67 @@ internal static class NullAssignmentPolicy
                 return new(NullAssignmentKind.None, [], sourcePath);
         }
     }
+
+    internal static NullAssignmentClassification Classify(PropertyMatchSnapshot propertyMatch)
+    {
+        var target = propertyMatch.Target;
+        var assignment = propertyMatch.Assignment;
+        if (target is null || assignment is null)
+            return new(NullAssignmentKind.None, [], string.Empty);
+
+        var destination = propertyMatch.Origin.Type;
+        var path = target.Properties;
+        var leaf = path[path.Count - 1];
+        var sourcePath = target.Path;
+        var includeLeaf = assignment.AssignType is AssignType.NewInstance or AssignType.Select;
+        var nullChecks = new List<string>();
+        var currentPath = string.Empty;
+        for (var index = 0; index < path.Count; index++)
+        {
+            var node = path[index];
+            currentPath = currentPath.Length == 0 ? node.Name : $"{currentPath}.{node.Name}";
+            if (!includeLeaf && index == path.Count - 1)
+                break;
+            if (node.Type.IsNullableReference)
+                nullChecks.Add(currentPath);
+        }
+
+        var destinationAcceptsNull = destination.MayBeNull;
+        var nonNullableReference = destination.IsNonNullableReference;
+        var nonNullableDestination = nonNullableReference || (!destination.IsNullable && destination.IsValueType);
+        var nullableSource = leaf.Type.MayBeNull;
+
+        switch (assignment.AssignType)
+        {
+            case AssignType.Select:
+                if (nullChecks.Count == 0) return new(NullAssignmentKind.None, [], sourcePath);
+                if (destinationAcceptsNull) return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
+                if (nonNullableReference) return new(NullAssignmentKind.EmptyCollectionFallback, nullChecks, sourcePath);
+                return new(NullAssignmentKind.None, [], sourcePath);
+            case AssignType.NewInstance:
+                if (nullChecks.Count == 0) return new(NullAssignmentKind.None, [], sourcePath);
+                if (destinationAcceptsNull) return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
+                if (nonNullableReference) return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
+                return new(NullAssignmentKind.None, [], sourcePath);
+            case AssignType.Direct:
+                if (nullChecks.Count > 0)
+                {
+                    if (destinationAcceptsNull) return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
+                    if (nonNullableDestination) return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
+                    return new(NullAssignmentKind.None, [], sourcePath);
+                }
+                return nullableSource && nonNullableDestination
+                    ? new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath)
+                    : new(NullAssignmentKind.None, [], sourcePath);
+            default:
+                if (nullChecks.Count > 0)
+                {
+                    if (destinationAcceptsNull) return new(NullAssignmentKind.PropagateNull, nullChecks, sourcePath);
+                    if (nonNullableDestination) return new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath);
+                }
+                return nullableSource && nonNullableDestination
+                    ? new(NullAssignmentKind.WarnUnsafe, nullChecks, sourcePath)
+                    : new(NullAssignmentKind.None, [], sourcePath);
+        }
+    }
 }

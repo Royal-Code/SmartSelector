@@ -4,24 +4,24 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
 {
-    private readonly Diagnostic[]? diagnostics;
-    private readonly PropertyDescriptor[]? properties;
-    private readonly TypeDescriptor? originType;
+    private readonly DiagnosticInfo[]? diagnostics;
+    private readonly PropertySnapshot[]? properties;
+    private readonly TypeSnapshot? originType;
     private readonly AutoDetailsInformation[]? autoDetails;
 
-    public AutoPropertiesInformation(Diagnostic diagnostic)
+    public AutoPropertiesInformation(DiagnosticInfo diagnostic)
     {
         diagnostics = [diagnostic];
     }
 
-    public AutoPropertiesInformation(Diagnostic[] diagnostics)
+    public AutoPropertiesInformation(DiagnosticInfo[] diagnostics)
     {
         this.diagnostics = diagnostics;
     }
 
     public AutoPropertiesInformation(
-        TypeDescriptor originType, 
-        PropertyDescriptor[] properties,
+        TypeSnapshot originType,
+        PropertySnapshot[] properties,
         AutoDetailsInformation[]? autoDetails = null)
     {
         this.originType = originType;
@@ -29,9 +29,9 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         this.autoDetails = autoDetails;
     }
 
-    public PropertyDescriptor[] Properties => properties ?? [];
+    public PropertySnapshot[] Properties => properties ?? [];
 
-    public TypeDescriptor? OriginType => originType;
+    public TypeSnapshot? OriginType => originType;
 
     public AutoDetailsInformation[] AutoDetails => autoDetails ?? [];
 
@@ -75,7 +75,7 @@ internal class AutoPropertiesInformation : IEquatable<AutoPropertiesInformation>
         {
             foreach (var diagnostic in diagnostics)
             {
-                context.ReportDiagnostic(diagnostic);
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
             }
         }
 

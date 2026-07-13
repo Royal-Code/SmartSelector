@@ -103,6 +103,31 @@ internal static class Util
         return CompileCore(sourceCode, references, includeImplicitUsings: true);
     }
 
+    internal static CSharpCompilation CreateIncrementalTestCompilation(
+        string sourceCode,
+        out SyntaxTree consumerTree)
+    {
+        var trustedPlatformAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")
+            ?? throw new InvalidOperationException("The test host did not provide trusted platform assemblies.");
+        var references = trustedPlatformAssemblies
+            .Split(Path.PathSeparator)
+            .Select(static path => MetadataReference.CreateFromFile(path));
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        consumerTree = CSharpSyntaxTree.ParseText(sourceCode, parseOptions, "Consumer.cs");
+        var runtimeTrees = RuntimeSourceResourceNames.Select(resourceName =>
+            CSharpSyntaxTree.ParseText(
+                $"using System;{Environment.NewLine}{ReadEmbeddedSource(resourceName)}",
+                parseOptions,
+                resourceName));
+        return CSharpCompilation.Create(
+            "IncrementalPipelineTests",
+            runtimeTrees.Prepend(CSharpSyntaxTree.ParseText(ImplicitUsings, parseOptions)).Append(consumerTree),
+            references,
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+    }
+
     private static CompileResult CompileCore(
         string sourceCode,
         IEnumerable<MetadataReference> frameworkReferences,

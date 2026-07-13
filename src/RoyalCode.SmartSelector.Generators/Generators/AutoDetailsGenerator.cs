@@ -34,7 +34,7 @@ internal static class AutoDetailsGenerator
         if (fromProperty is null)
         {
             autoDetailInfo = new AutoDetailsInformation(
-                Diagnostic.Create(AnalyzerDiagnostics.PropertyNotMatch, GetPropertyLocation(property), property.Name),
+                DiagnosticInfo.Create(AnalyzerDiagnostics.PropertyNotMatch, GetPropertyLocation(property), property.Name),
                 property.Name);
             return true;
         }
@@ -64,7 +64,7 @@ internal static class AutoDetailsGenerator
             if (!IsPartialClassInSource(existingType))
             {
                 autoDetailInfo = new AutoDetailsInformation(
-                    Diagnostic.Create(
+                    DiagnosticInfo.Create(
                         AnalyzerDiagnostics.AutoDetailsTypeMustBePartial,
                         GetPropertyLocation(property),
                         existingType.Name,
@@ -76,7 +76,7 @@ internal static class AutoDetailsGenerator
             if (!IsAccessibilityCompatible(existingType, property.Symbol))
             {
                 autoDetailInfo = new AutoDetailsInformation(
-                    Diagnostic.Create(
+                    DiagnosticInfo.Create(
                         AnalyzerDiagnostics.AutoDetailsTypeAccessibilityMismatch,
                         GetPropertyLocation(property),
                         existingType.Name,
@@ -107,7 +107,7 @@ internal static class AutoDetailsGenerator
         if (!generatedTypeKeys.Add(generatedTypeKey))
         {
             autoDetailInfo = new AutoDetailsInformation(
-                Diagnostic.Create(
+                DiagnosticInfo.Create(
                     AnalyzerDiagnostics.DuplicatedAutoDetailsType,
                     GetPropertyLocation(property),
                     generatedType.Name,
@@ -117,16 +117,16 @@ internal static class AutoDetailsGenerator
         }
 
         // Cria as informações de propriedades automáticas.
-        var autoPropertiesInfo = AutoPropertiesGenerator.CreateInformation(generatedType, fromPropertyType, autoDetailsAttribute);
+        var autoPropertiesBuild = AutoPropertiesGenerator.CreateBuildInformation(generatedType, fromPropertyType, autoDetailsAttribute);
 
         // Define as propriedades conhecidas para o tipo gerado e para a correspondência da propriedade.
-        generatedType.DefinedProperties = autoPropertiesInfo.Properties;
-        declaredType.DefinedProperties = autoPropertiesInfo.Properties;
+        generatedType.DefinedProperties = autoPropertiesBuild.Properties;
+        declaredType.DefinedProperties = autoPropertiesBuild.Properties;
 
         // Cria as informações de AutoDetails.
         autoDetailInfo = new AutoDetailsInformation(
             generatedType.Name,
-            autoPropertiesInfo);
+            autoPropertiesBuild.ToInformation());
 
         return true;
     }
@@ -186,10 +186,10 @@ internal static class AutoDetailsGenerator
         if (originType == null || properties.Length == 0)
             return;
 
-        var targetNamespace = originType.Symbol is INamedTypeSymbol { TypeKind: not TypeKind.Error } existingType
-            ? existingType.ContainingNamespace.IsGlobalNamespace
+        var targetNamespace = originType.Declaration is { IsError: false } existingType
+            ? string.IsNullOrWhiteSpace(existingType.NamespaceName)
                 ? null
-                : existingType.ContainingNamespace.ToDisplayString()
+                : existingType.NamespaceName
             : originType.Namespaces.FirstOrDefault();
         if (string.IsNullOrWhiteSpace(targetNamespace))
         {
@@ -203,8 +203,7 @@ internal static class AutoDetailsGenerator
 
         // Quando completa um tipo partial preexistente, o atributo vai nos membros;
         // quando a classe é gerada do zero, docs e [GeneratedCode] vão no tipo (DF11).
-        var completesExistingType = originType.HasNamedTypeSymbol(out var originSymbol) &&
-            originSymbol.TypeKind != TypeKind.Error;
+        var completesExistingType = originType.Declaration is { IsError: false };
         if (!completesExistingType)
         {
             detailsClass.Attributes.Add(new RawLinesGeneratorNode(
@@ -213,7 +212,7 @@ internal static class AutoDetailsGenerator
         }
 
         // 1.1 - Modificadores (usa a mesma acessibilidade do tipo de origem)
-        GeneratedSourceConventions.ApplyDeclaredAccessibility(detailsClass, originType.Symbol);
+        GeneratedSourceConventions.ApplyDeclaredAccessibility(detailsClass, originType.Declaration);
 
         // 1.2 - partial, para o desenvolvedor poder estender
         detailsClass.Modifiers.Partial();
@@ -233,13 +232,10 @@ internal static class AutoDetailsGenerator
     }
 
     private static AnnotatedPropertyGenerator CreatePropertyGenerator(
-        PropertyDescriptor property,
+        PropertySnapshot property,
         bool completesExistingType)
     {
-        var propertyType = property.Type.HasNamedTypeSymbol(out var typeSymbol)
-            ? TypeDescriptor.Create(typeSymbol)
-            : property.Type;
-        propertyType = GeneratedSourceConventions.PreserveNullableAnnotation(propertyType);
+        var propertyType = GeneratedSourceConventions.ToTypeDescriptor(property.Type);
 
         string[] prefixLines = completesExistingType
             ?
@@ -257,8 +253,8 @@ internal static class AutoDetailsGenerator
     private static void GenerateInGlobalNamespace(
         SourceProductionContext context,
         string className,
-        TypeDescriptor originType,
-        IReadOnlyList<PropertyDescriptor> properties)
+        TypeSnapshot originType,
+        IReadOnlyList<PropertySnapshot> properties)
     {
         // ClassGenerator sempre emite uma declaração de namespace. Para completar um tipo
         // global, emitimos a pequena declaração partial diretamente, preservando as mesmas
@@ -288,7 +284,7 @@ internal static class AutoDetailsGenerator
             builder.Append("using ").Append(ns).AppendLine(";");
 
         builder.AppendLine();
-        builder.Append(DeclaredAccessibility(originType.Symbol))
+        builder.Append(originType.Declaration?.Accessibility ?? "public")
             .Append(" partial class ").AppendLine(className)
             .Append('{');
         foreach (var property in propertyGenerators)
@@ -300,14 +296,4 @@ internal static class AutoDetailsGenerator
             builder.ToString());
     }
 
-    private static string DeclaredAccessibility(ISymbol? symbol) =>
-        symbol?.DeclaredAccessibility switch
-        {
-            Accessibility.Internal => "internal",
-            Accessibility.Private => "private",
-            Accessibility.Protected => "protected",
-            Accessibility.ProtectedOrInternal => "protected internal",
-            Accessibility.ProtectedAndInternal => "private protected",
-            _ => "public",
-        };
 }

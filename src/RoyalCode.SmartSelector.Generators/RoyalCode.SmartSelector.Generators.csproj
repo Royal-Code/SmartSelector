@@ -55,6 +55,8 @@
 		<Using Include="RoyalCode.Extensions.SourceGenerator.Descriptors" />
 		<Using Include="RoyalCode.Extensions.SourceGenerator.Descriptors.Assignments" />
 		<Using Include="RoyalCode.Extensions.SourceGenerator.Descriptors.PropertySelection" />
+		<Using Include="RoyalCode.Extensions.SourceGenerator.Descriptors.Snapshots" />
+		<Using Include="RoyalCode.SmartSelector.Generators.Models" />
 	</ItemGroup>
 	
 </Project>

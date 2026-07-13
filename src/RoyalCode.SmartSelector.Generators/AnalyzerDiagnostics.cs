@@ -134,4 +134,25 @@ internal static class AnalyzerDiagnostics
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
+    internal static DiagnosticDescriptor Get(string id) => id switch
+    {
+        "RCSS000" => InvalidAutoSelectType,
+        "RCSS001" => PropertyNotMatch,
+        "RCSS002" => PropertyNotCompatible,
+        "RCSS003" => InvalidAutoProperty,
+        "RCSS004" => ConflictingAutoPropertiesAttributes,
+        "RCSS005" => InvalidAutoPropertiesTypeArgument,
+        "RCSS006" => AutoPropertiesRequiresPartialClass,
+        "RCSS007" => AutoPropertiesRequiresAutoSelect,
+        "RCSS008" => GenericDestinationTypeNotSupported,
+        "RCSS010" => AmbiguousFlattening,
+        "RCSS011" => GlobalNamespaceNotSupported,
+        "RCSS012" => AutoDetailsTypeMustBePartial,
+        "RCSS013" => DuplicatedAutoDetailsType,
+        "RCSS014" => AutoDetailsTypeAccessibilityMismatch,
+        "RCSS015" => NullableSourceForNonNullableDestination,
+        "RCSS016" => NullableCollectionProjectedAsEmpty,
+        _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Unknown SmartSelector diagnostic."),
+    };
+
 }

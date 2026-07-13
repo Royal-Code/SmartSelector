@@ -43,7 +43,7 @@ internal static class AutoPropertiesGenerator
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        if (classSymbol.Arity > 0)
+        if (classSymbol.Arity > 0 || HasGenericContainingType(classSymbol))
         {
             var diagnostic = Diagnostic.Create(
                 AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
@@ -52,12 +52,12 @@ internal static class AutoPropertiesGenerator
             return new AutoPropertiesInformation(diagnostic);
         }
 
-        if (classSymbol.ContainingType is not null)
+        if (FindNonPartialContainingType(classDeclaration) is { } nonPartialContainingType)
         {
             var diagnostic = Diagnostic.Create(
-                AnalyzerDiagnostics.NestedDestinationTypeNotSupported,
+                AnalyzerDiagnostics.AutoPropertiesRequiresPartialClass,
                 classDeclaration.Identifier.GetLocation(),
-                classSymbol.Name);
+                nonPartialContainingType.Identifier.Text);
             return new AutoPropertiesInformation(diagnostic);
         }
 
@@ -322,6 +322,9 @@ internal static class AutoPropertiesGenerator
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(origin.Name, origin.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
+        GeneratedSourceConventions.ApplyContainingTypes(
+            partialClass,
+            origin.Symbol as INamedTypeSymbol);
 
         // 1.1 modificadores
         GeneratedSourceConventions.ApplyDeclaredAccessibility(partialClass, origin.Symbol);
@@ -359,6 +362,24 @@ internal static class AutoPropertiesGenerator
             "AutoProperties");
         partialClass.Generate(context);
     }
+
+    private static bool HasGenericContainingType(INamedTypeSymbol symbol)
+    {
+        for (var containingType = symbol.ContainingType;
+             containingType is not null;
+             containingType = containingType.ContainingType)
+        {
+            if (containingType.Arity > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static TypeDeclarationSyntax? FindNonPartialContainingType(ClassDeclarationSyntax declaration) =>
+        declaration.Ancestors()
+            .OfType<TypeDeclarationSyntax>()
+            .FirstOrDefault(type => !type.Modifiers.Any(SyntaxKind.PartialKeyword));
 }
 
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever

@@ -58,7 +58,7 @@ public class GeneratorDiagnosticTests
     }
 
     [Fact]
-    public void RCSS009_should_report_nested_destination_dto()
+    public void RCSS008_should_report_generic_containing_type()
     {
         AssertDiagnostic(
             """
@@ -68,13 +68,34 @@ public class GeneratorDiagnosticTests
 
             public class Entity { public int Id { get; set; } }
 
-            public partial class Container
+            public partial class Container<T>
             {
                 [AutoSelect<Entity>]
                 public partial class Details { public int Id { get; set; } }
             }
             """,
-            "RCSS009",
+            "RCSS008",
+            "Details");
+    }
+
+    [Fact]
+    public void RCSS000_should_report_non_partial_containing_type()
+    {
+        AssertDiagnostic(
+            """
+            using RoyalCode.SmartSelector;
+
+            namespace Diagnostics;
+
+            public class Entity { public int Id { get; set; } }
+
+            public class Container
+            {
+                [AutoSelect<Entity>]
+                public partial class Details { public int Id { get; set; } }
+            }
+            """,
+            "RCSS000",
             "Details");
     }
 

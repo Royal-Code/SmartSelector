@@ -72,16 +72,8 @@ internal static class AnalyzerDiagnostics
 
     public static readonly DiagnosticDescriptor GenericDestinationTypeNotSupported = new(
         id: "RCSS008",
-        title: "Generic destination DTOs are not supported",
-        messageFormat: "The destination DTO '{0}' cannot be generic; generic DTO support is not available",
-        category: Category,
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor NestedDestinationTypeNotSupported = new(
-        id: "RCSS009",
-        title: "Nested destination DTOs are not supported",
-        messageFormat: "The destination DTO '{0}' cannot be nested; nested DTO support is not available",
+        title: "Generic destination DTOs and containing types are not supported",
+        messageFormat: "The destination DTO '{0}' and its containing types must be non-generic; generic DTO support is not available",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

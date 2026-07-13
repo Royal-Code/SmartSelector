@@ -62,6 +62,42 @@ public class GenerationHardeningTests
     }
 
     [Fact]
+    public void Homonymous_nested_dtos_in_different_containing_types_should_have_unique_artifacts()
+    {
+        var result = Util.CompileAndAssert(
+            """
+            using RoyalCode.SmartSelector;
+
+            namespace Nested;
+
+            public class Entity { public int Id { get; set; } }
+
+            public partial class First
+            {
+                [AutoSelect<Entity>]
+                public partial class Details { public int Id { get; set; } }
+            }
+
+            public partial class Second
+            {
+                [AutoSelect<Entity>]
+                public partial class Details { public int Id { get; set; } }
+            }
+            """);
+
+        result.GeneratedSources.Should().ContainKeys(
+            "Nested.First.Details.AutoSelect.g.cs",
+            "Nested.First.Details.Extensions.g.cs",
+            "Nested.Second.Details.AutoSelect.g.cs",
+            "Nested.Second.Details.Extensions.g.cs");
+
+        result.GeneratedSource("Nested.First.Details.Extensions.g.cs")
+            .Should().Contain("public static class First_Details_Extensions");
+        result.GeneratedSource("Nested.Second.Details.Extensions.g.cs")
+            .Should().Contain("public static class Second_Details_Extensions");
+    }
+
+    [Fact]
     public void Generated_files_should_compile_without_implicit_usings()
     {
         var result = Util.CompileAndAssert(

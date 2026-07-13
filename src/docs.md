@@ -326,6 +326,10 @@ Notas:
 
 ---
 ## 11. FAQ Rápido
+
+**Posso declarar um DTO dentro de outra classe?** Sim. O DTO e todos os tipos que o contêm devem ser `partial`.
+As partes geradas repetem a cadeia de tipos e preservam suas acessibilidades. DTOs genéricos e DTOs dentro de um
+tipo genérico não são suportados e produzem **RCSS008**.
 **Flattening precisa de atributo?** Não, é por convenção do nome.  
 **Qual profundidade máxima?** Não fixada; limitada apenas pela cadeia navegável e heurística de casamento.  
 **Posso misturar flattening e objetos aninhados?** Sim.  

@@ -72,7 +72,7 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
-        if (classSymbol.Arity > 0)
+        if (classSymbol.Arity > 0 || HasGenericContainingType(classSymbol))
         {
             var diagnostic = Diagnostic.Create(
                 AnalyzerDiagnostics.GenericDestinationTypeNotSupported,
@@ -81,12 +81,12 @@ internal static class AutoSelectGenerator
             return new AutoSelectInformation(diagnostic);
         }
 
-        if (classSymbol.ContainingType is not null)
+        if (FindNonPartialContainingType(classDeclaration) is { } nonPartialContainingType)
         {
             var diagnostic = Diagnostic.Create(
-                AnalyzerDiagnostics.NestedDestinationTypeNotSupported,
+                AnalyzerDiagnostics.InvalidAutoSelectType,
                 classDeclaration.Identifier.GetLocation(),
-                classSymbol.Name);
+                $"The containing type '{nonPartialContainingType.Identifier.Text}' must be partial.");
             return new AutoSelectInformation(diagnostic);
         }
 
@@ -368,6 +368,9 @@ internal static class AutoSelectGenerator
         // 1 - criação da classe partial
         var partialClass = new ClassGenerator(match.OriginType.Name, match.OriginType.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(partialClass);
+        GeneratedSourceConventions.ApplyContainingTypes(
+            partialClass,
+            match.OriginType.Symbol as INamedTypeSymbol);
         partialClass.FileName = GeneratedSourceConventions.FileName(
             match.OriginType,
             match.OriginType.Name,
@@ -463,7 +466,13 @@ internal static class AutoSelectGenerator
         partialClass.Generate(context);
 
         // 2 - Criação da classe de extensão
-        var extensionClass = new ClassGenerator($"{match.OriginType.Name}_Extensions", match.OriginType.Namespaces[0]);
+        var qualifiedOriginTypeName = GeneratedSourceConventions.QualifiedTypeName(match.OriginType);
+        var extensionTypeIdentifier = GeneratedSourceConventions.TypeIdentityIdentifier(match.OriginType);
+        var extensionOriginType = new TypeDescriptor(
+            qualifiedOriginTypeName,
+            match.OriginType.Namespaces,
+            match.OriginType.Symbol);
+        var extensionClass = new ClassGenerator($"{extensionTypeIdentifier}_Extensions", match.OriginType.Namespaces[0]);
         GeneratedSourceConventions.ApplyRequiredNamespaces(extensionClass);
         extensionClass.FileName = GeneratedSourceConventions.FileName(
             match.OriginType,
@@ -482,7 +491,7 @@ internal static class AutoSelectGenerator
         
         // 2.1.1 cria tipo de retorno
         var queryType = new TypeDescriptor(
-            $"IQueryable<{match.OriginType.Name}>",
+            $"IQueryable<{qualifiedOriginTypeName}>",
             [match.OriginType.Namespaces[0], "System.Linq"], 
             null);
 
@@ -513,7 +522,7 @@ internal static class AutoSelectGenerator
         var invokeSelect = new MethodInvokeGenerator(
             queryParam.Name, 
             "Select",
-            $"{match.OriginType.Name}.{expressionProperty.Name}");
+            $"{qualifiedOriginTypeName}.{expressionProperty.Name}");
 
         queryMethod.Commands.Add(new ReturnCommand(invokeSelect));
 
@@ -524,7 +533,7 @@ internal static class AutoSelectGenerator
         
         // 2.2.1 cria tipo de retorno
         var enumerableType = new TypeDescriptor(
-            $"IEnumerable<{match.OriginType.Name}>",
+            $"IEnumerable<{qualifiedOriginTypeName}>",
             [match.OriginType.Namespaces[0], "System.Collections.Generic"],
             null);
 
@@ -555,7 +564,7 @@ internal static class AutoSelectGenerator
         var invokeSelectEnumerable = new MethodInvokeGenerator(
             enumerableParam.Name,
             "Select",
-            $"{match.OriginType.Name}.From");
+            $"{qualifiedOriginTypeName}.From");
 
         enumerableMethod.Commands.Add(new ReturnCommand(invokeSelectEnumerable));
 
@@ -565,7 +574,7 @@ internal static class AutoSelectGenerator
         // 2.3 Cria método To{Origin} a partir do Target
 
         // 2.3.1 cria o método
-        var toMethod = new MethodGenerator($"To{match.OriginType.Name}", match.OriginType);
+        var toMethod = new MethodGenerator($"To{match.OriginType.Name}", extensionOriginType);
         var toParamName = targetTypeIdentifier.ToLowerCamelCase();
         toMethod.Attributes.Add(new RawLinesGeneratorNode(
             $"/// <summary>Projects a <see cref=\"{match.TargetType.Name}\"/> instance into a new <see cref=\"{match.OriginType.Name}\"/>.</summary>",
@@ -584,7 +593,7 @@ internal static class AutoSelectGenerator
 
         // 2.3.3 cria o comando que chama o método From
         var invokeFrom = new MethodInvokeGenerator(
-            match.OriginType.Name,
+            qualifiedOriginTypeName,
             "From",
             toParamName);
 
@@ -596,6 +605,24 @@ internal static class AutoSelectGenerator
         // 2.4 Gera o código da classe de extensão
         extensionClass.Generate(context);
     }
+
+    private static bool HasGenericContainingType(INamedTypeSymbol symbol)
+    {
+        for (var containingType = symbol.ContainingType;
+             containingType is not null;
+             containingType = containingType.ContainingType)
+        {
+            if (containingType.Arity > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static TypeDeclarationSyntax? FindNonPartialContainingType(ClassDeclarationSyntax declaration) =>
+        declaration.Ancestors()
+            .OfType<TypeDeclarationSyntax>()
+            .FirstOrDefault(type => !type.Modifiers.Any(SyntaxKind.PartialKeyword));
 
     private static bool HasAccessibleBaseMember(ITypeSymbol? type, string memberName)
     {

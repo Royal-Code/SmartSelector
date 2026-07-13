@@ -44,6 +44,95 @@ internal static class GeneratedSourceConventions
         }
     }
 
+    internal static void ApplyContainingTypes(
+        ClassGenerator generator,
+        INamedTypeSymbol? symbol)
+    {
+        if (symbol?.ContainingType is null)
+            return;
+
+        var containingTypes = new Stack<INamedTypeSymbol>();
+        for (var containingType = symbol.ContainingType;
+             containingType is not null;
+             containingType = containingType.ContainingType)
+        {
+            containingTypes.Push(containingType);
+        }
+
+        while (containingTypes.Count > 0)
+        {
+            var containingSymbol = containingTypes.Pop();
+            var containingGenerator = new ContainingTypeGenerator(
+                containingSymbol.Name,
+                GetTypeDeclarationKeyword(containingSymbol));
+            ApplyDeclaredAccessibility(containingGenerator.Modifiers, containingSymbol);
+            containingGenerator.Modifiers.Partial();
+            generator.ContainingTypes.Add(containingGenerator);
+        }
+    }
+
+    internal static string QualifiedTypeName(TypeDescriptor type) =>
+        type.Symbol is INamedTypeSymbol symbol
+            ? QualifiedTypeName(symbol)
+            : type.Name;
+
+    internal static string TypeIdentityIdentifier(TypeDescriptor type)
+    {
+        if (type.Symbol is not INamedTypeSymbol symbol)
+            return type.Name;
+
+        var names = new Stack<string>();
+        for (var current = symbol; current is not null; current = current.ContainingType)
+            names.Push(current.Name);
+        return string.Join("_", names);
+    }
+
+    private static string QualifiedTypeName(INamedTypeSymbol symbol)
+    {
+        var names = new Stack<string>();
+        for (var current = symbol; current is not null; current = current.ContainingType)
+            names.Push(current.Name);
+        return string.Join(".", names);
+    }
+
+    private static string GetTypeDeclarationKeyword(INamedTypeSymbol symbol) =>
+        symbol switch
+        {
+            { IsRecord: true, TypeKind: TypeKind.Struct } => "record struct",
+            { IsRecord: true } => "record",
+            { TypeKind: TypeKind.Struct } => "struct",
+            _ => "class",
+        };
+
+    private static void ApplyDeclaredAccessibility(
+        ModifiersGenerator modifiers,
+        ISymbol symbol)
+    {
+        switch (symbol.DeclaredAccessibility)
+        {
+            case Accessibility.Public:
+                modifiers.Public();
+                break;
+            case Accessibility.Internal:
+                modifiers.Internal();
+                break;
+            case Accessibility.Protected:
+                modifiers.Protected();
+                break;
+            case Accessibility.Private:
+                modifiers.Private();
+                break;
+            case Accessibility.ProtectedOrInternal:
+                modifiers.Protected();
+                modifiers.Internal();
+                break;
+            case Accessibility.ProtectedAndInternal:
+                modifiers.Private();
+                modifiers.Protected();
+                break;
+        }
+    }
+
     internal static void ApplyRequiredNamespaces(ClassGenerator generator)
     {
         generator.Generating += static (_, builder) =>

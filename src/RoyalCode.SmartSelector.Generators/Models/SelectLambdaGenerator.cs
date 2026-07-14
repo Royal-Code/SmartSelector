@@ -62,30 +62,62 @@ internal class SelectLambdaGenerator : ValueNode
                     break;
                 case NullAssignmentKind.EmptyCollectionFallback:
                     AppendNullChecks(sb, param, classification.NullCheckPaths);
-                    if (propMatch.Origin.Type.UnderlyingType.EndsWith("[]", StringComparison.Ordinal))
-                        sb.Append(" ? Array.Empty<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
-                    else
-                        sb.Append(" ? new List<").Append(GenericItemName(propMatch.Origin.Type)).Append(">() : ");
+                    AppendEmptyCollection(sb, assignDescriptor.Materialization, propMatch.Origin.Type);
                     break;
             }
 
-            var assign = new AssignProperties(propMatch.Origin, propMatch.Target!, assignDescriptor.InnerSelection);
+            var assign = new AssignProperties(
+                propMatch.Origin,
+                propMatch.Target!,
+                assignDescriptor.InnerSelection,
+                assignDescriptor.ElementAssignment);
             assignGenerator(sb, indent, param, assign);
 
-            // check ToList
-            if (assignDescriptor.AssignType == AssignType.Select &&
-                propMatch.Origin.Type.UnderlyingType.EndsWith("[]", StringComparison.Ordinal))
-            {
-                sb.Append('.').Append("ToArray()");
-            }
-            else if (assignDescriptor.RequireToList)
-            {
-                sb.Append('.').Append("ToList()");
-            }
+            AppendMaterialization(sb, assignDescriptor.Materialization);
 
             sb.Append(',');
         }
         sb.Length--;
+    }
+
+    /// <summary>
+    /// Materializa o enumerável conforme o tipo declarado no destino, como resolvido pelo matching.
+    /// </summary>
+    private static void AppendMaterialization(StringBuilder sb, CollectionMaterialization materialization)
+    {
+        switch (materialization)
+        {
+            case CollectionMaterialization.List:
+                sb.Append(".ToList()");
+                break;
+            case CollectionMaterialization.Array:
+                sb.Append(".ToArray()");
+                break;
+            case CollectionMaterialization.HashSet:
+                sb.Append(".ToHashSet()");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Coleção vazia do mesmo tipo do destino, para o fallback de origem nula.
+    /// </summary>
+    private static void AppendEmptyCollection(
+        StringBuilder sb, CollectionMaterialization materialization, TypeSnapshot type)
+    {
+        var item = GenericItemName(type);
+        switch (materialization)
+        {
+            case CollectionMaterialization.Array:
+                sb.Append(" ? Array.Empty<").Append(item).Append(">() : ");
+                break;
+            case CollectionMaterialization.HashSet:
+                sb.Append(" ? new HashSet<").Append(item).Append(">() : ");
+                break;
+            default:
+                sb.Append(" ? new List<").Append(item).Append(">() : ");
+                break;
+        }
     }
 
     private static string GenericItemName(TypeSnapshot type)
@@ -165,25 +197,46 @@ internal class SelectLambdaGenerator : ValueNode
 
     private static void AssignSelect(StringBuilder sb, int indent, char param, AssignProperties assign)
     {
-        var inner = assign.InnerSelection;
-        if (inner is null)
-            throw new ArgumentException("Inner selection is null.", nameof(inner));
-
-        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".Select(");
-
+        var itemName = GenericItemName(assign.Origin.Type);
         var nextParam = (char)(param + 1);
 
-        sb.Append(nextParam).Append(" => new ").AppendLine(GenericItemName(assign.Origin.Type))
-            .Indent(indent).Append('{');
+        sb.Append(param).Append('.').Append(assign.Target.Path).Append(".Select(")
+            .Append(nextParam).Append(" => ");
 
-        GeneratePropertyCode(indent + 1, sb, nextParam, inner.PropertyMatches);
+        // elementos mapeados: projeta um novo objeto com a seleção interna
+        if (assign.InnerSelection is { } inner)
+        {
+            sb.Append("new ").AppendLine(itemName).Indent(indent).Append('{');
+            GeneratePropertyCode(indent + 1, sb, nextParam, inner.PropertyMatches);
+            sb.AppendLine().Indent(indent).Append("})");
+            return;
+        }
 
-        sb.AppendLine().Indent(indent).Append("})");
+        // elementos que só precisam de conversão (enums equivalentes, por exemplo):
+        // o corpo do lambda é o próprio elemento, com ou sem cast
+        switch (assign.ElementAssignment?.AssignType)
+        {
+            case AssignType.SimpleCast:
+                sb.Append('(').Append(itemName).Append(')').Append(nextParam).Append(')');
+                break;
+            case AssignType.Direct:
+                sb.Append(nextParam).Append(')');
+                break;
+            default:
+                throw new ArgumentException(
+                    $"Cannot generate a Select for elements of '{itemName}': " +
+                    "the assignment has neither an inner selection nor an element assignment.",
+                    nameof(assign));
+        }
     }
 
     private delegate void AssignGenerator(StringBuilder sb, int indent, char param, AssignProperties assign);
 
-    private readonly ref struct AssignProperties(PropertySnapshot origin, PropertyPathSnapshot target, MatchSelectionSnapshot? inner)
+    private readonly ref struct AssignProperties(
+        PropertySnapshot origin,
+        PropertyPathSnapshot target,
+        MatchSelectionSnapshot? inner,
+        AssignmentSnapshot? elementAssignment)
     {
         /// <summary>
         /// The origin property type descriptor. (DTO property)
@@ -199,5 +252,10 @@ internal class SelectLambdaGenerator : ValueNode
         /// The inner selection of the target property. (Entity property)
         /// </summary>
         public MatchSelectionSnapshot? InnerSelection { get; } = inner;
+
+        /// <summary>
+        /// For a Select, how each element must be assigned when it is not a mapped object.
+        /// </summary>
+        public AssignmentSnapshot? ElementAssignment { get; } = elementAssignment;
     }
 }

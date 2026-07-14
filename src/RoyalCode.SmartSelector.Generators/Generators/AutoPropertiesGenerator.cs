@@ -15,9 +15,10 @@ internal static class AutoPropertiesGenerator
     {
         OriginPropertiesRetriever = new AutoPropertyOriginPropertiesRetriever(),
         TargetPropertiesRetriever = new SafeTargetPropertiesRetriever(),
+        // destinos de coleção (List<T>, T[], HashSet<T>...) são resolvidos pelo
+        // EnumerableAssignDescriptorResolver padrão, que informa a materialização necessária.
         AdditionalAssignDescriptorResolvers =
         [
-            new ArrayAssignDescriptorResolver(),
             new AutoDetailsAssignDescriptorResolver(),
         ],
         PropertyNameResolvers = [new MapFromPropertyNameResolver()],
@@ -444,58 +445,6 @@ internal static class AutoPropertiesGenerator
         declaration.Ancestors()
             .OfType<TypeDeclarationSyntax>()
             .FirstOrDefault(type => !type.Modifiers.Any(SyntaxKind.PartialKeyword));
-}
-
-internal sealed class ArrayAssignDescriptorResolver : IAssignDescriptorResolver
-{
-    public bool TryCreateAssignDescriptor(
-        TypeDescriptor leftType,
-        TypeDescriptor rightType,
-        SemanticModel model,
-        MatchOptions options,
-        out AssignDescriptor? descriptor)
-    {
-        descriptor = null;
-        if (leftType.Symbol is not IArrayTypeSymbol leftArray || rightType.Symbol is null)
-            return false;
-
-        // Conversões diretas de array continuam a cargo do resolver padrão.
-        if (model.Compilation.ClassifyConversion(rightType.Symbol, leftType.Symbol).IsImplicit)
-            return false;
-
-        ITypeSymbol? rightElement = rightType.Symbol is IArrayTypeSymbol rightArray
-            ? rightArray.ElementType
-            : rightType.Symbol.TryGetEnumerableGenericType(out var enumerableElement)
-                ? enumerableElement
-                : null;
-        if (rightElement is null)
-            return false;
-
-        var leftElementType = TypeDescriptor.Create(leftArray.ElementType);
-        var rightElementType = TypeDescriptor.Create(rightElement);
-        var leftProperties = options.OriginPropertiesRetriever.GetProperties(leftElementType);
-        var rightProperties = options.TargetPropertiesRetriever.GetProperties(rightElementType);
-        if (leftProperties.Count == 0 || rightProperties.Count == 0)
-            return false;
-
-        var inner = MatchSelection.Create(
-            leftElementType,
-            leftProperties,
-            rightElementType,
-            rightProperties,
-            model,
-            options);
-        if (inner.HasMissingProperties(out _) || inner.HasNotAssignableProperties(out _))
-            return false;
-
-        descriptor = new AssignDescriptor
-        {
-            AssignType = AssignType.Select,
-            InnerSelection = inner,
-            RequireToList = false,
-        };
-        return true;
-    }
 }
 
 internal class AutoPropertyOriginPropertiesRetriever : IOriginPropertiesRetriever

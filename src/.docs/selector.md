@@ -361,7 +361,24 @@ public class CommentDetails
 }
 ```
 
-O generator projeta cada item com `Select` e, quando o tipo de destino exige uma lista, materializa com `ToList()`.
+O generator projeta cada item com `Select` e materializa conforme o tipo declarado no destino:
+
+| Tipo do destino | Materialização |
+| --- | --- |
+| `IEnumerable<T>` | nenhuma |
+| `List<T>`, `IList<T>`, `ICollection<T>`, `IReadOnlyList<T>`, `IReadOnlyCollection<T>` | `.ToList()` |
+| `T[]` | `.ToArray()` |
+| `HashSet<T>`, `ISet<T>` | `.ToHashSet()` |
+
+Um destino de coleção que o generator não sabe materializar (um `Dictionary<K,V>`, por exemplo) é reportado como
+propriedade não-assinável, em vez de gerar código inválido.
+
+Quando os elementos não são objetos a mapear, mas apenas a converter — uma coleção de enums equivalentes, por
+exemplo —, o `Select` emite só a conversão: `Status = source.Status.Select(b => (StatusDto)b).ToList()`.
+
+> Antes da 0.5.1, um destino declarado com o tipo concreto `List<T>` gerava código inválido (mapeava
+> `Capacity`/`this[]` do próprio `List<T>`); o contorno era declarar a coleção como `IReadOnlyList<T>`.
+> Corrigido — qualquer um dos tipos da tabela acima funciona.
 
 ### 10.3 Arrays
 
@@ -509,6 +526,36 @@ IEnumerable<OrderDetails> many = orders.SelectOrderDetails();
 `From` compila e executa a mesma expressão em memória. Ele não é uma operação assíncrona e não consulta o banco.
 
 Mesmo usando apenas construções normalmente traduzíveis — acesso a membros, condicionais, `Select`, `ToList` e `ToArray` — a capacidade final depende do provider e da versão do EF Core. Valide consultas relevantes com o provider real da aplicação.
+
+### 14.1 Uso em conjunto com o SmartSearch
+
+As duas bibliotecas foram feitas para trabalhar juntas, mas **nenhuma depende da outra**: o SmartSelector é usável sem
+o SmartSearch (é o que esta seção mostra), e o SmartSearch é usável sem o SmartSelector.
+
+Quando as duas estão presentes, a integração é automática e **não exige registro nenhum**. O membro gerado
+
+```csharp
+public static Expression<Func<Order, OrderDetails>> SelectOrderExpression { get; }
+```
+
+satisfaz o contrato por convenção que o SmartSearch usa para descobrir projeções: ao resolver `Select<TDto>()`, ele
+procura no DTO uma propriedade `public static` do tipo `Expression<Func<TEntity, TDto>>`. Encontrando, usa a expressão
+gerada — que é verificada em tempo de compilação — em vez de construir uma projeção por reflexão em runtime.
+
+```csharp
+[AutoSelect<Order>, AutoProperties]
+public partial class OrderDetails
+{
+    public List<OrderItemDetails> Items { get; set; } = [];
+}
+
+// o SmartSearch encontra SelectOrderExpression sozinho:
+var result = await criteria.FilterBy(filter).Select<OrderDetails>().ToListAsync(ct);
+```
+
+O mesmo contrato aceita uma expressão escrita à mão — o que importa é o tipo da propriedade estática, não o nome nem
+quem a produziu. Detalhes da ordem de resolução (registro no DI, propriedade estática, geração em runtime) estão na
+documentação do SmartSearch, seção "Projeção para DTO".
 
 ## 15. Referência dos atributos
 

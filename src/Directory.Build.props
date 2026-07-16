@@ -5,10 +5,10 @@
 		<GenFrwkVer>netstandard2.0</GenFrwkVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<ExtSrcGenVer>0.3.0</ExtSrcGenVer>
+		<ExtSrcGenVer>0.4.0</ExtSrcGenVer>
 	</PropertyGroup>
 	<PropertyGroup>
-		<Ver>0.5.1</Ver>
+		<Ver>0.5.2</Ver>
 		<Prev></Prev>
 	</PropertyGroup>
 </Project>

@@ -10,10 +10,10 @@ namespace RoyalCode.SmartSelector.Demo.Details.Library;
 public partial class ShelfDetails
 {
     /// <summary>Generated property, projected from the source type.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public Guid Id { get; set; }
 
     /// <summary>Generated property, projected from the source type.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public string Location { get; set; }
 }

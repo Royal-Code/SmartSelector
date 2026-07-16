@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace RoyalCode.SmartSelector.Demo.Details.Store;
 
 /// <summary>Generated details class, projected from the source type.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
 public partial class WarehouseDetails
 {
     /// <summary>Generated property, projected from the source type.</summary>

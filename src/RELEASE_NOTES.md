@@ -1,3 +1,13 @@
+# SmartSelector 0.5.1
+
+## Generated code changes
+
+- Nested collection destinations are now materialized from the destination type resolved during matching, instead of a textual check on the type name: `.ToList()` for `List<T>`, `IList<T>`, `ICollection<T>`, `IReadOnlyList<T>` and `IReadOnlyCollection<T>`; `.ToArray()` for `T[]`; `.ToHashSet()` for `HashSet<T>` and `ISet<T>`; and nothing for `IEnumerable<T>`. The same resolution drives the empty-collection fallback of the null policy (RCSS016), which previously emitted `new List<T>()` for any non-array destination.
+- **Fixed**: a nested collection declared with the concrete `List<T>` type generated invalid code — the destination `List<T>` was mapped as an object, projecting its own members (`Capacity`, the `this[]` indexer) and producing CS0443/CS1001/CS1003 in the generated file. The workaround (declaring the collection as `IReadOnlyList<T>`) is no longer needed. `HashSet<T>`/`ISet<T>` destinations, previously unsupported, now work as well.
+- **Fixed**: a collection of equivalent enums (`List<Status>` into `List<StatusDto>`) crashed the generator with `ArgumentException: Inner selection is null`, because the element only needed a conversion and not an object projection. It now emits `Status = a.Status.Select(b => (StatusDto)b).ToList()`.
+- A collection destination the generator cannot materialize (a `Dictionary<K,V>`, for instance) is now reported as a non-assignable property, instead of being mapped as an object.
+- Requires `RoyalCode.Extensions.SourceGenerator` 0.3.0 (bundled inside the generator package).
+
 # SmartSelector 0.5.0
 
 ## Generated code changes

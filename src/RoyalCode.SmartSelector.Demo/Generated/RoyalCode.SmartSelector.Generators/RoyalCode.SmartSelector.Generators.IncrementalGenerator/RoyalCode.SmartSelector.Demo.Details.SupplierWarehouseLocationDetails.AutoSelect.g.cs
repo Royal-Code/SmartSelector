@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details;
 
 public partial class SupplierWarehouseLocationDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     private static Func<Supplier, SupplierWarehouseLocationDetails>? selectSupplierFunc;
 
     /// <summary>Projection expression that creates a new <see cref="SupplierWarehouseLocationDetails"/> from a <see cref="Supplier"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static Expression<Func<Supplier, SupplierWarehouseLocationDetails>> SelectSupplierExpression { get; } = a => new SupplierWarehouseLocationDetails
     {
         Location = a.Warehouse == null ? null : a.Warehouse.Location
@@ -24,6 +24,6 @@ public partial class SupplierWarehouseLocationDetails
     /// <summary>Creates a new <see cref="SupplierWarehouseLocationDetails"/> projected from a <see cref="Supplier"/> instance.</summary>
     /// <param name="supplier">The source instance to project.</param>
     /// <returns>A new <see cref="SupplierWarehouseLocationDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static SupplierWarehouseLocationDetails From(Supplier supplier) => (selectSupplierFunc ??= SelectSupplierExpression.Compile())(supplier);
 }

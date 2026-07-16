@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details.Blogs;
 
 public partial class AuthorDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     private static Func<Author, AuthorDetails>? selectAuthorFunc;
 
     /// <summary>Projection expression that creates a new <see cref="AuthorDetails"/> from a <see cref="Author"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static Expression<Func<Author, AuthorDetails>> SelectAuthorExpression { get; } = a => new AuthorDetails
     {
         Name = a.Name
@@ -24,6 +24,6 @@ public partial class AuthorDetails
     /// <summary>Creates a new <see cref="AuthorDetails"/> projected from a <see cref="Author"/> instance.</summary>
     /// <param name="author">The source instance to project.</param>
     /// <returns>A new <see cref="AuthorDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static AuthorDetails From(Author author) => (selectAuthorFunc ??= SelectAuthorExpression.Compile())(author);
 }

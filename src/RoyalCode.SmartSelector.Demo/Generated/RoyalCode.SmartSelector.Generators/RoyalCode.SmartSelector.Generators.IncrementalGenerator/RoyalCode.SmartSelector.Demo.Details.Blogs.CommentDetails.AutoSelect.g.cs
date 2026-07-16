@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details.Blogs;
 
 public partial class CommentDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     private static Func<Comment, CommentDetails>? selectCommentFunc;
 
     /// <summary>Projection expression that creates a new <see cref="CommentDetails"/> from a <see cref="Comment"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static Expression<Func<Comment, CommentDetails>> SelectCommentExpression { get; } = a => new CommentDetails
     {
         Content = a.Content,
@@ -25,6 +25,6 @@ public partial class CommentDetails
     /// <summary>Creates a new <see cref="CommentDetails"/> projected from a <see cref="Comment"/> instance.</summary>
     /// <param name="comment">The source instance to project.</param>
     /// <returns>A new <see cref="CommentDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
     public static CommentDetails From(Comment comment) => (selectCommentFunc ??= SelectCommentExpression.Compile())(comment);
 }

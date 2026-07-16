@@ -9,7 +9,7 @@ using RoyalCode.SmartSelector.Demo.Entities.Store;
 namespace RoyalCode.SmartSelector.Demo.Details.Store;
 
 /// <summary>Generated extension methods to project <see cref="Supplier"/> instances into <see cref="SupplierDetails"/> instances.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
 public static class SupplierDetails_Extensions
 {
     /// <summary>Projects the <see cref="Supplier"/> query into <see cref="SupplierDetails"/>.</summary>

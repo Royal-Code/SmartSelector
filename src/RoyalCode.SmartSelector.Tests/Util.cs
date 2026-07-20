@@ -32,7 +32,40 @@ internal sealed record CompileResult(
         .Concat(CompilationDiagnostics)
         .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Warning);
 
-    internal string GeneratedSource(string hintName) => GeneratedSources[hintName];
+    internal string GeneratedSource(string logicalHintName) =>
+        GeneratedSources[GeneratedHintName(logicalHintName)];
+
+    internal string GeneratedHintName(string logicalHintName)
+    {
+        if (GeneratedSources.ContainsKey(logicalHintName))
+            return logicalHintName;
+
+        const string suffix = ".g.cs";
+        if (!logicalHintName.EndsWith(suffix, StringComparison.Ordinal))
+            throw new ArgumentException("The logical hint name must end with '.g.cs'.", nameof(logicalHintName));
+
+        var identity = logicalHintName[..^suffix.Length];
+        var categorySeparator = identity.LastIndexOf('.');
+        if (categorySeparator < 0)
+            throw new ArgumentException("The logical hint name must contain a category.", nameof(logicalHintName));
+
+        var typeSeparator = identity.LastIndexOf('.', categorySeparator - 1);
+        var generatedTypeName = identity[(typeSeparator + 1)..categorySeparator];
+        var metadataAritySeparator = generatedTypeName.IndexOf('`');
+        if (metadataAritySeparator >= 0)
+            generatedTypeName = generatedTypeName[..metadataAritySeparator];
+
+        var category = identity[(categorySeparator + 1)..];
+        var categorySuffix = $"_{category}";
+        const int readablePartMaxLength = 32;
+        var generatedTypeNameMaxLength = readablePartMaxLength - categorySuffix.Length;
+        if (generatedTypeName.Length > generatedTypeNameMaxLength)
+            generatedTypeName = generatedTypeName[..generatedTypeNameMaxLength];
+
+        return RoyalCode.Extensions.SourceGenerator.GeneratedHintName.Create(
+            identity,
+            $"{generatedTypeName}{categorySuffix}");
+    }
 
     internal string AllGeneratedSources() => string.Join(
         "\n-----\n",

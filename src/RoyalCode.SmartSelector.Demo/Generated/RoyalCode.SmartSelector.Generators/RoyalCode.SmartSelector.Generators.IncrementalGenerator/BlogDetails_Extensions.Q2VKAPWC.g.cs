@@ -9,7 +9,7 @@ using RoyalCode.SmartSelector.Demo.Entities.Blogs;
 namespace RoyalCode.SmartSelector.Demo.Details.Blogs;
 
 /// <summary>Generated extension methods to project <see cref="Blog"/> instances into <see cref="BlogDetails"/> instances.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
 public static class BlogDetails_Extensions
 {
     /// <summary>Projects the <see cref="Blog"/> query into <see cref="BlogDetails"/>.</summary>

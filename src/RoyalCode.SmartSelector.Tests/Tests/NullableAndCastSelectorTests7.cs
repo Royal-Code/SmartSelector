@@ -70,11 +70,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class EnumNullsTypeDto
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<EnumNulls, EnumNullsTypeDto>? selectEnumNullsFunc;
 
     /// <summary>Projection expression that creates a new <see cref="EnumNullsTypeDto"/> from a <see cref="EnumNulls"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<EnumNulls, EnumNullsTypeDto>> SelectEnumNullsExpression { get; } = a => new EnumNullsTypeDto
     {
         Value1 = (NullsType)a.Value1,
@@ -86,7 +86,7 @@ public partial class EnumNullsTypeDto
     /// <summary>Creates a new <see cref="EnumNullsTypeDto"/> projected from a <see cref="EnumNulls"/> instance.</summary>
     /// <param name="enumNulls">The source instance to project.</param>
     /// <returns>A new <see cref="EnumNullsTypeDto"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static EnumNullsTypeDto From(EnumNulls enumNulls) => (selectEnumNullsFunc ??= SelectEnumNullsExpression.Compile())(enumNulls);
 }
 

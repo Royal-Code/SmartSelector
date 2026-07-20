@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details;
 
 public partial class UserDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<User, UserDetails>? selectUserFunc;
 
     /// <summary>Projection expression that creates a new <see cref="UserDetails"/> from a <see cref="User"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<User, UserDetails>> SelectUserExpression { get; } = a => new UserDetails
     {
         Id = a.Id,
@@ -28,6 +28,6 @@ public partial class UserDetails
     /// <summary>Creates a new <see cref="UserDetails"/> projected from a <see cref="User"/> instance.</summary>
     /// <param name="user">The source instance to project.</param>
     /// <returns>A new <see cref="UserDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static UserDetails From(User user) => (selectUserFunc ??= SelectUserExpression.Compile())(user);
 }

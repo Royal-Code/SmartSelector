@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details.Blogs;
 
 public partial class BlogDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Blog, BlogDetails>? selectBlogFunc;
 
     /// <summary>Projection expression that creates a new <see cref="BlogDetails"/> from a <see cref="Blog"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Blog, BlogDetails>> SelectBlogExpression { get; } = a => new BlogDetails
     {
         Id = a.Id,
@@ -44,6 +44,6 @@ public partial class BlogDetails
     /// <summary>Creates a new <see cref="BlogDetails"/> projected from a <see cref="Blog"/> instance.</summary>
     /// <param name="blog">The source instance to project.</param>
     /// <returns>A new <see cref="BlogDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static BlogDetails From(Blog blog) => (selectBlogFunc ??= SelectBlogExpression.Compile())(blog);
 }

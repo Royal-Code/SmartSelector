@@ -124,11 +124,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class PostAndCommentsDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Post, PostAndCommentsDetails>? selectPostFunc;
 
     /// <summary>Projection expression that creates a new <see cref="PostAndCommentsDetails"/> from a <see cref="Post"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Post, PostAndCommentsDetails>> SelectPostExpression { get; } = a => new PostAndCommentsDetails
     {
         Title = a.Title,
@@ -147,7 +147,7 @@ public partial class PostAndCommentsDetails
     /// <summary>Creates a new <see cref="PostAndCommentsDetails"/> projected from a <see cref="Post"/> instance.</summary>
     /// <param name="post">The source instance to project.</param>
     /// <returns>A new <see cref="PostAndCommentsDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static PostAndCommentsDetails From(Post post) => (selectPostFunc ??= SelectPostExpression.Compile())(post);
 }
 

@@ -29,10 +29,15 @@ public class GenerationHardeningTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "First.Details.AutoSelect.g.cs",
-            "First.Details.Extensions.g.cs",
-            "Second.Details.AutoSelect.g.cs",
-            "Second.Details.Extensions.g.cs");
+            result.GeneratedHintName("First.Details.AutoSelect.g.cs"),
+            result.GeneratedHintName("First.Details.Extensions.g.cs"),
+            result.GeneratedHintName("Second.Details.AutoSelect.g.cs"),
+            result.GeneratedHintName("Second.Details.Extensions.g.cs"));
+
+        result.GeneratedSources.Keys.Should().OnlyContain(static hintName =>
+            System.Text.RegularExpressions.Regex.IsMatch(
+                hintName,
+                "^Details_(AutoSelect|Extensions)\\.[A-Z2-7]{8}\\.g\\.cs$"));
     }
 
     [Fact]
@@ -86,15 +91,51 @@ public class GenerationHardeningTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "Nested.First.Details.AutoSelect.g.cs",
-            "Nested.First.Details.Extensions.g.cs",
-            "Nested.Second.Details.AutoSelect.g.cs",
-            "Nested.Second.Details.Extensions.g.cs");
+            result.GeneratedHintName("Nested.First.Details.AutoSelect.g.cs"),
+            result.GeneratedHintName("Nested.First.Details.Extensions.g.cs"),
+            result.GeneratedHintName("Nested.Second.Details.AutoSelect.g.cs"),
+            result.GeneratedHintName("Nested.Second.Details.Extensions.g.cs"));
 
         result.GeneratedSource("Nested.First.Details.Extensions.g.cs")
             .Should().Contain("public static class First_Details_Extensions");
         result.GeneratedSource("Nested.Second.Details.Extensions.g.cs")
             .Should().Contain("public static class Second_Details_Extensions");
+    }
+
+    [Fact]
+    public void Hint_names_should_be_bounded_and_deterministic_for_global_types()
+    {
+        const string source =
+            """
+            using RoyalCode.SmartSelector;
+
+            public partial class DetailsWithAnExtremelyLongAndReadableTypeName { }
+
+            namespace HintNames
+            {
+                public class Address { public int Number { get; set; } }
+                public class Entity { public Address Address { get; set; } = new(); }
+
+                [AutoSelect<Entity>, AutoProperties]
+                public partial class Details
+                {
+                    [AutoDetails]
+                    public global::DetailsWithAnExtremelyLongAndReadableTypeName Address { get; set; } = new();
+                }
+            }
+            """;
+
+        var first = Util.CompileAndAssert(source);
+        var second = Util.CompileAndAssert(source);
+
+        first.GeneratedSources.Keys.Should().BeEquivalentTo(second.GeneratedSources.Keys);
+        first.GeneratedSources.Keys.Should().OnlyContain(static hintName => hintName.Length <= 46);
+        first.GeneratedSources.Keys.Should().OnlyContain(static hintName =>
+            System.Text.RegularExpressions.Regex.IsMatch(
+                hintName,
+                "^[A-Za-z0-9_-]{1,32}\\.[A-Z2-7]{8}\\.g\\.cs$"));
+        first.GeneratedSources.Keys.Should().Contain(static hintName =>
+            hintName.Contains("_AutoDetails.", StringComparison.Ordinal));
     }
 
     [Fact]

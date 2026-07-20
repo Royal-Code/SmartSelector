@@ -154,11 +154,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class DtoWithSubSelectsAndCollections
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<EntityWithSubSelectsAndCollections, DtoWithSubSelectsAndCollections>? selectEntityWithSubSelectsAndCollectionsFunc;
 
     /// <summary>Projection expression that creates a new <see cref="DtoWithSubSelectsAndCollections"/> from a <see cref="EntityWithSubSelectsAndCollections"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<EntityWithSubSelectsAndCollections, DtoWithSubSelectsAndCollections>> SelectEntityWithSubSelectsAndCollectionsExpression { get; } = a => new DtoWithSubSelectsAndCollections
     {
         Id = a.Id,
@@ -194,7 +194,7 @@ public partial class DtoWithSubSelectsAndCollections
     /// <summary>Creates a new <see cref="DtoWithSubSelectsAndCollections"/> projected from a <see cref="EntityWithSubSelectsAndCollections"/> instance.</summary>
     /// <param name="entityWithSubSelectsAndCollections">The source instance to project.</param>
     /// <returns>A new <see cref="DtoWithSubSelectsAndCollections"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static DtoWithSubSelectsAndCollections From(EntityWithSubSelectsAndCollections entityWithSubSelectsAndCollections) => (selectEntityWithSubSelectsAndCollectionsFunc ??= SelectEntityWithSubSelectsAndCollectionsExpression.Compile())(entityWithSubSelectsAndCollections);
 }
 

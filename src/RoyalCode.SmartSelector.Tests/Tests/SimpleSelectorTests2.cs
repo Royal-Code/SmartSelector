@@ -112,11 +112,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class VariationDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Variation, VariationDetails>? selectVariationFunc;
 
     /// <summary>Projection expression that creates a new <see cref="VariationDetails"/> from a <see cref="Variation"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Variation, VariationDetails>> SelectVariationExpression { get; } = a => new VariationDetails
     {
         Id = a.Id,
@@ -129,7 +129,7 @@ public partial class VariationDetails
     /// <summary>Creates a new <see cref="VariationDetails"/> projected from a <see cref="Variation"/> instance.</summary>
     /// <param name="variation">The source instance to project.</param>
     /// <returns>A new <see cref="VariationDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static VariationDetails From(Variation variation) => (selectVariationFunc ??= SelectVariationExpression.Compile())(variation);
 }
 

@@ -129,7 +129,8 @@ public class GeneratorDiagnosticTests
         result.GeneratorDiagnostics.Single(diagnostic => diagnostic.Id == "RCSS010")
             .Severity.Should().Be(DiagnosticSeverity.Warning);
         result.Errors.Should().BeEmpty();
-        result.GeneratedSources.Should().ContainKey("Diagnostics.Details.AutoSelect.g.cs");
+        result.GeneratedSources.Should().ContainKey(
+            result.GeneratedHintName("Diagnostics.Details.AutoSelect.g.cs"));
     }
 
     [Fact]

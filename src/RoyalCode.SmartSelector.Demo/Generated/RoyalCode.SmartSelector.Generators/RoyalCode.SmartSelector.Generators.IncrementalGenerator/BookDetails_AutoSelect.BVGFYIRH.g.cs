@@ -11,11 +11,11 @@ namespace RoyalCode.SmartSelector.Demo.Details.Library;
 
 public partial class BookDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Book, BookDetails>? selectBookFunc;
 
     /// <summary>Projection expression that creates a new <see cref="BookDetails"/> from a <see cref="Book"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Book, BookDetails>> SelectBookExpression { get; } = a => new BookDetails
     {
         Shelf = new ShelfDetails
@@ -35,6 +35,6 @@ public partial class BookDetails
     /// <summary>Creates a new <see cref="BookDetails"/> projected from a <see cref="Book"/> instance.</summary>
     /// <param name="book">The source instance to project.</param>
     /// <returns>A new <see cref="BookDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static BookDetails From(Book book) => (selectBookFunc ??= SelectBookExpression.Compile())(book);
 }

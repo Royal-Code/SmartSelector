@@ -65,11 +65,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class CustomerDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Customer, CustomerDetails>? selectCustomerFunc;
 
     /// <summary>Projection expression that creates a new <see cref="CustomerDetails"/> from a <see cref="Customer"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Customer, CustomerDetails>> SelectCustomerExpression { get; } = a => new CustomerDetails
     {
         Id = a.Id,
@@ -80,7 +80,7 @@ public partial class CustomerDetails
     /// <summary>Creates a new <see cref="CustomerDetails"/> projected from a <see cref="Customer"/> instance.</summary>
     /// <param name="customer">The source instance to project.</param>
     /// <returns>A new <see cref="CustomerDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static CustomerDetails From(Customer customer) => (selectCustomerFunc ??= SelectCustomerExpression.Compile())(customer);
 }
 
@@ -98,7 +98,7 @@ using System.Collections.Generic;
 namespace Tests.SmartSelector.Models;
 
 /// <summary>Generated extension methods to project <see cref="Customer"/> instances into <see cref="CustomerDetails"/> instances.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
 public static class CustomerDetails_Extensions
 {
     /// <summary>Projects the <see cref="Customer"/> query into <see cref="CustomerDetails"/>.</summary>

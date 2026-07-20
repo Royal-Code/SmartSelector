@@ -7,13 +7,13 @@ using System.Collections.Generic;
 
 namespace RoyalCode.SmartSelector.Demo.Details.Store;
 
-/// <summary>Generated details class, projected from the source type.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.2.0")]
-public partial class WarehouseDetails
+public partial class SupplierDetails
 {
     /// <summary>Generated property, projected from the source type.</summary>
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public Guid Id { get; set; }
 
     /// <summary>Generated property, projected from the source type.</summary>
-    public string Location { get; set; }
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
+    public string Name { get; set; }
 }

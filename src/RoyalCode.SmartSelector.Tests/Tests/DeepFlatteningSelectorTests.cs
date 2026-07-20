@@ -87,11 +87,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class OrderDetails
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<Order, OrderDetails>? selectOrderFunc;
 
     /// <summary>Projection expression that creates a new <see cref="OrderDetails"/> from a <see cref="Order"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<Order, OrderDetails>> SelectOrderExpression { get; } = a => new OrderDetails
     {
         Id = a.Id,
@@ -103,7 +103,7 @@ public partial class OrderDetails
     /// <summary>Creates a new <see cref="OrderDetails"/> projected from a <see cref="Order"/> instance.</summary>
     /// <param name="order">The source instance to project.</param>
     /// <returns>A new <see cref="OrderDetails"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static OrderDetails From(Order order) => (selectOrderFunc ??= SelectOrderExpression.Compile())(order);
 }
 
@@ -121,7 +121,7 @@ using System.Collections.Generic;
 namespace Tests.SmartSelector.Models;
 
 /// <summary>Generated extension methods to project <see cref="Order"/> instances into <see cref="OrderDetails"/> instances.</summary>
-[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+[global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
 public static class OrderDetails_Extensions
 {
     /// <summary>Projects the <see cref="Order"/> query into <see cref="OrderDetails"/>.</summary>

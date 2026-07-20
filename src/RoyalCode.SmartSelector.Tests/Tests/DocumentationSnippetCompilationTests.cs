@@ -24,9 +24,9 @@ public class DocumentationSnippetCompilationTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "Documentation.Quickstart.UserDetails.AutoProperties.g.cs",
-            "Documentation.Quickstart.UserDetails.AutoSelect.g.cs",
-            "Documentation.Quickstart.UserDetails.Extensions.g.cs");
+            result.GeneratedHintName("Documentation.Quickstart.UserDetails.AutoProperties.g.cs"),
+            result.GeneratedHintName("Documentation.Quickstart.UserDetails.AutoSelect.g.cs"),
+            result.GeneratedHintName("Documentation.Quickstart.UserDetails.Extensions.g.cs"));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class DocumentationSnippetCompilationTests
             """);
 
         result.GeneratedSources.Should().ContainKey(
-            "Documentation.AutoProperties.UserSnapshot.AutoProperties.g.cs");
+            result.GeneratedHintName("Documentation.AutoProperties.UserSnapshot.AutoProperties.g.cs"));
     }
 
     [Fact]
@@ -84,9 +84,9 @@ public class DocumentationSnippetCompilationTests
             """);
 
         result.GeneratedSources.Should().ContainKeys(
-            "Documentation.AutoDetails.AddressDetails.AutoDetails.g.cs",
-            "Documentation.AutoDetails.CustomerDetails.AutoSelect.g.cs",
-            "Documentation.AutoDetails.CustomerDetails.Extensions.g.cs");
+            result.GeneratedHintName("Documentation.AutoDetails.AddressDetails.AutoDetails.g.cs"),
+            result.GeneratedHintName("Documentation.AutoDetails.CustomerDetails.AutoSelect.g.cs"),
+            result.GeneratedHintName("Documentation.AutoDetails.CustomerDetails.Extensions.g.cs"));
     }
 
     [Fact]

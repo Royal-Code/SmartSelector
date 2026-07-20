@@ -4,6 +4,8 @@ namespace RoyalCode.SmartSelector.Generators.Generators;
 
 internal static class GeneratedSourceConventions
 {
+    private const int GeneratedHintNameReadablePartMaxLength = 32;
+
     internal const string ToolName = "RoyalCode.SmartSelector.Generators";
 
     internal static readonly string ToolVersion =
@@ -211,8 +213,7 @@ internal static class GeneratedSourceConventions
             parts.Add(generatedTypeName);
         }
 
-        parts.Add(category);
-        return $"{string.Join(".", parts)}.g.cs";
+        return CreateFileName(parts, generatedTypeName, category);
     }
 
     private static void ApplyAccessibility(ModifiersGenerator modifiers, string accessibility)
@@ -288,7 +289,26 @@ internal static class GeneratedSourceConventions
             parts.Add(generatedTypeName);
         }
 
-        parts.Add(category);
-        return $"{string.Join(".", parts)}.g.cs";
+        return CreateFileName(parts, generatedTypeName, category);
+    }
+
+    private static string CreateFileName(
+        List<string> identityParts,
+        string generatedTypeName,
+        string category)
+    {
+        identityParts.Add(category);
+        var categorySuffix = $"_{category}";
+        var generatedTypeNameMaxLength = GeneratedHintNameReadablePartMaxLength - categorySuffix.Length;
+        if (generatedTypeNameMaxLength < 1)
+            throw new ArgumentException("The artifact category is too long for a readable hint name.", nameof(category));
+
+        var readableTypeName = generatedTypeName.Length > generatedTypeNameMaxLength
+            ? generatedTypeName.Substring(0, generatedTypeNameMaxLength)
+            : generatedTypeName;
+
+        return GeneratedHintName.Create(
+            string.Join(".", identityParts),
+            $"{readableTypeName}{categorySuffix}");
     }
 }

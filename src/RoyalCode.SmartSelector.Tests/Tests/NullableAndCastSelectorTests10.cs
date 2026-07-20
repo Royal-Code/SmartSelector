@@ -67,11 +67,11 @@ namespace Tests.SmartSelector.Models;
 
 public partial class ValueSelectNullsDto
 {
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     private static Func<ValueSelectNulls, ValueSelectNullsDto>? selectValueSelectNullsFunc;
 
     /// <summary>Projection expression that creates a new <see cref="ValueSelectNullsDto"/> from a <see cref="ValueSelectNulls"/>.</summary>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static Expression<Func<ValueSelectNulls, ValueSelectNullsDto>> SelectValueSelectNullsExpression { get; } = a => new ValueSelectNullsDto
     {
         Value1 = a.Value1.Select(b => new ValueDto
@@ -95,7 +95,7 @@ public partial class ValueSelectNullsDto
     /// <summary>Creates a new <see cref="ValueSelectNullsDto"/> projected from a <see cref="ValueSelectNulls"/> instance.</summary>
     /// <param name="valueSelectNulls">The source instance to project.</param>
     /// <returns>A new <see cref="ValueSelectNullsDto"/> instance.</returns>
-    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCode("RoyalCode.SmartSelector.Generators", "0.5.3.0")]
     public static ValueSelectNullsDto From(ValueSelectNulls valueSelectNulls) => (selectValueSelectNullsFunc ??= SelectValueSelectNullsExpression.Compile())(valueSelectNulls);
 }
 
